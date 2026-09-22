@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env
+.env.*
+!.env.example
+.sites-demo/
+.sites-runtime/
+*.tsbuildinfo
+*.log
+coverage/
