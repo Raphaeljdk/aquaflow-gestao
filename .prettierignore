@@ -1,0 +1,5 @@
+node_modules
+.next
+.sites-demo
+out
+src/components/ui
