@@ -71,6 +71,8 @@ Hospede em Node.js, Vercel ou outro ambiente compatível com Next.js e PostgreSQ
 
 O build valida o código, mas não cria tabelas nem administrador. Sem migração e seed, a aplicação publicada não consegue atender ao login. Nunca coloque a URL do banco ou senhas no repositório ou em mensagens públicas.
 
+Se `/login` falhar no pré-render com `ERR_INVALID_URL` e `input: ''`, verifique `NEXTAUTH_URL` na Vercel. Uma variável criada com valor vazio causa esse erro no NextAuth. O projeto agora usa `VERCEL_URL` durante o build nesse caso, mas configure `NEXTAUTH_URL` com a origem HTTPS definitiva e faça um novo deploy para autenticação em produção.
+
 `npm run build` produz o build completo e também a demonstração estática. `npm run build:demo` cria uma cópia temporária em `.sites-demo`, remove exclusivamente dessa cópia as rotas de API e o proxy de autenticação e gera `out/`. Nenhum arquivo do servidor original é removido. A publicação Sites usa apenas `out/`.
 
 Para novos ambientes sem dados fictícios, crie o administrador e os serviços necessários por um seed adaptado antes do primeiro uso.
