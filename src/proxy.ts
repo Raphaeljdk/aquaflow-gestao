@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { allowedPages } from "@/lib/permissions";
 export async function proxy(request: NextRequest) {
+  if (process.env.NEXT_PUBLIC_DEMO === "true") return NextResponse.next();
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
