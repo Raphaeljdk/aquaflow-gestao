@@ -51,6 +51,8 @@ Abra **http://localhost:3000/login**. Use o e-mail e a senha definidos no seed. 
 
 O seed é idempotente: preserva dados existentes e não redefine senhas. Os funcionários de exemplo são cadastros operacionais; habilite cada acesso em **Funcionários → Editar**, informando e-mail e senha.
 
+Para redefinir a senha de um administrador já criado, execute `npm run admin:password` em um ambiente confiável com `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` definidos. O comando exige uma conta ADMIN ativa e grava apenas o hash bcrypt; não registre a senha no repositório nem a passe como argumento de linha de comando.
+
 O Docker expõe o PostgreSQL apenas em localhost. A senha padrão do compose é exclusivamente para desenvolvimento; configure credenciais próprias no seu ambiente real.
 
 ## Build e implantação
