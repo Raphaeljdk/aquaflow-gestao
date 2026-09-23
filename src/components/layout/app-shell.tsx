@@ -219,18 +219,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {roleLabels[user?.role ?? "ADMIN"]}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Sair"
-                onClick={() =>
-                  DEMO
-                    ? router.push("/login")
-                    : void signOut({ callbackUrl: "/login" })
-                }
-              >
-                <LogOut size={15} />
-              </Button>
+              {!DEMO && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Sair"
+                  onClick={() => void signOut({ callbackUrl: "/login" })}
+                >
+                  <LogOut size={15} />
+                </Button>
+              )}
             </div>
           </SidebarFooter>
         </Sidebar>

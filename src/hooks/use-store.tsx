@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { makeDemoData } from "@/lib/demo-data";
 import { applyMutation } from "@/lib/domain";
 import type { AppData, Mutation, User } from "@/types";
-export const DEMO = process.env.NEXT_PUBLIC_DEMO === "true";
+export const DEMO = true;
 type Store = {
   data: AppData | null;
   user: User | null;

@@ -1,5 +1,7 @@
 # AquaFlow — Gestão de Lava Rápido
 
+> **Publicação temporária para avaliação:** a interface no branch `main` abre diretamente em `/dashboard`, usa somente dados fictícios na memória do navegador e não solicita login. As alterações desaparecem ao recarregar. O código de autenticação e PostgreSQL está preservado para ativação posterior; a interface atual não grava no banco. Não insira dados reais nesta publicação.
+
 Aplicação em português com **Next.js 16 (App Router), TypeScript, Tailwind CSS 4, shadcn/ui, Prisma 6 + PostgreSQL, NextAuth Credentials, Zod, React Hook Form e date-fns**. Next.js 16 atende ao requisito 14+.
 
 ## Aplicação e demonstração
