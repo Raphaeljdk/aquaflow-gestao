@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
     "db:seed": "node --env-file=.env --import tsx prisma/seed.ts",
+    "admin:password": "node scripts/set-admin-password.mjs",
     "build:demo": "node scripts/build-demo.mjs",
     "dev:demo": "vite --host 0.0.0.0 --port 4173",
     "build:app": "prisma generate && next build --webpack"
