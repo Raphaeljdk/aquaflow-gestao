@@ -71,6 +71,8 @@ Hospede em Node.js, Vercel ou outro ambiente compatível com Next.js e PostgreSQ
 3. Antes de liberar o sistema, execute `npx prisma migrate deploy` apontando para o banco de produção em um ambiente confiável. Para o primeiro acesso, execute `npm run db:seed` com `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` (mínimo 12 caracteres). O seed inclui registros fictícios; avalie antes de usá-lo com um cliente real.
 4. Faça o deploy pelo Git conectado e valide `/login`, autenticação, abertura e finalização de uma comanda. A Vercel publica novos commits automaticamente; o GitHub Actions apenas verifica tipos, testes e build, sem necessitar de `VERCEL_TOKEN` ou iniciar uma segunda publicação.
 
+Para uma avaliação temporária **sem banco**, configure `NEXT_PUBLIC_DEMO=true` na Vercel e faça um novo deploy. Acesse `/login` e clique em **Explorar demonstração**: não há e-mail nem senha. O modo demonstração usa apenas dados fictícios na memória do navegador; alterações somem ao recarregar e não são compartilhadas entre usuários. Não use esse modo para dados reais. Antes de colocar a aplicação em produção, remova `NEXT_PUBLIC_DEMO` (ou defina `false`), configure o PostgreSQL e execute migração e seed.
+
 O build valida o código, mas não cria tabelas nem administrador. Sem migração e seed, a aplicação publicada não consegue atender ao login. Nunca coloque a URL do banco ou senhas no repositório ou em mensagens públicas.
 
 Se `/login` falhar no pré-render com `ERR_INVALID_URL` e `input: ''`, verifique `NEXTAUTH_URL` na Vercel. Uma variável criada com valor vazio causa esse erro no NextAuth. O projeto agora usa `VERCEL_URL` durante o build nesse caso, mas configure `NEXTAUTH_URL` com a origem HTTPS definitiva e faça um novo deploy para autenticação em produção.
