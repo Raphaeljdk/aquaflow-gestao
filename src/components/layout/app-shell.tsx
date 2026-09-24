@@ -8,6 +8,7 @@ import {
   Users,
   CarFront,
   Sparkles,
+  Package,
   ClipboardList,
   CalendarDays,
   UserRoundCog,
@@ -61,6 +62,7 @@ const links = [
   { path: "clientes", label: "Clientes", icon: Users },
   { path: "veiculos", label: "Veículos", icon: CarFront },
   { path: "servicos", label: "Serviços", icon: Sparkles },
+  { path: "estoque", label: "Estoque", icon: Package },
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Relatórios", icon: ChartNoAxesCombined },
   { path: "configuracoes", label: "Configurações", icon: Settings2 },
@@ -143,7 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupLabel>
               <SidebarMenu className="gap-1">
                 {links
-                  .slice(0, 6)
+                  .slice(0, 7)
                   .filter((l) => allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
@@ -172,7 +174,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupLabel>
               <SidebarMenu className="gap-1">
                 {links
-                  .slice(6)
+                  .slice(7)
                   .filter((l) => allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>

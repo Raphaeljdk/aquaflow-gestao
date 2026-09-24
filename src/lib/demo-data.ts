@@ -138,6 +138,13 @@ export function makeDemoData(now = new Date()): AppData {
     ],
     comandas: [],
     agendamentos: [],
+    materiais: [
+      { id: "m1", nome: "Shampoo automotivo", unidade: "L", quantidade: 12, minimo: 5, custoUnitario: 18.9, ativo: true },
+      { id: "m2", nome: "Cera líquida", unidade: "L", quantidade: 3, minimo: 4, custoUnitario: 32, ativo: true },
+      { id: "m3", nome: "Pano de microfibra", unidade: "un", quantidade: 24, minimo: 10, custoUnitario: 7.5, ativo: true },
+      { id: "m4", nome: "Desengraxante", unidade: "L", quantidade: 2, minimo: 3, custoUnitario: 25, ativo: true },
+    ],
+    movimentosEstoque: [],
     configuracao: {
       nome: "AquaFlow Lava Rápido",
       cnpj: "",

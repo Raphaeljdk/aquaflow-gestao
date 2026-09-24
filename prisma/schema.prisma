@@ -171,4 +171,23 @@ model LoginAttempt {
   attempts Int @default(1)
   expiresAt DateTime
 }
-
+model Material {
+  id String @id @default(cuid())
+  nome String @unique
+  unidade String
+  quantidade Decimal @default(0) @db.Decimal(15,3)
+  minimo Decimal @default(0) @db.Decimal(15,3)
+  custoUnitario Decimal @default(0) @db.Decimal(12,2)
+  ativo Boolean @default(true)
+  movimentos MovimentoEstoque[]
+}
+model MovimentoEstoque {
+  id String @id @default(cuid())
+  materialId String
+  material Material @relation(fields:[materialId],references:[id],onDelete:Restrict)
+  tipo String
+  quantidade Decimal @db.Decimal(15,3)
+  observacao String @default("")
+  createdAt DateTime @default(now())
+  @@index([materialId,createdAt])
+}

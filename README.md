@@ -4,6 +4,10 @@
 
 Aplicação em português com **Next.js 16 (App Router), TypeScript, Tailwind CSS 4, shadcn/ui, Prisma 6 + PostgreSQL, NextAuth Credentials, Zod, React Hook Form e date-fns**. Next.js 16 atende ao requisito 14+.
 
+## Estoque de materiais
+
+Em **Estoque**, gestores cadastram materiais com unidade, custo unitário e saldo mínimo. A equipe registra entradas e saídas com quantidade e observação; o saldo é atualizado e saídas acima do disponível são bloqueadas. O painel destaca materiais no mínimo ou abaixo dele e exibe as movimentações recentes. A demonstração apresenta dados fictícios e reinicia ao recarregar. No modo PostgreSQL, execute `npm run db:migrate` antes de usar o módulo.
+
 ## Aplicação e demonstração
 
 - **Aplicação completa:** `src/`, autenticação real, APIs protegidas e persistência PostgreSQL. Requer seu banco e variáveis de ambiente.

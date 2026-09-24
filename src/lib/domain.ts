@@ -8,6 +8,8 @@ import {
   statusSchema,
   agendamentoSchema,
   configuracaoSchema,
+  materialSchema,
+  movimentoEstoqueSchema,
 } from "./validations";
 import { cents, decimal, dayKey, dateLabel } from "./format";
 import { canWrite } from "./permissions";
@@ -133,6 +135,37 @@ export function applyMutation(
   if (m.entity === "configuracoes") {
     need(m.method === "PATCH", "Método inválido.");
     d.configuracao = configuracaoSchema.parse(input);
+    return d;
+  }
+  if (m.entity === "movimentosEstoque") {
+    need(m.method === "POST", "Movimentações são permanentes; registre uma nova movimentação para corrigir.");
+    const v = movimentoEstoqueSchema.parse(input);
+    need(Math.round(v.quantidade * 1000) === v.quantidade * 1000, "Use até três casas decimais.");
+    const material = d.materiais.find((x) => x.id === v.materialId && x.ativo);
+    need(material, "Material ativo não encontrado.", 404);
+    const balance = Math.round(material.quantidade * 1000) +
+      (v.tipo === "ENTRADA" ? 1 : -1) * Math.round(v.quantidade * 1000);
+    need(balance >= 0, "Saldo insuficiente para esta saída.", 409);
+    material.quantidade = balance / 1000;
+    d.movimentosEstoque.unshift({ ...v, id: uid(), createdAt: now.toISOString() });
+    return d;
+  }
+  if (m.entity === "materiais") {
+    if (m.method === "DELETE") {
+      const item = d.materiais.find((x) => x.id === m.id);
+      need(item, "Material não encontrado.", 404);
+      item.ativo = false;
+      return d;
+    }
+    const v = materialSchema.parse(input);
+    need(!d.materiais.some((x) => x.id !== m.id && x.nome.toLowerCase() === v.nome.toLowerCase()), "Já existe um material com este nome.", 409);
+    if (m.method === "POST") {
+      d.materiais.push({ ...v, id: uid(), quantidade: 0 });
+    } else {
+      const item = d.materiais.find((x) => x.id === m.id);
+      need(item, "Material não encontrado.", 404);
+      Object.assign(item, v);
+    }
     return d;
   }
   if (m.entity === "comandas") {

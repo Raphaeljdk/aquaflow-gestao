@@ -11,6 +11,9 @@ export const allowedPages: Record<Role, string[]> = {
     "funcionarios",
     "relatorios",
     "configuracoes",
+    "materiais",
+    "movimentosEstoque",
+    "estoque",
   ],
   GERENTE: [
     "dashboard",
@@ -22,6 +25,9 @@ export const allowedPages: Record<Role, string[]> = {
     "funcionarios",
     "relatorios",
     "configuracoes",
+    "materiais",
+    "movimentosEstoque",
+    "estoque",
   ],
   ATENDENTE: [
     "dashboard",
@@ -30,6 +36,9 @@ export const allowedPages: Record<Role, string[]> = {
     "servicos",
     "comandas",
     "agendamentos",
+    "materiais",
+    "movimentosEstoque",
+    "estoque",
   ],
   LAVADOR: ["dashboard", "comandas"],
 };
@@ -38,5 +47,6 @@ export function canWrite(role: Role, entity: Entity) {
   if (role === "LAVADOR") return entity === "comandas";
   if (["servicos", "funcionarios", "configuracoes"].includes(entity))
     return role === "GERENTE";
+  if (entity === "materiais") return role === "GERENTE";
   return true;
 }

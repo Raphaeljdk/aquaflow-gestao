@@ -14,6 +14,8 @@ const entitySchema = z.enum([
   "comandas",
   "agendamentos",
   "configuracoes",
+  "materiais",
+  "movimentosEstoque",
 ]);
 type Context = { params: Promise<{ entity: string; id?: string[] }> };
 async function handler(request: Request, context: Context) {

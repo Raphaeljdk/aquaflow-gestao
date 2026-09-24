@@ -14,6 +14,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     orders,
     appointments,
     config,
+    materiais,
+    movimentosEstoque,
   ] = await Promise.all([
     db.cliente.findMany({ orderBy: { nome: "asc" } }),
     db.veiculo.findMany(),
@@ -28,6 +30,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       orderBy: { dataHora: "asc" },
     }),
     db.configuracao.findUnique({ where: { id: "empresa" } }),
+    db.material.findMany({ orderBy: { nome: "asc" } }),
+    db.movimentoEstoque.findMany({ orderBy: { createdAt: "desc" } }),
   ]);
   return {
     clientes: clientes.map((c) => ({
@@ -67,6 +71,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       comandaId: a.comandaId,
       servicoIds: a.servicos.map((s) => s.servicoId),
     })),
+    materiais: materiais.map((x) => ({ ...x, unidade: x.unidade as "un" | "L" | "ml" | "kg" | "g", quantidade: Number(x.quantidade), minimo: Number(x.minimo), custoUnitario: Number(x.custoUnitario) })),
+    movimentosEstoque: movimentosEstoque.map((x) => ({ ...x, tipo: x.tipo as "ENTRADA" | "SAIDA", quantidade: Number(x.quantidade), createdAt: x.createdAt.toISOString() })),
     configuracao: config ?? {
       nome: "AquaFlow",
       cnpj: "",
@@ -95,6 +101,8 @@ export function scopeData(d: AppData, u: User): AppData {
     ),
     funcionarios: d.funcionarios.filter((f) => f.id === u.funcionarioId),
     agendamentos: [],
+    materiais: [],
+    movimentosEstoque: [],
   };
 }
 export async function mutate(m: Mutation, actor: User) {
@@ -144,6 +152,13 @@ export async function mutate(m: Mutation, actor: User) {
           create: { id, ...data },
           update: data,
         });
+      }
+      for (const item of changed(before.materiais, after.materiais)) {
+        const { id, ...data } = item;
+        await tx.material.upsert({ where: { id }, create: { id, ...data }, update: data });
+      }
+      for (const movement of changed(before.movimentosEstoque, after.movimentosEstoque)) {
+        await tx.movimentoEstoque.create({ data: { ...movement, createdAt: new Date(movement.createdAt) } });
       }
       for (const f of changed(before.funcionarios, after.funcionarios)) {
         const { id, ...data } = f;

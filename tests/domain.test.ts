@@ -64,6 +64,25 @@ test("não finaliza sem pagamento e não modifica o original", () => {
   assert.throws(() => transition(d, "FINALIZADO"), /pagamento/);
   assert.equal(d.comandas[0].status, "EM_LAVAGEM");
 });
+test("estoque registra entradas e saídas sem permitir saldo negativo", () => {
+  const d = setup();
+  const add = applyMutation(d, { entity: "movimentosEstoque", method: "POST", data: { materialId: "m2", tipo: "ENTRADA", quantidade: 2.5, observacao: "Compra" } }, admin, now);
+  assert.equal(add.materiais.find((x) => x.id === "m2")?.quantidade, 5.5);
+  const taken = applyMutation(add, { entity: "movimentosEstoque", method: "POST", data: { materialId: "m2", tipo: "SAIDA", quantidade: 1.25, observacao: "Consumo" } }, admin, now);
+  assert.equal(taken.materiais.find((x) => x.id === "m2")?.quantidade, 4.25);
+  assert.equal(taken.movimentosEstoque.length, 2);
+  assert.throws(() => applyMutation(taken, { entity: "movimentosEstoque", method: "POST", data: { materialId: "m2", tipo: "SAIDA", quantidade: 5 } }, admin, now), /Saldo insuficiente/);
+  assert.equal(d.materiais.find((x) => x.id === "m2")?.quantidade, 3);
+});
+test("estoque restringe cadastro e preserva histórico", () => {
+  const atendente: User = { ...admin, role: "ATENDENTE" };
+  assert.throws(() => applyMutation(setup(), { entity: "materiais", method: "POST", data: { nome: "Novo insumo", unidade: "L", minimo: 2, custoUnitario: 10 } }, atendente, now), /permissão/);
+  const moved = applyMutation(setup(), { entity: "movimentosEstoque", method: "POST", data: { materialId: "m1", tipo: "SAIDA", quantidade: 1 } }, atendente, now);
+  assert.throws(() => applyMutation(moved, { entity: "movimentosEstoque", method: "DELETE", id: moved.movimentosEstoque[0].id }, admin, now), /permanentes/);
+  const archived = applyMutation(moved, { entity: "materiais", method: "DELETE", id: "m1" }, admin, now);
+  assert.equal(archived.movimentosEstoque.length, 1);
+  assert.equal(archived.materiais.find((x) => x.id === "m1")?.ativo, false);
+});
 test("impede duplicidade de veículo ativo, inclusive pronto para retirada", () => {
   const d = create();
   assert.throws(() => create(d), /já está na fila/);

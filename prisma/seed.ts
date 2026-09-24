@@ -15,10 +15,10 @@ async function main(){
  for(const v of data.veiculos)await tx.veiculo.create({data:v});
  for(const s of data.servicos)await tx.servico.create({data:s});
  for(const f of data.funcionarios)await tx.funcionario.create({data:f});
+ for(const item of data.materiais)await tx.material.create({data:item});
  for(const o of data.comandas){const {itens,...v}=o;await tx.comanda.create({data:{...v,createdAt:new Date(v.createdAt),finalizadoEm:v.finalizadoEm?new Date(v.finalizadoEm):null,itens:{create:itens}}});}
  for(const a of data.agendamentos){const {servicoIds,...v}=a;await tx.agendamento.create({data:{...v,dataHora:new Date(v.dataHora),fim:new Date(v.fim),servicos:{create:servicoIds.map(servicoId=>({servicoId}))}}});}
- console.log("Seed concluído com clientes, veículos, catálogo, equipe, comandas e agenda.");
+ console.log("Seed concluído com clientes, veículos, catálogo, equipe, comandas, agenda e estoque.");
  },{timeout:60000});
 }
 main().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>prisma.$disconnect());
-

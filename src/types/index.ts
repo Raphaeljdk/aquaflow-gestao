@@ -91,6 +91,23 @@ export interface Configuracao {
   diasSemana: number[];
   timezone: string;
 }
+export interface Material {
+  id: string;
+  nome: string;
+  unidade: "un" | "L" | "ml" | "kg" | "g";
+  quantidade: number;
+  minimo: number;
+  custoUnitario: number;
+  ativo: boolean;
+}
+export interface MovimentoEstoque {
+  id: string;
+  materialId: string;
+  tipo: "ENTRADA" | "SAIDA";
+  quantidade: number;
+  observacao: string;
+  createdAt: string;
+}
 export interface AppData {
   clientes: Cliente[];
   veiculos: Veiculo[];
@@ -98,6 +115,8 @@ export interface AppData {
   funcionarios: Funcionario[];
   comandas: Comanda[];
   agendamentos: Agendamento[];
+  materiais: Material[];
+  movimentosEstoque: MovimentoEstoque[];
   configuracao: Configuracao;
 }
 export type Entity =
@@ -107,6 +126,8 @@ export type Entity =
   | "funcionarios"
   | "comandas"
   | "agendamentos"
+  | "materiais"
+  | "movimentosEstoque"
   | "configuracoes";
 export interface Mutation {
   entity: Entity;

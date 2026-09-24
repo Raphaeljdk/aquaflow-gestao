@@ -128,3 +128,16 @@ export const loginSchema = z.object({
   email: z.string().trim().email().toLowerCase(),
   password: z.string().min(1).max(128),
 });
+export const materialSchema = z.object({
+  nome: text.min(2, "Informe o nome do material.").max(120),
+  unidade: z.enum(["un", "L", "ml", "kg", "g"]),
+  minimo: z.coerce.number().min(0).max(1000000),
+  custoUnitario: z.coerce.number().min(0).max(1000000),
+  ativo: z.boolean().default(true),
+});
+export const movimentoEstoqueSchema = z.object({
+  materialId: id,
+  tipo: z.enum(["ENTRADA", "SAIDA"]),
+  quantidade: z.coerce.number().positive("Informe uma quantidade maior que zero.").max(1000000),
+  observacao: text.max(300).default(""),
+});
