@@ -53,7 +53,7 @@ export const funcionarioSchema = z
   .object({
     nome: text.min(3).max(120),
     email,
-    cargo: z.enum(["ADMIN", "GERENTE", "ATENDENTE", "LAVADOR"]),
+    cargo: z.enum(["ADMIN", "FUNCIONARIO", "GERENTE", "ATENDENTE", "LAVADOR"]),
     comissao: z.coerce.number().min(0).max(100),
     ativo: z.boolean().default(true),
     password: z
@@ -130,6 +130,7 @@ export const configuracaoSchema = z
     cnpj: text.max(18),
     endereco: text.max(300),
     telefone: text.max(30),
+    pixChave: text.max(140).default(""),
     logo: text
       .max(500000)
       .refine(
