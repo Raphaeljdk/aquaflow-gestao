@@ -10,6 +10,7 @@ import {
   configuracaoSchema,
   materialSchema,
   movimentoEstoqueSchema,
+  vistoriaSchema,
 } from "./validations";
 import { cents, decimal, dayKey, dateLabel } from "./format";
 import { canWrite } from "./permissions";
@@ -125,6 +126,7 @@ export function applyMutation(
       total: orderTotal(itens, v.desconto),
       formaPagamento: v.formaPagamento ?? null,
       observacoes: v.observacoes,
+      vistoria: null,
       funcionarioId: f?.id ?? null,
       comissao: 0,
       comissaoPercentual: 0,
@@ -184,6 +186,22 @@ export function applyMutation(
     }
     const o = d.comandas.find((o) => o.id === m.id);
     need(o, "Comanda não encontrada.", 404);
+    if (input.action === "vistoria") {
+      need(
+        ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
+        "A vistoria só pode ser alterada antes da finalização.",
+        409,
+      );
+      if (actor.role === "LAVADOR")
+        need(
+          o.funcionarioId === actor.funcionarioId,
+          "Comanda de outro funcionário.",
+          403,
+        );
+      const vistoria = vistoriaSchema.parse(input.vistoria);
+      o.vistoria = { ...vistoria, atualizadoEm: now.toISOString() };
+      return d;
+    }
     const v = statusSchema.parse(input);
     if (actor.role === "LAVADOR") {
       need(
