@@ -512,7 +512,7 @@ export function OrderDetail({
                 )}
                 {o.status === "EM_LAVAGEM" && (
                   <Button
-                    disabled={busy || !payment}
+                    disabled={busy || !payment || (payment === "PIX" && !pixCode)}
                     onClick={() => void transition("FINALIZADO")}
                   >
                     Confirmar pagamento e finalizar
