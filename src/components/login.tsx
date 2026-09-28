@@ -50,15 +50,15 @@ export function Login() {
   });
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
-      <section className="hidden flex-col justify-between bg-[#103e55] p-14 text-white lg:flex">
+      <section className="hidden flex-col justify-between bg-black p-14 text-white lg:flex">
         <Link href="/" className="flex items-center gap-3">
-          <Droplets size={33} className="text-cyan-300" />
-          <span className="text-3xl font-semibold tracking-tight">
-            aquaflow
+          <Droplets size={33} className="text-yellow-300" />
+          <span className="text-3xl font-black tracking-tight">
+            Ducha <span className="text-yellow-300">Elitte</span>
           </span>
         </Link>
         <div className="max-w-md">
-          <p className="mb-5 text-xs font-medium uppercase tracking-[.2em] text-cyan-300">
+          <p className="mb-5 text-xs font-medium uppercase tracking-[.2em] text-yellow-300">
             Gestão de lava rápido
           </p>
           <h1 className="text-[48px] font-semibold leading-[1.12] tracking-tight">
@@ -66,7 +66,7 @@ export function Login() {
             <br />
             Menos complicação.
           </h1>
-          <p className="mt-6 text-base leading-relaxed text-sky-100/65">
+          <p className="mt-6 text-base leading-relaxed text-white/65">
             Da primeira chegada à última entrega, sua operação flui melhor
             quando tudo está no lugar.
           </p>
@@ -77,24 +77,24 @@ export function Login() {
               { icon: CheckCircle2, text: "Seus resultados sempre à vista." },
             ].map((x) => (
               <div
-                className="flex items-center gap-3 text-sm text-sky-100/80"
+                className="flex items-center gap-3 text-sm text-white/80"
                 key={x.text}
               >
-                <x.icon size={18} className="text-cyan-300" />
+                <x.icon size={18} className="text-yellow-300" />
                 {x.text}
               </div>
             ))}
           </div>
         </div>
-        <p className="text-xs text-sky-100/45">
-          AquaFlow · Cada detalhe sob controle.
+        <p className="text-xs text-white/45">
+          Ducha Elitte · Cada detalhe sob controle.
         </p>
       </section>
       <section className="flex items-center justify-center bg-card px-6 py-12">
         <div className="w-full max-w-[370px]">
-          <div className="mb-12 flex items-center gap-2 text-2xl font-semibold lg:hidden">
+          <div className="mb-12 flex items-center gap-2 text-2xl font-black lg:hidden">
             <Droplets className="text-primary" />
-            aquaflow
+            Ducha <span className="text-primary">Elitte</span>
           </div>
           <div className="mb-7 inline-flex rounded-xl bg-accent p-3 text-primary">
             <Droplets size={26} />
