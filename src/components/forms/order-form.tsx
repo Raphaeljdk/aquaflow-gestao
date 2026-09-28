@@ -9,6 +9,9 @@ import {
   AlertCircle,
   ArrowRight,
   Loader2,
+  Copy,
+  QrCode,
+  CreditCard,
 } from "lucide-react";
 import {
   Dialog,
@@ -46,6 +49,7 @@ import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
+import { pixPayload } from "@/lib/pix";
 type OrderValues = {
   clienteId: string;
   veiculoId: string;
@@ -56,16 +60,18 @@ type OrderValues = {
 };
 export function OrderForm({
   open,
+  initialClientId,
   onClose,
 }: {
   open: boolean;
+  initialClientId?: string;
   onClose: () => void;
 }) {
   const { data, busy, mutate } = useStore();
   const form = useForm<OrderValues>({
     resolver: zodResolver(comandaSchema),
     defaultValues: {
-      clienteId: "",
+      clienteId: initialClientId ?? "",
       veiculoId: "",
       servicoIds: [],
       funcionarioId: "",
@@ -74,16 +80,19 @@ export function OrderForm({
     },
   });
   useEffect(() => {
-    if (open)
-      form.reset({
-        clienteId: "",
-        veiculoId: "",
-        servicoIds: [],
-        funcionarioId: "",
-        desconto: 0,
-        observacoes: "",
-      });
-  }, [open, form]);
+    if (!open) return;
+    const firstVehicle =
+      data?.veiculos.find((vehicle) => vehicle.clienteId === initialClientId)?.id ??
+      "";
+    form.reset({
+      clienteId: initialClientId ?? "",
+      veiculoId: firstVehicle,
+      servicoIds: [],
+      funcionarioId: "",
+      desconto: 0,
+      observacoes: "",
+    });
+  }, [open, initialClientId, data, form]);
   if (!data) return null;
   const v = form.watch(),
     selected = data.servicos.filter((s) => v.servicoIds.includes(s.id)),
@@ -117,9 +126,12 @@ export function OrderForm({
                 render={({ field }) => (
                   <Picker
                     value={field.value}
-                    onChange={(s) => {
-                      field.onChange(s);
-                      form.setValue("veiculoId", "");
+                    onChange={(clientId) => {
+                      field.onChange(clientId);
+                      const firstVehicle = data.veiculos.find(
+                        (vehicle) => vehicle.clienteId === clientId,
+                      );
+                      form.setValue("veiculoId", firstVehicle?.id ?? "");
                     }}
                     options={data.clientes.map((c) => ({
                       value: c.id,
@@ -204,7 +216,7 @@ export function OrderForm({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Lavador responsável</Label>
+              <Label>Funcionário responsável</Label>
               <Controller
                 name="funcionarioId"
                 control={form.control}
@@ -217,10 +229,10 @@ export function OrderForm({
                     options={[
                       { value: "unassigned", label: "Atribuir depois" },
                       ...data.funcionarios
-                        .filter((f) => f.ativo && f.cargo === "LAVADOR")
+                        .filter((f) => f.ativo && f.cargo !== "ADMIN")
                         .map((f) => ({ value: f.id, label: f.nome })),
                     ]}
-                    placeholder="Selecione o lavador"
+                    placeholder="Selecione o funcionário"
                   />
                 )}
               />
@@ -297,14 +309,23 @@ export function OrderDetail({
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
-    v = data?.veiculos.find((v) => v.id === o?.veiculoId);
+    v = data?.veiculos.find((v) => v.id === o?.veiculoId),
+    pixCode =
+      o && data?.configuracao.pixChave
+        ? pixPayload({
+            chave: data.configuracao.pixChave,
+            valor: o.total,
+            nome: data.configuracao.nome,
+            txid: "CMD" + o.numero,
+          })
+        : "";
   const transition = async (status: Status) => {
     if (!o) return;
-    const payload: Record<string, unknown> = { status };
-    if (user?.role !== "LAVADOR") {
-      payload.funcionarioId = washer || null;
-      payload.formaPagamento = payment || null;
-    }
+    const payload: Record<string, unknown> = {
+      status,
+      funcionarioId: washer || null,
+      formaPagamento: payment || null,
+    };
     if (
       await mutate({
         entity: "comandas",
@@ -393,34 +414,76 @@ export function OrderDetail({
                   })
                 }
               />
-              {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) &&
-                user?.role !== "LAVADOR" && (
-                  <div className="space-y-2">
-                    <Label>Lavador responsável</Label>
-                    <Choice
-                      value={washer}
-                      onChange={setWasher}
-                      options={data.funcionarios
-                        .filter((f) => f.ativo && f.cargo === "LAVADOR")
-                        .map((f) => ({ value: f.id, label: f.nome }))}
-                      placeholder="Atribua um lavador"
-                    />
-                  </div>
-                )}
-              {o.status === "EM_LAVAGEM" && user?.role !== "LAVADOR" && (
+              {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
                 <div className="space-y-2">
+                  <Label>Funcionário responsável</Label>
+                  <Choice
+                    value={washer}
+                    onChange={setWasher}
+                    options={data.funcionarios
+                      .filter((f) => f.ativo && f.cargo !== "ADMIN")
+                      .map((f) => ({ value: f.id, label: f.nome }))}
+                    placeholder="Atribua um funcionário"
+                  />
+                </div>
+              )}
+              {o.status === "EM_LAVAGEM" && (
+                <div className="space-y-3">
                   <Label>Forma de pagamento</Label>
                   <Choice
                     value={payment}
                     onChange={setPayment}
-                    options={Object.entries(paymentLabels).map(
-                      ([value, label]) => ({ value, label }),
-                    )}
+                    options={[
+                      { value: "PIX", label: "PIX" },
+                      { value: "CREDITO", label: "Cartão" },
+                    ]}
                     placeholder="Selecione o pagamento"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Confirme o recebimento antes de finalizar.
-                  </p>
+                  {payment === "PIX" && (
+                    <div className="rounded-xl border border-primary/35 bg-primary/5 p-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <QrCode size={18} className="text-primary" />
+                        <p className="text-sm font-semibold">Pagamento via PIX</p>
+                      </div>
+                      {pixCode ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-center rounded-xl bg-white p-3">
+                            <img
+                              src={
+                                "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+                                encodeURIComponent(pixCode)
+                              }
+                              alt="QR Code PIX da comanda"
+                              width={220}
+                              height={220}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => void navigator.clipboard.writeText(pixCode)}
+                          >
+                            <Copy size={15} />
+                            Copiar código PIX
+                          </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Após confirmar o recebimento, finalize a comanda para registrar o pagamento como PIX.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Configure a chave PIX em Configurações para gerar o QR Code.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {payment === "CREDITO" && (
+                    <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">
+                      <CreditCard size={17} className="mt-0.5 shrink-0 text-primary" />
+                      Cartão é registrado manualmente no sistema após a aprovação na maquininha.
+                    </div>
+                  )}
                 </div>
               )}
               {o.finalizadoEm && (
@@ -432,8 +495,8 @@ export function OrderDetail({
                     </strong>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Finalizado em {dateLabel(o.finalizadoEm)} · Comissão{" "}
-                    {money(o.comissao)}
+                    {o.pagoEm ? "Pago em " + dateLabel(o.pagoEm) : "Finalizado em " + dateLabel(o.finalizadoEm)}
+                    {" · "}Comissão {money(o.comissao)}
                   </p>
                 </div>
               )}
@@ -447,7 +510,7 @@ export function OrderDetail({
                     <ArrowRight size={15} />
                   </Button>
                 )}
-                {o.status === "EM_LAVAGEM" && user?.role !== "LAVADOR" && (
+                {o.status === "EM_LAVAGEM" && (
                   <Button
                     disabled={busy || !payment}
                     onClick={() => void transition("FINALIZADO")}
@@ -456,7 +519,7 @@ export function OrderDetail({
                     <Check size={15} />
                   </Button>
                 )}
-                {o.status === "FINALIZADO" && user?.role !== "LAVADOR" && (
+                {o.status === "FINALIZADO" && (
                   <Button
                     disabled={busy}
                     onClick={() => void transition("ENTREGUE")}
@@ -465,8 +528,7 @@ export function OrderDetail({
                     <Check size={15} />
                   </Button>
                 )}
-                {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) &&
-                  user?.role !== "LAVADOR" && (
+                {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
                     <Button
                       variant="ghost"
                       className="text-destructive"
