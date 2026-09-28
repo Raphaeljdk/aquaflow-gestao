@@ -130,6 +130,13 @@ export function EntityPage({ kind }: { kind: Kind }) {
     setPage(0);
   }, [params]);
   if (!data || !user) return null;
+  if (kind === "funcionarios" && !canManage(user.role))
+    return (
+      <Empty
+        title="Acesso restrito"
+        text="Somente o administrador pode gerenciar funcionários."
+      />
+    );
   const m = meta[kind],
     canEdit =
       !["servicos", "funcionarios"].includes(kind) || canManage(user.role);
