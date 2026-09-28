@@ -45,6 +45,7 @@ import { useStore } from "@/hooks/use-store";
 import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
+import { VehicleInspection } from "@/components/vehicle-inspection";
 type OrderValues = {
   clienteId: string;
   veiculoId: string;
@@ -379,6 +380,19 @@ export function OrderDetail({
                   </p>
                 </div>
               )}
+              <VehicleInspection
+                value={o.vistoria}
+                busy={busy}
+                readOnly={!["AGUARDANDO", "EM_LAVAGEM"].includes(o.status)}
+                onSave={(vistoria) =>
+                  mutate({
+                    entity: "comandas",
+                    method: "PATCH",
+                    id: o.id,
+                    data: { action: "vistoria", vistoria },
+                  })
+                }
+              />
               {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) &&
                 user?.role !== "LAVADOR" && (
                   <div className="space-y-2">
