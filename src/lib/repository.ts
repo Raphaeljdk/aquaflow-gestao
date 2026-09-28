@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { prisma } from "./prisma";
-import type { AppData, Mutation, User } from "@/types";
+import type { AppData, Mutation, User, Vistoria } from "@/types";
 import { applyMutation, BusinessError } from "./domain";
 import { funcionarioSchema } from "./validations";
 type DB = Prisma.TransactionClient;
@@ -53,6 +53,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       comissaoPercentual: Number(o.comissaoPercentual),
       createdAt: o.createdAt.toISOString(),
       finalizadoEm: o.finalizadoEm?.toISOString() ?? null,
+      vistoria: (o.vistoria as unknown as Vistoria | null) ?? null,
       itens: o.itens.map((i) => ({
         servicoId: i.servicoId,
         nome: i.nome,
@@ -74,7 +75,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     materiais: materiais.map((x) => ({ ...x, unidade: x.unidade as "un" | "L" | "ml" | "kg" | "g", quantidade: Number(x.quantidade), minimo: Number(x.minimo), custoUnitario: Number(x.custoUnitario) })),
     movimentosEstoque: movimentosEstoque.map((x) => ({ ...x, tipo: x.tipo as "ENTRADA" | "SAIDA", quantidade: Number(x.quantidade), createdAt: x.createdAt.toISOString() })),
     configuracao: config ?? {
-      nome: "AquaFlow",
+      nome: "Ducha Elitte",
       cnpj: "",
       endereco: "",
       telefone: "",
@@ -229,9 +230,12 @@ export async function mutate(m: Mutation, actor: User) {
         });
       }
       for (const o of changed(before.comandas, after.comandas)) {
-        const { id, itens, ...v } = o;
+        const { id, itens, vistoria, ...v } = o;
         const data = {
           ...v,
+          ...(vistoria
+            ? { vistoria: vistoria as unknown as Prisma.InputJsonValue }
+            : {}),
           createdAt: new Date(v.createdAt),
           finalizadoEm: v.finalizadoEm ? new Date(v.finalizadoEm) : null,
         };
