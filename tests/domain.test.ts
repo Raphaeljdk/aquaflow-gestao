@@ -189,7 +189,7 @@ test("funcionário opera clientes, comandas e agendamentos", () => {
         {
           entity: "configuracoes",
           method: "PATCH",
-          data: setup().configuracao,
+          data: { ...setup().configuracao },
         },
         funcionario,
         now,
