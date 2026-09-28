@@ -4,7 +4,11 @@ import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
   title: "Ducha Elitte · Gestão de lava rápido",
   description: "Ducha Elitte: gestão completa do atendimento, vistoria e entrega.",
-  icons: { icon: "/favicon.svg" },
+  icons: {
+    icon: "/ducha-elitte-logo.jpg",
+    shortcut: "/ducha-elitte-logo.jpg",
+    apple: "/ducha-elitte-logo.jpg",
+  },
 };
 export default function RootLayout({
   children,
