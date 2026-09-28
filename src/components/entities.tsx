@@ -119,6 +119,10 @@ export function EntityPage({ kind }: { kind: Kind }) {
     [edit, setEdit] = useState<RecordValue | null>(null),
     [remove, setRemove] = useState<RecordValue | null>(null),
     [history, setHistory] = useState<RecordValue | null>(null),
+    [nestedEdit, setNestedEdit] = useState<{
+      kind: "veiculos" | "servicos";
+      record: RecordValue;
+    } | null>(null),
     [page, setPage] = useState(0),
     [includeInactive, setIncludeInactive] = useState(false);
   useEffect(() => {
@@ -449,6 +453,13 @@ export function EntityPage({ kind }: { kind: Kind }) {
       {!!edit && (
         <EntityEditor kind={kind} record={edit} onClose={() => setEdit(null)} />
       )}
+      {!!nestedEdit && (
+        <EntityEditor
+          kind={nestedEdit.kind}
+          record={nestedEdit.record}
+          onClose={() => setNestedEdit(null)}
+        />
+      )}
       <AlertDialog open={!!remove} onOpenChange={(v) => !v && setRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -500,6 +511,140 @@ export function EntityPage({ kind }: { kind: Kind }) {
             </SheetDescription>
           </SheetHeader>
           <div className="p-6">
+            {kind === "clientes" && history && (
+              <div className="mb-6 space-y-5">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => {
+                      actions.newOrder(history.id);
+                    }}
+                  >
+                    <Plus size={15} />
+                    Novo atendimento
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      setNestedEdit({
+                        kind: "veiculos",
+                        record: { clienteId: history.id },
+                      })
+                    }
+                  >
+                    <CarFront size={15} />
+                    Adicionar veículo
+                  </Button>
+                </div>
+
+                <section className="rounded-xl border border-border p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Veículos do cliente</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        O veículo fica dentro do cadastro do cliente.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {data.veiculos
+                      .filter((vehicle) => vehicle.clienteId === history.id)
+                      .map((vehicle) => (
+                        <div
+                          key={vehicle.id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-muted p-3"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {vehicle.marca} {vehicle.modelo}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {vehicle.placa} · {vehicle.cor} · {vehicle.ano}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setNestedEdit({
+                                kind: "veiculos",
+                                record: vehicle,
+                              })
+                            }
+                          >
+                            <Pencil size={14} />
+                            Editar
+                          </Button>
+                        </div>
+                      ))}
+                    {!data.veiculos.some(
+                      (vehicle) => vehicle.clienteId === history.id,
+                    ) && (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum veículo cadastrado.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-xl border border-border p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold">Serviços</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Os serviços são escolhidos no atendimento deste cliente.
+                      </p>
+                    </div>
+                    {canManage(user.role) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setNestedEdit({ kind: "servicos", record: {} })
+                        }
+                      >
+                        <Plus size={14} />
+                        Novo serviço
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {data.servicos
+                      .filter((service) => service.ativo)
+                      .map((service) => (
+                        <div
+                          key={service.id}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-muted p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {service.nome}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {money(service.preco)} · {service.duracaoMin} min
+                            </p>
+                          </div>
+                          {canManage(user.role) && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 shrink-0"
+                              onClick={() =>
+                                setNestedEdit({
+                                  kind: "servicos",
+                                  record: service,
+                                })
+                              }
+                              aria-label={"Editar " + service.nome}
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </section>
+              </div>
+            )}
             <div className="mb-6 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-muted p-4">
                 <p className="text-xs text-muted-foreground">Atendimentos</p>
@@ -589,7 +734,7 @@ function EntityEditor({
     funcionarios: {
       nome: "",
       email: "",
-      cargo: "LAVADOR",
+      cargo: "FUNCIONARIO",
       comissao: 0,
       ativo: true,
       password: "",
@@ -743,17 +888,10 @@ function EntityEditor({
               {input("nome", "Nome completo")}
               {input("email", "E-mail de acesso", "email")}
               <div className="grid grid-cols-2 gap-4">
-                {select(
-                  "cargo",
-                  "Perfil",
-                  Object.entries(roleLabels)
-                    .filter(
-                      ([r]) =>
-                        user?.role === "ADMIN" ||
-                        ["ATENDENTE", "LAVADOR"].includes(r),
-                    )
-                    .map(([value, label]) => ({ value, label })),
-                )}
+                {select("cargo", "Perfil", [
+                  { value: "FUNCIONARIO", label: "Funcionário" },
+                  { value: "ADMIN", label: "Administrador" },
+                ])}
                 {input("comissao", "Comissão (%)", "number", {
                   min: 0,
                   max: 100,
