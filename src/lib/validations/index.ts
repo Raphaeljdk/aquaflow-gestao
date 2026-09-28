@@ -94,6 +94,7 @@ export const vistoriaSchema = z.object({
           "PARACHOQUES",
           "INTERIOR",
         ]),
+        revisado: z.boolean(),
         defeito: z.boolean(),
         observacao: text.max(300).default(""),
       }),
