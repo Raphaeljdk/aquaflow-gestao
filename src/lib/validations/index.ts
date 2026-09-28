@@ -80,6 +80,27 @@ export const comandaSchema = z.object({
     .optional(),
   observacoes: text.max(1000).default(""),
 });
+export const vistoriaSchema = z.object({
+  itens: z
+    .array(
+      z.object({
+        id: z.enum([
+          "PINTURA",
+          "AMASSADOS",
+          "VIDROS",
+          "FAROIS",
+          "RODAS_PNEUS",
+          "RETROVISORES",
+          "PARACHOQUES",
+          "INTERIOR",
+        ]),
+        defeito: z.boolean(),
+        observacao: text.max(300).default(""),
+      }),
+    )
+    .length(8, "Revise todos os pontos da vistoria."),
+  observacoesGerais: text.max(1000).default(""),
+});
 export const statusSchema = z.object({
   status: z.enum([
     "AGUARDANDO",
