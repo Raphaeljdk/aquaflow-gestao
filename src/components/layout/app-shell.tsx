@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
       ).length ?? 0;
   const allowed = allowedPages[user?.role ?? "ADMIN"],
-    title = data?.configuracao.nome ?? "AquaFlow";
+    title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
     data?.clientes
       .filter((c) => {
@@ -122,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar className="border-r border-border" collapsible="offcanvas">
           <SidebarHeader className="px-6 pb-8 pt-8">
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-white shadow-sm shadow-cyan-200 dark:shadow-none">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-black shadow-sm shadow-yellow-500/20">
                 {data?.configuracao.logo ? (
                   <img
                     src={data.configuracao.logo}
@@ -133,8 +133,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Droplets size={24} strokeWidth={2.2} />
                 )}
               </div>
-              <span className="text-[23px] font-bold tracking-[-1px] text-foreground">
-                aqua<span className="font-normal text-primary">flow</span>
+              <span className="text-[21px] font-black tracking-[-.8px] text-white">
+                Ducha <span className="text-primary">Elitte</span>
               </span>
             </Link>
           </SidebarHeader>
@@ -211,7 +211,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ?.split(" ")
                   .slice(0, 2)
                   .map((n) => n[0])
-                  .join("") ?? "AF"}
+                  .join("") ?? "DE"}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-foreground">
@@ -302,13 +302,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
               <span>
-                © {new Date().getFullYear()} AquaFlow · Cada detalhe sob
+                © {new Date().getFullYear()} Ducha Elitte · Cada detalhe sob
                 controle.
               </span>
               <span>
                 {DEMO
                   ? "Demonstração · alterações temporárias, reiniciadas ao recarregar"
-                  : "AquaFlow Gestão"}
+                  : "Ducha Elitte Gestão"}
               </span>
             </footer>
           </main>
