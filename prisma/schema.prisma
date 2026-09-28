@@ -107,6 +107,7 @@ model Comanda {
   desconto Decimal @default(0) @db.Decimal(12,2)
   formaPagamento FormaPagamento?
   observacoes String @default("")
+  vistoria Json?
   funcionarioId String?
   funcionario Funcionario? @relation(fields:[funcionarioId],references:[id],onDelete:Restrict)
   comissao Decimal @default(0) @db.Decimal(12,2)
@@ -155,7 +156,7 @@ model AgendamentoServico {
 }
 model Configuracao {
   id String @id @default("empresa")
-  nome String @default("AquaFlow Lava Rápido")
+  nome String @default("Ducha Elitte")
   cnpj String @default("")
   endereco String @default("")
   telefone String @default("")
