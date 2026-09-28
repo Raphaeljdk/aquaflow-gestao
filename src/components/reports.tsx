@@ -47,21 +47,21 @@ export function Reports() {
     return (
       <Empty
         title="Acesso restrito"
-        text="Os relatórios estão disponíveis para administradores e gerentes."
+        text="O faturamento está disponível somente para administradores."
       />
     );
   const invalid = !start || !end || start > end,
     rows = invalid ? [] : reportRows(data, start, end),
     revenue = rows.reduce((s, r) => s + r.total, 0),
     commission = rows.reduce((s, r) => s + r.comissao, 0);
-  const pay = ["PIX", "Crédito", "Débito", "Dinheiro"].map((name) => ({
+  const pay = ["PIX", "Cartão"].map((name) => ({
     name,
     value: rows
       .filter((r) => r.pagamento === name)
       .reduce((s, r) => s + r.total, 0),
   }));
   const productivity = data.funcionarios
-    .filter((f) => f.cargo === "LAVADOR")
+    .filter((f) => f.ativo && f.cargo !== "ADMIN")
     .map((f) => {
       const r = rows.filter((r) => r.funcionarioId === f.id);
       return {
@@ -113,8 +113,8 @@ export function Reports() {
   return (
     <>
       <PageTitle
-        title="Relatórios"
-        description="Transforme seus atendimentos em decisões mais claras."
+        title="Faturamento"
+        description="Acompanhe o recebido no dia, na semana, na quinzena ou em um período personalizado."
       >
         <Button
           variant="outline"
@@ -156,24 +156,35 @@ export function Reports() {
           />
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={() => {
             setStart(dayKey(new Date()));
             setEnd(dayKey(new Date()));
           }}
         >
-          Hoje
+          Diário
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={() => {
             const d = new Date();
-            d.setDate(d.getDate() - 29);
+            d.setDate(d.getDate() - 6);
             setStart(dayKey(d));
             setEnd(dayKey(new Date()));
           }}
         >
-          Últimos 30 dias
+          Semanal
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            const d = new Date();
+            d.setDate(d.getDate() - 14);
+            setStart(dayKey(d));
+            setEnd(dayKey(new Date()));
+          }}
+        >
+          Quinzena
         </Button>
         {invalid && (
           <p className="text-sm text-destructive">Informe um período válido.</p>
