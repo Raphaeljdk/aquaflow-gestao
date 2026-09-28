@@ -93,9 +93,9 @@ export function applyMutation(
   const washer = (id?: string | null) => {
     if (!id) return null;
     const f = d.funcionarios.find(
-      (f) => f.id === id && f.ativo && f.cargo === "LAVADOR",
+      (f) => f.id === id && f.ativo && f.cargo !== "ADMIN",
     );
-    need(f, "Selecione um lavador ativo.");
+    need(f, "Selecione um funcionário ativo.");
     return f;
   };
   const makeOrder = (raw: unknown): Comanda => {
@@ -132,6 +132,7 @@ export function applyMutation(
       comissaoPercentual: 0,
       createdAt: now.toISOString(),
       finalizadoEm: null,
+      pagoEm: null,
     };
   };
   if (m.entity === "configuracoes") {
@@ -176,11 +177,6 @@ export function applyMutation(
       "Comandas devem ser canceladas, preservando o histórico.",
     );
     if (m.method === "POST") {
-      need(
-        actor.role !== "LAVADOR",
-        "Apenas atendimento pode abrir comandas.",
-        403,
-      );
       d.comandas.unshift(makeOrder(input));
       return d;
     }
@@ -192,31 +188,11 @@ export function applyMutation(
         "A vistoria só pode ser alterada antes da finalização.",
         409,
       );
-      if (actor.role === "LAVADOR")
-        need(
-          o.funcionarioId === actor.funcionarioId,
-          "Comanda de outro funcionário.",
-          403,
-        );
       const vistoria = vistoriaSchema.parse(input.vistoria);
       o.vistoria = { ...vistoria, atualizadoEm: now.toISOString() };
       return d;
     }
     const v = statusSchema.parse(input);
-    if (actor.role === "LAVADOR") {
-      need(
-        o.funcionarioId === actor.funcionarioId,
-        "Comanda de outro funcionário.",
-        403,
-      );
-      need(
-        v.status === "EM_LAVAGEM" &&
-          v.funcionarioId === undefined &&
-          v.formaPagamento === undefined,
-        "O recebimento é feito pelo atendimento.",
-        403,
-      );
-    }
     const transitions: Record<string, string[]> = {
       AGUARDANDO: ["EM_LAVAGEM", "CANCELADO"],
       EM_LAVAGEM: ["FINALIZADO", "CANCELADO"],
@@ -246,13 +222,14 @@ export function applyMutation(
       need(washer(o.funcionarioId), "Atribua um lavador antes de iniciar.");
     if (v.status === "FINALIZADO") {
       need(
-        o.formaPagamento,
-        "Selecione a forma de pagamento antes de finalizar.",
+        o.formaPagamento === "PIX" || o.formaPagamento === "CREDITO",
+        "Selecione PIX ou Cartão antes de finalizar.",
       );
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
       o.comissao = decimal(Math.round((cents(o.total) * f.comissao) / 100));
       o.finalizadoEm = now.toISOString();
+      o.pagoEm = now.toISOString();
     }
     o.status = v.status;
     return d;
@@ -366,11 +343,7 @@ export function applyMutation(
     }
     if (entity === "funcionarios") {
       const f = d.funcionarios.find((s) => s.id === m.id)!;
-      need(
-        actor.role === "ADMIN" || !["ADMIN", "GERENTE"].includes(f.cargo),
-        "Apenas administrador pode alterar gestores.",
-        403,
-      );
+      need(actor.role === "ADMIN", "Apenas administrador pode alterar funcionários.", 403);
       need(
         !d.comandas.some(
           (o) =>
@@ -425,14 +398,8 @@ export function applyMutation(
   if (entity === "funcionarios") {
     const v = funcionarioSchema.parse(input);
     const old = d.funcionarios.find((f) => f.id === m.id);
-    need(
-      actor.role === "ADMIN" ||
-        (!["ADMIN", "GERENTE"].includes(v.cargo) &&
-          !["ADMIN", "GERENTE"].includes(old?.cargo ?? "")),
-      "Apenas administrador pode alterar gestores.",
-      403,
-    );
-    if (!v.ativo || v.cargo !== "LAVADOR")
+    need(actor.role === "ADMIN", "Apenas administrador pode alterar funcionários.", 403);
+    if (!v.ativo || v.cargo === "ADMIN")
       need(
         !d.comandas.some(
           (o) =>
