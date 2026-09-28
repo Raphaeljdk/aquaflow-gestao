@@ -62,6 +62,7 @@ export type VistoriaItemId =
   | "INTERIOR";
 export interface ItemVistoria {
   id: VistoriaItemId;
+  revisado: boolean;
   defeito: boolean;
   observacao: string;
 }
