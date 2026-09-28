@@ -146,7 +146,7 @@ export function makeDemoData(now = new Date()): AppData {
     ],
     movimentosEstoque: [],
     configuracao: {
-      nome: "AquaFlow Lava Rápido",
+      nome: "Ducha Elitte",
       cnpj: "",
       endereco: "Rua dos Pinheiros, 870 · São Paulo, SP",
       telefone: "(11) 3091-2020",
@@ -182,6 +182,7 @@ export function makeDemoData(now = new Date()): AppData {
         ? (["PIX", "CREDITO", "DEBITO", "DINHEIRO"] as const)[number % 4]
         : null,
       observacoes: client === 1 ? "Atenção ao acabamento das rodas." : "",
+      vistoria: null,
       funcionarioId: fid,
       comissao: ["FINALIZADO", "ENTREGUE"].includes(status)
         ? Math.round(total * pct) / 100
