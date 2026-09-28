@@ -223,7 +223,7 @@ export function applyMutation(
     if (v.status === "FINALIZADO") {
       need(
         o.formaPagamento === "PIX" || o.formaPagamento === "CREDITO",
-        "Selecione PIX ou Cartão antes de finalizar.",
+        "Pagamento: selecione PIX ou Cartão antes de finalizar.",
       );
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
