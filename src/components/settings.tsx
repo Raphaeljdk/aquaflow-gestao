@@ -20,7 +20,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { configuracaoSchema } from "@/lib/validations";
 import { ErrorText } from "./forms/order-form";
 import type { Configuracao } from "@/types";
-import Link from "next/link";
 export function Settings() {
   const { data } = useStore();
   return data ? <SettingsForm initial={data.configuracao} /> : null;
@@ -143,6 +142,12 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                 {input("telefone", "Telefone", "tel")}
               </div>
               {input("endereco", "Endereço")}
+              <div className="border-t border-border pt-5">
+                {input("pixChave", "Chave PIX para o QR Code")}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Pode ser CPF/CNPJ, telefone, e-mail ou chave aleatória. Ela será usada para gerar o PIX da comanda.
+                </p>
+              </div>
             </div>
           </section>
         </TabsContent>
@@ -213,14 +218,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
         </TabsContent>
       </Tabs>
       <div className="mt-5 max-w-3xl rounded-xl border border-border p-4 text-sm text-muted-foreground">
-        Para alterar os preços e a duração dos atendimentos, acesse o{" "}
-        <Link
-          href="/servicos"
-          className="font-medium text-primary underline underline-offset-4"
-        >
-          catálogo de serviços
-        </Link>
-        .
+        Veículos e serviços agora são administrados pelo cadastro do cliente. O funcionário trabalha somente em Clientes, Comandas e Agendamentos.
       </div>
     </form>
   );
