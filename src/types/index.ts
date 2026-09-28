@@ -1,4 +1,4 @@
-export const roles = ["ADMIN", "GERENTE", "ATENDENTE", "LAVADOR"] as const;
+export const roles = ["ADMIN", "FUNCIONARIO", "GERENTE", "ATENDENTE", "LAVADOR"] as const;
 export type Role = (typeof roles)[number];
 export type Status =
   "AGUARDANDO" | "EM_LAVAGEM" | "FINALIZADO" | "ENTREGUE" | "CANCELADO";
@@ -87,6 +87,7 @@ export interface Comanda {
   comissaoPercentual: number;
   createdAt: string;
   finalizadoEm: string | null;
+  pagoEm: string | null;
   itens: ItemComanda[];
 }
 export interface Agendamento {
@@ -105,6 +106,7 @@ export interface Configuracao {
   cnpj: string;
   endereco: string;
   telefone: string;
+  pixChave: string;
   logo: string;
   abertura: string;
   fechamento: string;
@@ -171,7 +173,8 @@ export const paymentLabels: Record<Payment, string> = {
 };
 export const roleLabels: Record<Role, string> = {
   ADMIN: "Administrador",
-  GERENTE: "Gerente",
-  ATENDENTE: "Atendente",
-  LAVADOR: "Lavador",
+  FUNCIONARIO: "Funcionário",
+  GERENTE: "Funcionário",
+  ATENDENTE: "Funcionário",
+  LAVADOR: "Funcionário",
 };
