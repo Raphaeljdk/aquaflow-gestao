@@ -7,6 +7,7 @@ datasource db {
 }
 enum Role {
   ADMIN
+  FUNCIONARIO
   GERENTE
   ATENDENTE
   LAVADOR
@@ -39,7 +40,7 @@ model User {
   name String
   email String @unique
   password String
-  role Role @default(ATENDENTE)
+  role Role @default(FUNCIONARIO)
   ativo Boolean @default(true)
   funcionarioId String? @unique
   funcionario Funcionario? @relation(fields:[funcionarioId], references:[id], onDelete:Restrict)
@@ -89,7 +90,7 @@ model Funcionario {
   id String @id @default(cuid())
   nome String
   email String @default("")
-  cargo Role @default(LAVADOR)
+  cargo Role @default(FUNCIONARIO)
   comissao Decimal @default(0) @db.Decimal(5,2)
   ativo Boolean @default(true)
   user User?
@@ -115,6 +116,7 @@ model Comanda {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   finalizadoEm DateTime?
+  pagoEm DateTime?
   itens ItemComanda[]
   agendamento Agendamento?
   @@index([createdAt])
@@ -160,6 +162,7 @@ model Configuracao {
   cnpj String @default("")
   endereco String @default("")
   telefone String @default("")
+  pixChave String @default("")
   logo String @default("")
   abertura String @default("08:00")
   fechamento String @default("18:00")
