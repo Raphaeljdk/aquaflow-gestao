@@ -51,6 +51,25 @@ export interface ItemComanda {
   preco: number;
   quantidade: number;
 }
+export type VistoriaItemId =
+  | "PINTURA"
+  | "AMASSADOS"
+  | "VIDROS"
+  | "FAROIS"
+  | "RODAS_PNEUS"
+  | "RETROVISORES"
+  | "PARACHOQUES"
+  | "INTERIOR";
+export interface ItemVistoria {
+  id: VistoriaItemId;
+  defeito: boolean;
+  observacao: string;
+}
+export interface Vistoria {
+  itens: ItemVistoria[];
+  observacoesGerais: string;
+  atualizadoEm: string;
+}
 export interface Comanda {
   id: string;
   numero: number;
@@ -61,6 +80,7 @@ export interface Comanda {
   desconto: number;
   formaPagamento: Payment | null;
   observacoes: string;
+  vistoria: Vistoria | null;
   funcionarioId: string | null;
   comissao: number;
   comissaoPercentual: number;
