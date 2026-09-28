@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/hooks/use-store";
-import { PageTitle, Choice } from "./common";
+import { PageTitle, Choice, Empty } from "./common";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
@@ -20,9 +20,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { configuracaoSchema } from "@/lib/validations";
 import { ErrorText } from "./forms/order-form";
 import type { Configuracao } from "@/types";
+import { canManage } from "@/lib/permissions";
 export function Settings() {
-  const { data } = useStore();
-  return data ? <SettingsForm initial={data.configuracao} /> : null;
+  const { data, user } = useStore();
+  if (!data || !user) return null;
+  if (!canManage(user.role))
+    return (
+      <Empty
+        title="Acesso restrito"
+        text="Somente o administrador pode alterar as configurações."
+      />
+    );
+  return <SettingsForm initial={data.configuracao} />;
 }
 function SettingsForm({ initial }: { initial: Configuracao }) {
   const { mutate, busy } = useStore(),
