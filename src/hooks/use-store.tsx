@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { makeDemoData } from "@/lib/demo-data";
 import { applyMutation } from "@/lib/domain";
 import type { AppData, Mutation, User } from "@/types";
-export const DEMO = true;
+export const DEMO = process.env.NEXT_PUBLIC_DEMO === "true";
 type Store = {
   data: AppData | null;
   user: User | null;
@@ -25,7 +25,7 @@ const Context = createContext<Store | null>(null);
 const demoUser: User = {
   id: "demo-admin",
   name: "Administrador",
-  email: "demo@aquaflow.local",
+  email: "demo@duchaelitte.local",
   role: "ADMIN",
 };
 export function StoreProvider({ children }: { children: React.ReactNode }) {
