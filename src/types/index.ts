@@ -169,7 +169,7 @@ export const paymentLabels: Record<Payment, string> = {
   DINHEIRO: "Dinheiro",
   PIX: "PIX",
   DEBITO: "Débito",
-  CREDITO: "Crédito",
+  CREDITO: "Cartão",
 };
 export const roleLabels: Record<Role, string> = {
   ADMIN: "Administrador",
