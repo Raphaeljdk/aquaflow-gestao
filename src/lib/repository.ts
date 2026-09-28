@@ -53,6 +53,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       comissaoPercentual: Number(o.comissaoPercentual),
       createdAt: o.createdAt.toISOString(),
       finalizadoEm: o.finalizadoEm?.toISOString() ?? null,
+      pagoEm: o.pagoEm?.toISOString() ?? null,
       vistoria: (o.vistoria as unknown as Vistoria | null) ?? null,
       itens: o.itens.map((i) => ({
         servicoId: i.servicoId,
@@ -79,6 +80,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       cnpj: "",
       endereco: "",
       telefone: "",
+      pixChave: "",
       logo: "",
       abertura: "08:00",
       fechamento: "18:00",
@@ -89,19 +91,10 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
   };
 }
 export function scopeData(d: AppData, u: User): AppData {
-  if (u.role !== "LAVADOR") return d;
-  const orders = d.comandas.filter((o) => o.funcionarioId === u.funcionarioId);
+  if (u.role === "ADMIN") return d;
   return {
     ...d,
-    comandas: orders,
-    clientes: d.clientes.filter((c) =>
-      orders.some((o) => o.clienteId === c.id),
-    ),
-    veiculos: d.veiculos.filter((v) =>
-      orders.some((o) => o.veiculoId === v.id),
-    ),
-    funcionarios: d.funcionarios.filter((f) => f.id === u.funcionarioId),
-    agendamentos: [],
+    funcionarios: d.funcionarios.filter((f) => f.ativo),
     materiais: [],
     movimentosEstoque: [],
   };
@@ -238,6 +231,7 @@ export async function mutate(m: Mutation, actor: User) {
             : {}),
           createdAt: new Date(v.createdAt),
           finalizadoEm: v.finalizadoEm ? new Date(v.finalizadoEm) : null,
+          pagoEm: v.pagoEm ? new Date(v.pagoEm) : null,
         };
         if (before.comandas.some((x) => x.id === id))
           await tx.comanda.update({ where: { id }, data });
