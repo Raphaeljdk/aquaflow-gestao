@@ -3,16 +3,20 @@ import { paymentLabels } from "@/types";
 import { dayKey, dateLabel, money } from "./format";
 export function reportRows(data: AppData, start: string, end: string) {
   return data.comandas
-    .filter(
-      (o) =>
-        o.finalizadoEm &&
+    .filter((o) => {
+      const receivedAt = o.pagoEm ?? o.finalizadoEm;
+      return (
+        receivedAt &&
         ["FINALIZADO", "ENTREGUE"].includes(o.status) &&
-        dayKey(o.finalizadoEm) >= start &&
-        dayKey(o.finalizadoEm) <= end,
-    )
-    .map((o) => ({
+        dayKey(receivedAt) >= start &&
+        dayKey(receivedAt) <= end
+      );
+    })
+    .map((o) => {
+      const receivedAt = o.pagoEm ?? o.finalizadoEm!;
+      return {
       numero: o.numero,
-      data: dateLabel(o.finalizadoEm!),
+      data: dateLabel(receivedAt),
       cliente: data.clientes.find((c) => c.id === o.clienteId)?.nome ?? "",
       placa: data.veiculos.find((v) => v.id === o.veiculoId)?.placa ?? "",
       servicos: o.itens.map((i) => i.quantidade + "x " + i.nome).join(", "),
@@ -24,12 +28,13 @@ export function reportRows(data: AppData, start: string, end: string) {
       desconto: o.desconto,
       total: o.total,
       comissao: o.comissao,
-    }));
+    };
+    });
 }
 export type ReportRow = ReturnType<typeof reportRows>[number];
 const headers = [
   "Comanda",
-  "Finalizado em",
+  "Pago em",
   "Cliente",
   "Placa",
   "Serviços",

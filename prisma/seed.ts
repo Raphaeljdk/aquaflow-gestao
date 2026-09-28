@@ -62,7 +62,7 @@ async function main() {
         await tx.material.create({ data: item });
 
       for (const o of data.comandas) {
-        const { itens, vistoria, ...v } = o;
+        const { itens, vistoria, pagoEm, ...v } = o;
         await tx.comanda.create({
           data: {
             ...v,
@@ -73,6 +73,7 @@ async function main() {
             finalizadoEm: v.finalizadoEm
               ? new Date(v.finalizadoEm)
               : null,
+            pagoEm: pagoEm ? new Date(pagoEm) : null,
             itens: { create: itens },
           },
         });

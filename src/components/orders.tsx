@@ -60,7 +60,7 @@ export function Orders() {
       <PageTitle
         title="Comandas"
         description="Organize a fila e acompanhe cada atendimento."
-        action={user?.role !== "LAVADOR" ? a.newOrder : undefined}
+        action={a.newOrder}
         actionLabel="Nova comanda"
       />
       <div className="panel overflow-hidden">

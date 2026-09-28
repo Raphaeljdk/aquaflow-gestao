@@ -74,10 +74,11 @@ test("estoque registra entradas e saídas sem permitir saldo negativo", () => {
   assert.throws(() => applyMutation(taken, { entity: "movimentosEstoque", method: "POST", data: { materialId: "m2", tipo: "SAIDA", quantidade: 5 } }, admin, now), /Saldo insuficiente/);
   assert.equal(d.materiais.find((x) => x.id === "m2")?.quantidade, 3);
 });
-test("estoque restringe cadastro e preserva histórico", () => {
-  const atendente: User = { ...admin, role: "ATENDENTE" };
-  assert.throws(() => applyMutation(setup(), { entity: "materiais", method: "POST", data: { nome: "Novo insumo", unidade: "L", minimo: 2, custoUnitario: 10 } }, atendente, now), /permissão/);
-  const moved = applyMutation(setup(), { entity: "movimentosEstoque", method: "POST", data: { materialId: "m1", tipo: "SAIDA", quantidade: 1 } }, atendente, now);
+test("estoque é exclusivo do administrador e preserva histórico", () => {
+  const funcionario: User = { ...admin, role: "FUNCIONARIO" };
+  assert.throws(() => applyMutation(setup(), { entity: "materiais", method: "POST", data: { nome: "Novo insumo", unidade: "L", minimo: 2, custoUnitario: 10 } }, funcionario, now), /permissão/);
+  assert.throws(() => applyMutation(setup(), { entity: "movimentosEstoque", method: "POST", data: { materialId: "m1", tipo: "SAIDA", quantidade: 1 } }, funcionario, now), /permissão/);
+  const moved = applyMutation(setup(), { entity: "movimentosEstoque", method: "POST", data: { materialId: "m1", tipo: "SAIDA", quantidade: 1 } }, admin, now);
   assert.throws(() => applyMutation(moved, { entity: "movimentosEstoque", method: "DELETE", id: moved.movimentosEstoque[0].id }, admin, now), /permanentes/);
   const archived = applyMutation(moved, { entity: "materiais", method: "DELETE", id: "m1" }, admin, now);
   assert.equal(archived.movimentosEstoque.length, 1);
@@ -136,68 +137,82 @@ test("não permite pular etapas nem gerar comissão duas vezes", () => {
     /status/,
   );
 });
-test("lavador só pode iniciar suas próprias comandas", () => {
-  const d = create(),
-    lavador: User = { ...admin, role: "LAVADOR", funcionarioId: "f2" };
-  assert.throws(
-    () =>
-      applyMutation(
-        d,
-        {
-          entity: "comandas",
-          method: "PATCH",
-          id: d.comandas[0].id,
-          data: { status: "EM_LAVAGEM" },
-        },
-        lavador,
-        now,
-      ),
-    /outro funcionário/,
+test("funcionário opera clientes, comandas e agendamentos", () => {
+  const funcionario: User = {
+    ...admin,
+    role: "FUNCIONARIO",
+    funcionarioId: "f2",
+  };
+  const d = create();
+  const started = applyMutation(
+    d,
+    {
+      entity: "comandas",
+      method: "PATCH",
+      id: d.comandas[0].id,
+      data: { status: "EM_LAVAGEM", funcionarioId: "f2" },
+    },
+    funcionario,
+    now,
   );
+  const paid = applyMutation(
+    started,
+    {
+      entity: "comandas",
+      method: "PATCH",
+      id: started.comandas[0].id,
+      data: {
+        status: "FINALIZADO",
+        funcionarioId: "f2",
+        formaPagamento: "PIX",
+      },
+    },
+    funcionario,
+    now,
+  );
+  assert.equal(paid.comandas[0].formaPagamento, "PIX");
+  assert.equal(paid.comandas[0].pagoEm, now.toISOString());
   assert.throws(
     () =>
       applyMutation(
-        d,
+        setup(),
         { entity: "servicos", method: "POST", data: {} },
-        lavador,
+        funcionario,
         now,
       ),
     /permissão/,
   );
-  assert.equal(
-    applyMutation(
-      d,
-      {
-        entity: "comandas",
-        method: "PATCH",
-        id: d.comandas[0].id,
-        data: { status: "EM_LAVAGEM" },
-      },
-      { ...lavador, funcionarioId: "f1" },
-      now,
-    ).comandas[0].status,
-    "EM_LAVAGEM",
-  );
-});
-test("lavador não recebe pagamento nem finaliza", () => {
-  const d = transition(create(), "EM_LAVAGEM");
   assert.throws(
     () =>
       applyMutation(
-        d,
+        setup(),
         {
-          entity: "comandas",
+          entity: "configuracoes",
           method: "PATCH",
-          id: d.comandas[0].id,
-          data: { status: "FINALIZADO", formaPagamento: "PIX" },
+          data: { ...setup().configuracao },
         },
-        { ...admin, role: "LAVADOR", funcionarioId: "f1" },
+        funcionario,
         now,
       ),
-    /recebimento/,
+    /permissão/,
   );
 });
-test("gerente não pode promover funcionário para administrador", () =>
+
+test("pagamento novo aceita somente PIX ou cartão", () => {
+  const d = transition(create(), "EM_LAVAGEM");
+  assert.throws(
+    () => transition(d, "FINALIZADO", { formaPagamento: "DINHEIRO" }),
+    /PIX ou Cartão/,
+  );
+  assert.equal(
+    transition(d, "FINALIZADO", { formaPagamento: "CREDITO" }).comandas[0]
+      .formaPagamento,
+    "CREDITO",
+  );
+});
+
+test("funcionário não administra usuários", () => {
+  const funcionario: User = { ...admin, role: "FUNCIONARIO" };
   assert.throws(
     () =>
       applyMutation(
@@ -206,18 +221,20 @@ test("gerente não pode promover funcionário para administrador", () =>
           entity: "funcionarios",
           method: "POST",
           data: {
-            nome: "Gestor",
+            nome: "Novo Administrador",
             email: "gestor@example.com",
             cargo: "ADMIN",
             comissao: 0,
             ativo: true,
           },
         },
-        { ...admin, role: "GERENTE" },
+        funcionario,
         now,
       ),
-    /administrador/,
-  ));
+    /permissão/,
+  );
+});
+
 const booking = {
   clienteId: "c1",
   veiculoId: "v1",

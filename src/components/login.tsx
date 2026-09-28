@@ -41,7 +41,7 @@ export function Login() {
         setError(
           "E-mail ou senha inválidos. Após muitas tentativas, aguarde 15 minutos.",
         );
-      else window.location.href = "/dashboard";
+      else window.location.href = "/clientes";
     } catch {
       setError("Não foi possível conectar. Tente novamente.");
     } finally {

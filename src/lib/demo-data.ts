@@ -106,7 +106,7 @@ export function makeDemoData(now = new Date()): AppData {
       {
         id: "f1",
         nome: "Diego Martins",
-        cargo: "LAVADOR",
+        cargo: "FUNCIONARIO",
         email: "diego@example.com",
         comissao: 15,
         ativo: true,
@@ -114,7 +114,7 @@ export function makeDemoData(now = new Date()): AppData {
       {
         id: "f2",
         nome: "André Silva",
-        cargo: "LAVADOR",
+        cargo: "FUNCIONARIO",
         email: "andre@example.com",
         comissao: 12,
         ativo: true,
@@ -122,7 +122,7 @@ export function makeDemoData(now = new Date()): AppData {
       {
         id: "f3",
         nome: "Beatriz Souza",
-        cargo: "ATENDENTE",
+        cargo: "FUNCIONARIO",
         email: "beatriz@example.com",
         comissao: 0,
         ativo: true,
@@ -130,7 +130,7 @@ export function makeDemoData(now = new Date()): AppData {
       {
         id: "f4",
         nome: "Carlos Mendes",
-        cargo: "GERENTE",
+        cargo: "FUNCIONARIO",
         email: "carlos@example.com",
         comissao: 0,
         ativo: true,
@@ -150,6 +150,7 @@ export function makeDemoData(now = new Date()): AppData {
       cnpj: "",
       endereco: "Rua dos Pinheiros, 870 · São Paulo, SP",
       telefone: "(11) 3091-2020",
+      pixChave: "11999999999",
       logo: "",
       abertura: "08:00",
       fechamento: "18:00",
@@ -179,7 +180,7 @@ export function makeDemoData(now = new Date()): AppData {
       total,
       desconto: discount,
       formaPagamento: ["FINALIZADO", "ENTREGUE"].includes(status)
-        ? (["PIX", "CREDITO", "DEBITO", "DINHEIRO"] as const)[number % 4]
+        ? (["PIX", "CREDITO"] as const)[number % 2]
         : null,
       observacoes: client === 1 ? "Atenção ao acabamento das rodas." : "",
       vistoria: null,
@@ -190,6 +191,9 @@ export function makeDemoData(now = new Date()): AppData {
       comissaoPercentual: pct,
       createdAt: date,
       finalizadoEm: ["FINALIZADO", "ENTREGUE"].includes(status)
+        ? new Date(new Date(date).getTime() + 3600000).toISOString()
+        : null,
+      pagoEm: ["FINALIZADO", "ENTREGUE"].includes(status)
         ? new Date(new Date(date).getTime() + 3600000).toISOString()
         : null,
       itens: [{ servicoId: s.id, nome: s.nome, preco: s.preco, quantidade: 1 }],

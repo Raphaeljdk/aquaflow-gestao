@@ -32,7 +32,7 @@ export async function GET(request: Request) {
             ? "text/csv; charset=utf-8"
             : "application/pdf",
         "Content-Disposition":
-          'attachment; filename="aquaflow-relatorio.' + input.formato + '"',
+          'attachment; filename="ducha-elitte-faturamento.' + input.formato + '"',
         "Cache-Control": "no-store",
       },
     });

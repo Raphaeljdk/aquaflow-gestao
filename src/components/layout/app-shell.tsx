@@ -6,8 +6,6 @@ import {
   Droplets,
   LayoutDashboard,
   Users,
-  CarFront,
-  Sparkles,
   Package,
   ClipboardList,
   CalendarDays,
@@ -57,18 +55,16 @@ import { cn } from "@/lib/utils";
 import { WebMCPTools } from "@/components/webmcp-tools";
 const links = [
   { path: "dashboard", label: "Visão geral", icon: LayoutDashboard },
+  { path: "clientes", label: "Clientes", icon: Users },
   { path: "comandas", label: "Comandas", icon: ClipboardList },
   { path: "agendamentos", label: "Agendamentos", icon: CalendarDays },
-  { path: "clientes", label: "Clientes", icon: Users },
-  { path: "veiculos", label: "Veículos", icon: CarFront },
-  { path: "servicos", label: "Serviços", icon: Sparkles },
   { path: "estoque", label: "Estoque", icon: Package },
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
-  { path: "relatorios", label: "Relatórios", icon: ChartNoAxesCombined },
+  { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
   { path: "configuracoes", label: "Configurações", icon: Settings2 },
 ];
 const Actions = createContext<{
-  newOrder: () => void;
+  newOrder: (clientId?: string) => void;
   showOrder: (id: string) => void;
 }>({ newOrder: () => {}, showOrder: () => {} });
 export const useActions = () => useContext(Actions);
@@ -78,9 +74,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { data, user, loading, error, refresh } = useStore(),
     { theme, setTheme } = useTheme();
   const [orderOpen, setOrderOpen] = useState(false),
+    [orderClientId, setOrderClientId] = useState<string | undefined>(),
     [orderId, setOrderId] = useState<string | null>(null),
     [searchOpen, setSearchOpen] = useState(false),
     [query, setQuery] = useState("");
+  useEffect(() => {
+    if (!user) return;
+    const page = path.split("/")[1] || "dashboard";
+    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
+    if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
+      router.replace("/clientes");
+  }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -113,7 +117,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .slice(0, 8) ?? [];
   return (
     <Actions.Provider
-      value={{ newOrder: () => setOrderOpen(true), showOrder: setOrderId }}
+      value={{
+        newOrder: (clientId?: string) => {
+          setOrderClientId(clientId);
+          setOrderOpen(true);
+        },
+        showOrder: setOrderId,
+      }}
     >
       <SidebarProvider
         style={{ "--sidebar-width": "238px" } as React.CSSProperties}
@@ -145,7 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupLabel>
               <SidebarMenu className="gap-1">
                 {links
-                  .slice(0, 7)
+                  .slice(0, 4)
                   .filter((l) => allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
@@ -174,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupLabel>
               <SidebarMenu className="gap-1">
                 {links
-                  .slice(7)
+                  .slice(4)
                   .filter((l) => allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
@@ -315,7 +325,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         {data && (
           <>
-            <OrderForm open={orderOpen} onClose={() => setOrderOpen(false)} />
+            <OrderForm
+              open={orderOpen}
+              initialClientId={orderClientId}
+              onClose={() => {
+                setOrderOpen(false);
+                setOrderClientId(undefined);
+              }}
+            />
             <OrderDetail id={orderId} onClose={() => setOrderId(null)} />
           </>
         )}
