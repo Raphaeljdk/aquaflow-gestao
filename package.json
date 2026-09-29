@@ -15,8 +15,7 @@
     "admin:password": "node scripts/set-admin-password.mjs",
     "build:demo": "node scripts/build-demo.mjs",
     "dev:demo": "vite --host 0.0.0.0 --port 4173",
-    "build:app": "prisma generate && next build --webpack",
-    "build:vercel": "prisma generate && if [ \"$VERCEL_ENV\" = \"production\" ]; then prisma migrate deploy; fi && next build --webpack"
+    "build:app": "prisma generate && next build --webpack"
   },
   "prisma": {
     "seed": "node --env-file=.env --import tsx prisma/seed.ts"
