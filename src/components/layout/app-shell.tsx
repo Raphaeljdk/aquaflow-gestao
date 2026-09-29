@@ -3,7 +3,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useState, useEffect } from "react";
 import {
-  Droplets,
   LayoutDashboard,
   Users,
   Package,
@@ -131,19 +130,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <WebMCPTools />
         <Sidebar className="border-r border-border" collapsible="offcanvas">
           <SidebarHeader className="px-6 pb-8 pt-8">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-black shadow-sm shadow-yellow-500/20">
-                {data?.configuracao.logo ? (
-                  <img
-                    src={data.configuracao.logo}
-                    alt="Logo da empresa"
-                    className="size-full rounded-xl object-contain"
-                  />
-                ) : (
-                  <Droplets size={24} strokeWidth={2.2} />
-                )}
+            <Link href="/clientes" className="flex items-center gap-3">
+              <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
+                <img
+                  src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
+                  alt="Ducha Elitte"
+                  className="size-full object-cover"
+                />
               </div>
-              <span className="text-[21px] font-black tracking-[-.8px] text-white">
+              <span className="text-[19px] font-black tracking-[-.6px] text-white">
                 Ducha <span className="text-primary">Elitte</span>
               </span>
             </Link>

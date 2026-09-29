@@ -6,7 +6,6 @@ import {
   Building2,
   Clock3,
   Upload,
-  Droplets,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -103,15 +102,11 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
             </p>
             <div className="mb-7 flex flex-wrap items-center gap-5">
               <div className="flex size-20 items-center justify-center overflow-hidden rounded-2xl border border-border bg-accent">
-                {values.logo ? (
-                  <img
-                    src={values.logo}
-                    alt="Logo da empresa"
-                    className="size-full object-contain"
-                  />
-                ) : (
-                  <Droplets size={35} className="text-primary" />
-                )}
+                <img
+                  src={values.logo || "/ducha-elitte-logo.jpg"}
+                  alt="Logo da empresa"
+                  className="size-full object-cover"
+                />
               </div>
               <div>
                 <Label
@@ -136,10 +131,12 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="mt-1 px-0 text-destructive"
-                    onClick={() => f.setValue("logo", "")}
+                    className="mt-1 px-0"
+                    onClick={() =>
+                      f.setValue("logo", "", { shouldDirty: true })
+                    }
                   >
-                    Remover logo
+                    Restaurar logo oficial
                   </Button>
                 )}
               </div>

@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import {
-  Droplets,
   ArrowRight,
   Eye,
   EyeOff,
@@ -51,11 +50,12 @@ export function Login() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
       <section className="hidden flex-col justify-between bg-black p-14 text-white lg:flex">
-        <Link href="/" className="flex items-center gap-3">
-          <Droplets size={33} className="text-yellow-300" />
-          <span className="text-3xl font-black tracking-tight">
-            Ducha <span className="text-yellow-300">Elitte</span>
-          </span>
+        <Link href="/" className="block">
+          <img
+            src="/ducha-elitte-logo.jpg"
+            alt="Ducha Elitte Lava Rápido App"
+            className="w-72 rounded-2xl border border-white/10 shadow-2xl shadow-black/40"
+          />
         </Link>
         <div className="max-w-md">
           <p className="mb-5 text-xs font-medium uppercase tracking-[.2em] text-yellow-300">
@@ -92,12 +92,19 @@ export function Login() {
       </section>
       <section className="flex items-center justify-center bg-card px-6 py-12">
         <div className="w-full max-w-[370px]">
-          <div className="mb-12 flex items-center gap-2 text-2xl font-black lg:hidden">
-            <Droplets className="text-primary" />
-            Ducha <span className="text-primary">Elitte</span>
+          <div className="mb-10 lg:hidden">
+            <img
+              src="/ducha-elitte-logo.jpg"
+              alt="Ducha Elitte Lava Rápido App"
+              className="w-64 rounded-2xl border border-border shadow-lg"
+            />
           </div>
-          <div className="mb-7 inline-flex rounded-xl bg-accent p-3 text-primary">
-            <Droplets size={26} />
+          <div className="mb-7 overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+            <img
+              src="/ducha-elitte-logo.jpg"
+              alt="Logo Ducha Elitte"
+              className="h-28 w-full object-cover"
+            />
           </div>
           <h2 className="text-3xl font-semibold tracking-tight">
             Bom ter você aqui.
