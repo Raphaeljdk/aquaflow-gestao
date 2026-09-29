@@ -9,7 +9,6 @@ import {
   AlertCircle,
   ArrowRight,
   Loader2,
-  Copy,
   QrCode,
   CreditCard,
 } from "lucide-react";
@@ -310,14 +309,21 @@ export function OrderDetail({
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
     v = data?.veiculos.find((v) => v.id === o?.veiculoId),
+    pixStored = data?.configuracao.pixChave ?? "",
     pixCode =
-      o && data?.configuracao.pixChave
+      o && pixStored && !pixStored.startsWith("data:image/")
         ? pixPayload({
-            chave: data.configuracao.pixChave,
+            chave: pixStored,
             valor: o.total,
             nome: data.configuracao.nome,
             txid: "CMD" + o.numero,
           })
+        : "",
+    pixQrSrc = pixStored.startsWith("data:image/")
+      ? pixStored
+      : pixCode
+        ? "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+          encodeURIComponent(pixCode)
         : "";
   const transition = async (status: Status) => {
     if (!o) return;
@@ -445,35 +451,24 @@ export function OrderDetail({
                         <QrCode size={18} className="text-primary" />
                         <p className="text-sm font-semibold">Pagamento via PIX</p>
                       </div>
-                      {pixCode ? (
+                      {pixQrSrc ? (
                         <div className="space-y-3">
                           <div className="flex justify-center rounded-xl bg-white p-3">
                             <img
-                              src={
-                                "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
-                                encodeURIComponent(pixCode)
-                              }
+                              src={pixQrSrc}
                               alt="QR Code PIX da comanda"
                               width={220}
                               height={220}
+                              className="object-contain"
                             />
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => void navigator.clipboard.writeText(pixCode)}
-                          >
-                            <Copy size={15} />
-                            Copiar código PIX
-                          </Button>
-                          <p className="text-xs text-muted-foreground">
-                            Após confirmar o recebimento, finalize a comanda para registrar o pagamento como PIX.
+                          <p className="text-center text-xs text-muted-foreground">
+                            Confirme o recebimento no banco e finalize a comanda para registrar como pago via PIX.
                           </p>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Configure a chave PIX em Configurações para gerar o QR Code.
+                          Envie o QR Code PIX em Configurações para liberar este pagamento.
                         </p>
                       )}
                     </div>
@@ -512,7 +507,7 @@ export function OrderDetail({
                 )}
                 {o.status === "EM_LAVAGEM" && (
                   <Button
-                    disabled={busy || !payment || (payment === "PIX" && !pixCode)}
+                    disabled={busy || !payment || (payment === "PIX" && !pixQrSrc)}
                     onClick={() => void transition("FINALIZADO")}
                   >
                     Confirmar pagamento e finalizar
