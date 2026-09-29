@@ -46,7 +46,10 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
       <ErrorText message={f.formState.errors[name]?.message} />
     </div>
   );
-  async function upload(file?: File) {
+  async function uploadImage(
+    field: "logo" | "pixChave",
+    file?: File,
+  ) {
     if (!file) return;
     if (
       !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
@@ -57,7 +60,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
     }
     const reader = new FileReader();
     reader.onload = () =>
-      f.setValue("logo", String(reader.result), { shouldDirty: true });
+      f.setValue(field, String(reader.result), { shouldDirty: true });
     reader.readAsDataURL(file);
   }
   return (
@@ -121,7 +124,9 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   className="sr-only"
-                  onChange={(e) => void upload(e.target.files?.[0])}
+                  onChange={(e) =>
+                    void uploadImage("logo", e.target.files?.[0])
+                  }
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
                   PNG, JPG ou WebP. Máximo 300 KB.
@@ -149,10 +154,57 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               </div>
               {input("endereco", "Endereço")}
               <div className="border-t border-border pt-5">
-                {input("pixChave", "Chave PIX para o QR Code")}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Pode ser CPF/CNPJ, telefone, e-mail ou chave aleatória. Ela será usada para gerar o PIX da comanda.
-                </p>
+                <Label>QR Code PIX</Label>
+                <div className="mt-3 flex flex-wrap items-center gap-5">
+                  <div className="flex size-40 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-2">
+                    {values.pixChave?.startsWith("data:image/") ? (
+                      <img
+                        src={values.pixChave}
+                        alt="QR Code PIX"
+                        className="size-full object-contain"
+                      />
+                    ) : (
+                      <span className="px-4 text-center text-xs text-muted-foreground">
+                        Nenhum QR Code enviado
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="pix-qr-upload"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm hover:bg-muted"
+                    >
+                      <Upload size={15} />
+                      Enviar QR Code PIX
+                    </Label>
+                    <Input
+                      id="pix-qr-upload"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      onChange={(e) =>
+                        void uploadImage("pixChave", e.target.files?.[0])
+                      }
+                    />
+                    <p className="mt-2 max-w-sm text-xs text-muted-foreground">
+                      O cliente verá somente o QR Code durante o pagamento. PNG, JPG ou WebP, até 300 KB.
+                    </p>
+                    {values.pixChave && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 px-0 text-destructive"
+                        onClick={() =>
+                          f.setValue("pixChave", "", { shouldDirty: true })
+                        }
+                      >
+                        Remover QR Code
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <ErrorText message={f.formState.errors.pixChave?.message} />
               </div>
             </div>
           </section>
