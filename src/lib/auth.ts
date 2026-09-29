@@ -7,7 +7,7 @@ import { prisma } from "./prisma";
 import { loginSchema } from "./validations";
 import { BusinessError } from "./domain";
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   pages: { signIn: "/login" },
   providers: [
@@ -18,8 +18,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Senha", type: "password" },
       },
       async authorize(raw) {
-        if (!process.env.NEXTAUTH_SECRET)
-          throw new Error("Configure NEXTAUTH_SECRET.");
+        if (!(process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET))
+          throw new Error("Configure NEXTAUTH_SECRET ou AUTH_SECRET.");
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
