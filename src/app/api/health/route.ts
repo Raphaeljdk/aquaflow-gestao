@@ -4,11 +4,22 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const databaseEnv = process.env.DATABASE_URL
+    ? "DATABASE_URL"
+    : process.env.POSTGRES_PRISMA_URL
+      ? "POSTGRES_PRISMA_URL"
+      : process.env.POSTGRES_URL
+        ? "POSTGRES_URL"
+        : process.env.NEON_DATABASE_URL
+          ? "NEON_DATABASE_URL"
+          : null;
+
   const checks = {
+    databaseEnv,
     database: false,
     schema: false,
-    nextAuthSecret: Boolean(process.env.NEXTAUTH_SECRET),
-    nextAuthUrl: Boolean(process.env.NEXTAUTH_URL),
+    authSecret: Boolean(process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET),
+    authUrl: Boolean(process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? process.env.VERCEL_URL),
     demo: process.env.NEXT_PUBLIC_DEMO === "true",
   };
 
@@ -25,19 +36,16 @@ export async function GET() {
     ]);
     checks.schema = true;
   } catch (e) {
-    error =
-      e instanceof Error
-        ? e.name
-        : "UnknownError";
+    error = e instanceof Error ? e.name : "UnknownError";
   }
 
   return NextResponse.json(
     {
       ok:
+        Boolean(checks.databaseEnv) &&
         checks.database &&
         checks.schema &&
-        checks.nextAuthSecret &&
-        checks.nextAuthUrl,
+        checks.authSecret,
       checks,
       error: error || undefined,
       commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? null,
