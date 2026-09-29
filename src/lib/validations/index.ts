@@ -130,7 +130,16 @@ export const configuracaoSchema = z
     cnpj: text.max(18),
     endereco: text.max(300),
     telefone: text.max(30),
-    pixChave: text.max(140).default(""),
+    pixChave: text
+      .max(500000)
+      .refine(
+        (v) =>
+          !v ||
+          v.length <= 140 ||
+          /^data:image\/(png|jpeg|webp);base64,/.test(v),
+        "Envie um QR Code PNG, JPG ou WebP válido.",
+      )
+      .default(""),
     logo: text
       .max(500000)
       .refine(
