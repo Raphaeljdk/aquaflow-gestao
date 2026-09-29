@@ -315,7 +315,7 @@ export function OrderDetail({
         ? pixPayload({
             chave: pixStored,
             valor: o.total,
-            nome: data.configuracao.nome,
+            nome: data?.configuracao.nome ?? "Ducha Elitte",
             txid: "CMD" + o.numero,
           })
         : "",
