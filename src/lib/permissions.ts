@@ -2,7 +2,9 @@ import type { Role, Entity } from "@/types";
 
 export const canManage = (role: Role) => role === "ADMIN";
 
-const employeePages = ["clientes", "veiculos", "comandas", "agendamentos"];
+// O funcionário enxerga somente estas três áreas.
+// Veículos continuam graváveis porque são administrados dentro do cadastro do cliente.
+const employeePages = ["clientes", "comandas", "agendamentos"];
 
 export const allowedPages: Record<Role, string[]> = {
   ADMIN: [
