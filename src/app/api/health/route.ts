@@ -3,6 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+const expectedMigrations = [
+  "202609210001_initial",
+  "202609240001_estoque",
+  "202609280001_vistoria_comanda",
+  "202609280002_hierarquia_pagamentos",
+  "202609280003_funcionario_defaults",
+];
+
 export async function GET() {
   const databaseEnv = process.env.DATABASE_URL
     ? "DATABASE_URL"
@@ -19,12 +27,15 @@ export async function GET() {
     database: false,
     schema: false,
     authSecret: Boolean(process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET),
-    authUrl: Boolean(process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? process.env.VERCEL_URL),
+    authUrl: Boolean(
+      process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? process.env.VERCEL_URL,
+    ),
     demo: process.env.NEXT_PUBLIC_DEMO === "true",
     activeAdmins: 0,
     activeEmployees: 0,
     pixQrConfigured: false,
     pendingMigrations: -1,
+    missingMigrations: [] as string[],
   };
 
   let error = "";
@@ -32,12 +43,14 @@ export async function GET() {
     await prisma.$queryRawUnsafe("SELECT 1");
     checks.database = true;
 
-    const [config, admins, employees, pendingRows] = await Promise.all([
+    const [config, admins, employees, migrationRows] = await Promise.all([
       prisma.configuracao.findUnique({ where: { id: "empresa" } }),
       prisma.user.count({ where: { role: "ADMIN", ativo: true } }),
       prisma.user.count({ where: { role: "FUNCIONARIO", ativo: true } }),
-      prisma.$queryRawUnsafe<{ count: bigint }[]>(
-        'SELECT COUNT(*)::bigint AS count FROM "_prisma_migrations" WHERE "finished_at" IS NULL AND "rolled_back_at" IS NULL',
+      prisma.$queryRawUnsafe<
+        { migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }[]
+      >(
+        'SELECT "migration_name", "finished_at", "rolled_back_at" FROM "_prisma_migrations"',
       ),
       prisma.material.count(),
       prisma.movimentoEstoque.count(),
@@ -47,10 +60,18 @@ export async function GET() {
 
     checks.activeAdmins = admins;
     checks.activeEmployees = employees;
-    checks.pixQrConfigured = Boolean(
-      config?.pixChave?.startsWith("data:image/"),
+    checks.pixQrConfigured = Boolean(config?.pixChave?.startsWith("data:image/"));
+    checks.pendingMigrations = migrationRows.filter(
+      (row) => !row.finished_at && !row.rolled_back_at,
+    ).length;
+    const applied = new Set(
+      migrationRows
+        .filter((row) => row.finished_at && !row.rolled_back_at)
+        .map((row) => row.migration_name),
     );
-    checks.pendingMigrations = Number(pendingRows[0]?.count ?? 0);
+    checks.missingMigrations = expectedMigrations.filter(
+      (name) => !applied.has(name),
+    );
     checks.schema = true;
   } catch (e) {
     error = e instanceof Error ? e.name : "UnknownError";
@@ -63,7 +84,8 @@ export async function GET() {
         checks.database &&
         checks.schema &&
         checks.authSecret &&
-        checks.pendingMigrations === 0,
+        checks.pendingMigrations === 0 &&
+        checks.missingMigrations.length === 0,
       checks,
       error: error || undefined,
       commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? null,
@@ -72,7 +94,8 @@ export async function GET() {
       status:
         checks.database &&
         checks.schema &&
-        checks.pendingMigrations === 0
+        checks.pendingMigrations === 0 &&
+        checks.missingMigrations.length === 0
           ? 200
           : 503,
       headers: { "Cache-Control": "no-store" },
