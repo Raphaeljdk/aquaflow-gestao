@@ -51,12 +51,16 @@ export function Dashboard() {
     [filter, setFilter] = useState("todos");
   if (!data) return null;
   const today = dayKey(new Date()),
-    finished = data.comandas.filter(
-      (o) =>
-        o.finalizadoEm &&
-        dayKey(o.finalizadoEm) === today &&
-        ["FINALIZADO", "ENTREGUE"].includes(o.status),
-    ),
+    receivedAt = (o: (typeof data.comandas)[number]) =>
+      o.pagoEm ?? o.finalizadoEm,
+    finished = data.comandas.filter((o) => {
+      const received = receivedAt(o);
+      return (
+        received &&
+        dayKey(received) === today &&
+        ["FINALIZADO", "ENTREGUE"].includes(o.status)
+      );
+    }),
     revenue = finished.reduce((n, o) => n + o.total, 0);
   const active = data.comandas.filter((o) =>
       ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status),
@@ -71,10 +75,14 @@ export function Dashboard() {
       day: dateLabel(d, Number(days) === 7 ? "EEE" : "dd"),
       value: data.comandas
         .filter(
-          (o) =>
-            o.finalizadoEm &&
-            dayKey(o.finalizadoEm) === key &&
-            ["FINALIZADO", "ENTREGUE"].includes(o.status),
+          (o) => {
+            const received = receivedAt(o);
+            return (
+              received &&
+              dayKey(received) === key &&
+              ["FINALIZADO", "ENTREGUE"].includes(o.status)
+            );
+          },
         )
         .reduce((n, o) => n + o.total, 0),
     };
@@ -82,9 +90,11 @@ export function Dashboard() {
   const chartTotal = chart.reduce((n, c) => n + c.value, 0);
   const previous = data.comandas
       .filter((o) => {
-        if (!o.finalizadoEm) return false;
+        const received = receivedAt(o);
+        if (!received || !["FINALIZADO", "ENTREGUE"].includes(o.status))
+          return false;
         const diff = Math.floor(
-          (Date.now() - new Date(o.finalizadoEm).getTime()) / 86400000,
+          (Date.now() - new Date(received).getTime()) / 86400000,
         );
         return diff >= Number(days) && diff < Number(days) * 2;
       })
@@ -94,13 +104,15 @@ export function Dashboard() {
       .map((s) => ({
         ...s,
         count: data.comandas
-          .filter(
-            (o) =>
-              o.finalizadoEm &&
+          .filter((o) => {
+            const received = receivedAt(o);
+            return (
+              received &&
               ["FINALIZADO", "ENTREGUE"].includes(o.status) &&
-              new Date(o.finalizadoEm).getTime() >=
-                Date.now() - Number(days) * 86400000,
-          )
+              new Date(received).getTime() >=
+                Date.now() - Number(days) * 86400000
+            );
+          })
           .flatMap((o) => o.itens)
           .filter((i) => i.servicoId === s.id)
           .reduce((n, i) => n + i.quantidade, 0),
@@ -203,11 +215,14 @@ export function Dashboard() {
             >
               <Tabs value={days} onValueChange={setDays}>
                 <TabsList className="h-8 rounded-lg bg-background p-1">
-                  <TabsTrigger value="7" className="px-3 text-xs">
-                    7 dias
+                  <TabsTrigger value="1" className="px-3 text-xs">
+                    Diário
                   </TabsTrigger>
-                  <TabsTrigger value="30" className="px-3 text-xs">
-                    30 dias
+                  <TabsTrigger value="7" className="px-3 text-xs">
+                    Semanal
+                  </TabsTrigger>
+                  <TabsTrigger value="15" className="px-3 text-xs">
+                    Quinzenal
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -302,7 +317,13 @@ export function Dashboard() {
           <section className="panel">
             <PanelHeading
               title="Serviços mais vendidos"
-              subtitle={"Os favoritos nos últimos " + days + " dias"}
+              subtitle={
+                days === "1"
+                  ? "Os favoritos de hoje"
+                  : days === "7"
+                    ? "Os favoritos dos últimos 7 dias"
+                    : "Os favoritos dos últimos 15 dias"
+              }
             >
               <div className="rounded-lg bg-accent p-2 text-primary">
                 <SparklesIcon />
