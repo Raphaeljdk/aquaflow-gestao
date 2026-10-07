@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-
-const employeePages = new Set(["clientes", "comandas", "agendamentos"]);
+import { canAccessPage, homePath, isRole } from "@/lib/permissions";
 
 export async function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO === "true") return NextResponse.next();
@@ -15,7 +14,7 @@ export async function proxy(request: NextRequest) {
 
   const token = await getToken({ req: request, secret });
 
-  if (!token) {
+  if (!token || !isRole(token.role)) {
     const url = new URL("/login", request.url);
     url.searchParams.set(
       "callbackUrl",
@@ -25,8 +24,8 @@ export async function proxy(request: NextRequest) {
   }
 
   const page = request.nextUrl.pathname.split("/")[1] || "dashboard";
-  if (token.role !== "ADMIN" && !employeePages.has(page)) {
-    return NextResponse.redirect(new URL("/clientes", request.url));
+  if (!canAccessPage(token.role, page)) {
+    return NextResponse.redirect(new URL(homePath(token.role), request.url));
   }
 
   return NextResponse.next();

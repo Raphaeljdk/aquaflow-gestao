@@ -225,6 +225,10 @@ export function applyMutation(
         o.formaPagamento === "PIX" || o.formaPagamento === "CREDITO",
         "Selecione o pagamento via PIX ou Cartão antes de finalizar.",
       );
+      need(
+        o.formaPagamento !== "PIX" || !!d.configuracao.pixChave.trim(),
+        "Configure o PIX antes de confirmar o pagamento.",
+      );
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
       o.comissao = decimal(Math.round((cents(o.total) * f.comissao) / 100));

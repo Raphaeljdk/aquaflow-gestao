@@ -312,6 +312,21 @@ export function EntityPage({ kind }: { kind: Kind }) {
                   <Mail size={14} />
                   {r.email || "E-mail não informado"}
                 </p>
+                <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-medium">
+                    {r.acesso
+                      ? r.ativo && r.acesso.ativo ? "Login liberado" : "Login desativado"
+                      : "Sem acesso ao sistema"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {r.acesso
+                      ? roleLabels[r.acesso.role as keyof typeof roleLabels] + " · " + r.acesso.email
+                      : "Defina e-mail e senha para habilitar o login."}
+                  </p>
+                  <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setEdit(r)}>
+                    {r.acesso ? "Gerenciar acesso" : "Liberar acesso"}
+                  </Button>
+                </div>
                 <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4">
                   <div>
                     <p className="text-xs text-muted-foreground">
@@ -755,8 +770,13 @@ function EntityEditor({
   };
   const form = useForm<RecordValue>({
     resolver: zodResolver(schemas[kind]),
-    defaultValues: { ...defaults[kind], ...record, password: "" },
+    defaultValues: {
+      ...defaults[kind], ...record, password: "",
+      ...(kind === "funcionarios" ? { cargo: record.cargo === "ADMIN" ? "ADMIN" : "FUNCIONARIO" } : {}),
+    },
   });
+  const selectedRole = form.watch("cargo");
+  const newPassword = form.watch("password");
   if (!data) return null;
   const input = (
     name: string,
@@ -905,17 +925,26 @@ function EntityEditor({
                   step: 0.1,
                 })}
               </div>
+              <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                <p className="font-medium">Permissões deste perfil</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {selectedRole === "ADMIN"
+                    ? "Acesso total, incluindo faturamento, estoque, configurações e liberação de usuários."
+                    : "Clientes e seus veículos, comandas e agendamentos. Gestão de usuários, faturamento, estoque e configurações ficam restritos ao administrador."}
+                </p>
+              </div>
               {input(
                 "password",
-                record.id
+                record.acesso
                   ? "Nova senha (opcional)"
-                  : "Senha de acesso (opcional)",
+                  : "Definir senha para liberar acesso",
                 "password",
                 { autoComplete: "new-password" },
               )}
               <p className="text-xs text-muted-foreground">
-                Informe e-mail e senha com 10 caracteres para habilitar o login.
-                Sem senha, será criado apenas o cadastro operacional.
+                {record.acesso
+                  ? "Deixe a senha vazia para manter a atual. Desativar o cadastro também bloqueia o login."
+                  : "Informe e-mail e senha com pelo menos 10 caracteres. Sem senha, o cadastro permanece sem login."}
               </p>
             </>
           )}
@@ -939,8 +968,10 @@ function EntityEditor({
               Cancelar
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy && <Loader2 size={16} className="animate-spin" />}Salvar{" "}
-              {meta[kind].single}
+              {busy && <Loader2 size={16} className="animate-spin" />}
+              {kind === "funcionarios" && !record.acesso && newPassword
+                ? "Salvar e liberar acesso"
+                : "Salvar " + meta[kind].single}
             </Button>
           </div>
         </form>
