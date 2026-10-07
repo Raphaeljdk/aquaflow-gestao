@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { z } from "zod";
 import { useStore } from "@/hooks/use-store";
 import { useActions } from "./layout/app-shell";
+import { canWrite } from "@/lib/permissions";
 type Context = {
   registerTool: (
     tool: {
@@ -73,7 +74,7 @@ export function WebMCPTools() {
         empty.parse(input);
         if (
           !ref.current.store.user ||
-          ref.current.store.user.role === "LAVADOR"
+          !canWrite(ref.current.store.user.role, "comandas")
         )
           throw Error("Sem permissão.");
         ref.current.actions.newOrder();

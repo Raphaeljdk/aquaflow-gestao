@@ -44,6 +44,7 @@ export interface Funcionario {
   comissao: number;
   email: string;
   ativo: boolean;
+  acesso?: { ativo: boolean; email: string; role: Role } | null;
 }
 export interface ItemComanda {
   servicoId: string;

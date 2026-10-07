@@ -3,7 +3,7 @@ import { z } from "zod";
 import { currentUser } from "@/lib/auth";
 import { snapshot, scopeData, mutate } from "@/lib/repository";
 import { checkOrigin, apiError } from "@/lib/api";
-import { allowedPages } from "@/lib/permissions";
+import { canAccessEntity } from "@/lib/permissions";
 import { BusinessError } from "@/lib/domain";
 import type { Mutation } from "@/types";
 const entitySchema = z.enum([
@@ -26,7 +26,7 @@ async function handler(request: Request, context: Context) {
       id = params.id?.[0];
     if (params.id && params.id.length > 1)
       throw new BusinessError("Rota inexistente.", 404);
-    if (!allowedPages[user.role].includes(entity))
+    if (!canAccessEntity(user.role, entity, request.method))
       throw new BusinessError("Sem permissão.", 403);
     if (request.method === "GET") {
       const d = scopeData(await snapshot(), user);

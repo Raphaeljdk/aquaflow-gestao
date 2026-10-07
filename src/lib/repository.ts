@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import type { AppData, Mutation, User, Vistoria } from "@/types";
 import { applyMutation, BusinessError } from "./domain";
 import { funcionarioSchema } from "./validations";
+export { scopeData } from "./data-scope";
 type DB = Prisma.TransactionClient;
 export async function snapshot(db: DB = prisma): Promise<AppData> {
   const [
@@ -20,7 +21,9 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     db.cliente.findMany({ orderBy: { nome: "asc" } }),
     db.veiculo.findMany(),
     db.servico.findMany(),
-    db.funcionario.findMany(),
+    db.funcionario.findMany({
+      include: { user: { select: { ativo: true, email: true, role: true } } },
+    }),
     db.comanda.findMany({
       include: { itens: true },
       orderBy: { createdAt: "desc" },
@@ -41,9 +44,10 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     })),
     veiculos,
     servicos: servicos.map((s) => ({ ...s, preco: Number(s.preco) })),
-    funcionarios: funcionarios.map((f) => ({
+    funcionarios: funcionarios.map(({ user: acesso, ...f }) => ({
       ...f,
       comissao: Number(f.comissao),
+      acesso,
     })),
     comandas: orders.map((o) => ({
       ...o,
@@ -88,15 +92,6 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       diasSemana: [1, 2, 3, 4, 5, 6],
       timezone: "America/Sao_Paulo",
     },
-  };
-}
-export function scopeData(d: AppData, u: User): AppData {
-  if (u.role === "ADMIN") return d;
-  return {
-    ...d,
-    funcionarios: d.funcionarios.filter((f) => f.ativo),
-    materiais: [],
-    movimentosEstoque: [],
   };
 }
 export async function mutate(m: Mutation, actor: User) {
@@ -155,7 +150,7 @@ export async function mutate(m: Mutation, actor: User) {
         await tx.movimentoEstoque.create({ data: { ...movement, createdAt: new Date(movement.createdAt) } });
       }
       for (const f of changed(before.funcionarios, after.funcionarios)) {
-        const { id, ...data } = f;
+        const { id, acesso: _acesso, ...data } = f;
         await tx.funcionario.upsert({
           where: { id },
           create: { id, ...data },
