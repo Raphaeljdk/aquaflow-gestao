@@ -87,9 +87,14 @@ try {
   if (!config) fail("configuração da empresa ausente.");
   if (config.timezone !== "America/Sao_Paulo")
     fail("timezone da empresa diferente de America/Sao_Paulo.");
-  if (!config.pixChave?.startsWith("data:image/"))
-    fail("QR Code PIX real ainda não está configurado.");
-  console.log("[delivery-check] PIX QR: configurado");
+  const pixQrConfigured = config.pixChave?.startsWith("data:image/");
+  if (!pixQrConfigured) {
+    if (process.env.VERCEL_ENV !== "preview")
+      fail("QR Code PIX real ainda não está configurado.");
+    console.log("[delivery-check] PIX QR: ausente no preview (não bloqueante)");
+  } else {
+    console.log("[delivery-check] PIX QR: configurado");
+  }
   console.log("[delivery-check] timezone: America/Sao_Paulo");
 
   if (!activeAdmins.length) fail("nenhum administrador ativo.");

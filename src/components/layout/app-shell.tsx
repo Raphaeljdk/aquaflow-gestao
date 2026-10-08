@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore, DEMO } from "@/hooks/use-store";
-import { allowedPages } from "@/lib/permissions";
+import { allowedPages, canAccessPage, homePath } from "@/lib/permissions";
 import { roleLabels, type Comanda } from "@/types";
 import { OrderForm, OrderDetail } from "@/components/forms/order-form";
 import { SearchInput } from "@/components/common";
@@ -80,9 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
-    if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
-      router.replace("/clientes");
+    if (!canAccessPage(user.role, page)) router.replace(homePath(user.role));
   }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -99,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       data?.comandas.filter((o) =>
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
       ).length ?? 0;
-  const allowed = allowedPages[user?.role ?? "ADMIN"],
+  const allowed = user ? allowedPages[user.role] ?? [] : [],
     title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
     data?.clientes
@@ -301,9 +299,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     Tentar novamente
                   </Button>
                 </div>
-              ) : (
+              ) : user && canAccessPage(user.role, path.split("/")[1] || "dashboard") ? (
                 children
-              )}
+              ) : null}
             </div>
             <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
               <span>

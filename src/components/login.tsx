@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
+import { loginRedirectPath } from "@/lib/permissions";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
@@ -36,11 +37,16 @@ export function Login() {
         ...values,
         redirect: false,
       });
-      if (result?.error)
+      if (!result?.ok || result.error)
         setError(
           "E-mail ou senha inválidos. Após muitas tentativas, aguarde 15 minutos.",
         );
-      else window.location.href = "/clientes";
+      else {
+        const session = await getSession();
+        if (!session?.user) throw new Error("Sessão indisponível.");
+        const callback = new URLSearchParams(window.location.search).get("callbackUrl");
+        window.location.href = loginRedirectPath(session.user.role, callback);
+      }
     } catch {
       setError("Não foi possível conectar. Tente novamente.");
     } finally {
@@ -92,18 +98,11 @@ export function Login() {
       </section>
       <section className="flex items-center justify-center bg-card px-6 py-12">
         <div className="w-full max-w-[370px]">
-          <div className="mb-10 lg:hidden">
+          <div className="mb-7 flex items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-4 shadow-sm">
             <img
               src="/ducha-elitte-logo.jpg"
-              alt="Ducha Elitte Lava Rápido App"
-              className="w-64 rounded-2xl border border-border shadow-lg"
-            />
-          </div>
-          <div className="mb-7 overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-            <img
-              src="/ducha-elitte-logo.jpg"
-              alt="Logo Ducha Elitte"
-              className="h-28 w-full object-cover"
+              alt="Logo completa Ducha Elitte"
+              className="h-auto max-h-40 w-full object-contain"
             />
           </div>
           <h2 className="text-3xl font-semibold tracking-tight">

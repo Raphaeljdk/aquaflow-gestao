@@ -491,7 +491,7 @@ export function OrderDetail({
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {o.pagoEm ? "Pago em " + dateLabel(o.pagoEm) : "Finalizado em " + dateLabel(o.finalizadoEm)}
-                    {" · "}Comissão {money(o.comissao)}
+                    {user?.role === "ADMIN" && <> · Comissão {money(o.comissao)}</>}
                   </p>
                 </div>
               )}

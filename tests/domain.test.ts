@@ -211,6 +211,15 @@ test("pagamento novo aceita somente PIX ou cartão", () => {
   );
 });
 
+test("servidor recusa confirmar PIX sem configuração e não marca pagamento", () => {
+  const d = transition(create(), "EM_LAVAGEM");
+  d.configuracao.pixChave = "";
+  assert.throws(() => transition(d, "FINALIZADO", { formaPagamento: "PIX" }), /Configure o PIX/);
+  assert.equal(d.comandas[0].pagoEm, null);
+  assert.equal(d.comandas[0].status, "EM_LAVAGEM");
+  assert.equal(transition(d, "FINALIZADO", { formaPagamento: "CREDITO" }).comandas[0].formaPagamento, "CREDITO");
+});
+
 test("funcionário não administra usuários", () => {
   const funcionario: User = { ...admin, role: "FUNCIONARIO" };
   assert.throws(

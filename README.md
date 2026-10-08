@@ -104,15 +104,26 @@ Para novos ambientes sem dados fictícios, crie o administrador e os serviços n
 
 ## Perfis e autorização
 
-| Recurso                     | ADMIN           | GERENTE              | ATENDENTE  | LAVADOR                       |
-| --------------------------- | --------------- | -------------------- | ---------- | ----------------------------- |
-| Clientes, veículos e agenda | Gerenciar       | Gerenciar            | Gerenciar  | Sem acesso                    |
-| Comandas                    | Gerenciar       | Gerenciar            | Gerenciar  | Iniciar somente as atribuídas |
-| Catálogo                    | Gerenciar       | Gerenciar            | Consultar  | Sem acesso à página           |
-| Funcionários                | Todos os perfis | Atendentes/lavadores | Sem acesso | Sem acesso                    |
-| Relatórios e configurações  | Sim             | Sim                  | Não        | Não                           |
+| Recurso | Administrador | Funcionário |
+| --- | --- | --- |
+| Clientes e veículos dentro do cliente | Gerenciar | Gerenciar |
+| Comandas e agendamentos | Gerenciar | Gerenciar |
+| Dashboard, faturamento e comissões | Acesso total | Sem acesso |
+| Funcionários e liberação de login | Acesso total | Sem acesso |
+| Estoque, catálogo e configurações | Gerenciar | Sem acesso às páginas de gestão |
 
-O lavador vê somente seus atendimentos no snapshot; ele não recebe pagamento nem finaliza a comanda. A finalização é feita pelo atendimento após confirmar o recebimento. A navegação e `src/proxy.ts` protegem páginas; **todas as APIs verificam a sessão e relêem usuário ativo/cargo no banco**. No Next.js 16, o middleware chama-se proxy. Alterações de cargo e desativação valem na próxima chamada à API, mesmo com um JWT ainda válido.
+Os perfis legados GERENTE, ATENDENTE e LAVADOR seguem as permissões de FUNCIONARIO. O funcionário acessa apenas Clientes, Comandas e Agendamentos; o snapshot fornece os serviços e responsáveis necessários à operação, sem dados de contas, comissões ou estoque. A navegação e `src/proxy.ts` protegem páginas; **todas as APIs verificam a sessão e relêem usuário ativo/cargo no banco**. Alterações de cargo e desativação valem na próxima chamada à API, mesmo com um JWT ainda válido.
+
+### Liberação de acesso para teste
+
+1. Em um ambiente de teste com banco separado, entre como administrador e abra **Funcionários → Liberar acesso**.
+2. Informe um e-mail válido, escolha Administrador ou Funcionário e defina uma senha com pelo menos 10 caracteres. Mantenha o cadastro ativo.
+3. Salve e confira o indicador **Login liberado**, o e-mail e o perfil. Cadastro operacional sem senha não cria login.
+4. Em uma janela separada, teste o login: administrador inicia no Dashboard; funcionário em Clientes. Teste também URLs diretas de áreas restritas e o logout.
+5. Cadastre cliente e veículo, abra uma comanda, inicie a lavagem, confira o pagamento e finalize. Teste agendamento e conversão em comanda.
+6. Desative o cadastro ao encerrar o teste. Não publique senhas no GitHub e não use contas compartilhadas em produção.
+
+O PDF `Qrcode thiago.pdf` recebido nesta tarefa contém uma página em branco, sem imagem ou QR Code. Ele não substitui a configuração PIX existente. É necessário reenviar uma imagem válida do QR para finalizar essa parte da entrega.
 
 Senhas usam bcrypt (custo 12). Há limite de 10 tentativas por e-mail em 15 minutos, persistido no banco. Senhas nunca fazem parte do snapshot. Formulários NextAuth usam CSRF; APIs de escrita verificam a origem. Não há recuperação automática de senha: o administrador define uma nova em Funcionários.
 
@@ -198,12 +209,12 @@ Os testes cobrem permissões, transições, pagamento, precisão de dinheiro, co
 
 ## Operação
 
-Mantenha backup do banco, HTTPS e segredos no provedor. O snapshot atual carrega o histórico completo e atualiza a cada 30 segundos, adequado para uma unidade pequena. Pagamento registra o recebimento informado pelo atendente; não realiza cobrança bancária nem conciliação com adquirentes. PIX nesta versão é uma forma de pagamento registrada, sem geração de QR Code ou integração bancária.
+Mantenha backup do banco, HTTPS e segredos no provedor. O snapshot atual carrega o histórico completo e atualiza a cada 30 segundos, adequado para uma unidade pequena. O PIX exibe o QR configurado e registra o recebimento confirmado manualmente pelo operador; exibir o QR não comprova o pagamento. Cartão é registro manual após aprovação na maquininha. Não há conciliação bancária automática.
 
-## Resultado da verificação
+## Verificação da revisão de acessos
 
-- Build Next.js e exportação estática concluídos.
-- 16 testes de domínio aprovados.
-- Migração e restrições SQL verificadas em PostgreSQL embarcado (PGlite): pagamento obrigatório, fila única e horários sem sobreposição.
-- Autenticação com credenciais e integração completa com uma instância externa PostgreSQL precisam de validação no seu ambiente configurado.
-- Ferramentas WebMCP têm detecção de suporte; o navegador de revisão não ofereceu essa API.
+- 27 testes automatizados de domínio, escopo de dados, permissões e proxy com JWT.
+- TypeScript validado; nenhuma mudança em schema ou migrations.
+- O banco real não foi validado nesta revisão: nenhuma variável de conexão disponível e a conexão Vercel recusou o acesso ao projeto.
+- Login com contas reais, ativação dos usuários de teste e fluxo completo com persistência dependem da reconexão do ambiente. Não promover para produção antes dessa validação.
+- QR de Thiago pendente de reenvio; PDF recebido em branco.
