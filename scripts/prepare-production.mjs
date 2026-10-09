@@ -20,13 +20,37 @@ if (!adminPassword || adminPassword.length < 12 || !employeePassword || employee
   throw new Error("[production-init] Senhas de produção devem ter pelo menos 12 caracteres.");
 }
 
-console.log("[production-init] Aplicando exclusivamente migrations oficiais pendentes.");
-execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
-  stdio: "inherit",
-  env: process.env,
-});
-
 const prisma = new PrismaClient();
+
+// Evita disputar o advisory lock do Prisma entre deploys simultâneos quando
+// todas as migrations versionadas já estão aplicadas neste banco.
+const { readdirSync } = await import("node:fs");
+const migrationFolders = readdirSync(new URL("../prisma/migrations/", import.meta.url), {
+  withFileTypes: true,
+}).filter((x) => x.isDirectory()).map((x) => x.name);
+let needsMigration = true;
+const relation = await prisma.$queryRawUnsafe(
+  `SELECT to_regclass('public."_prisma_migrations"')::text AS name`,
+);
+if (relation[0]?.name) {
+  const rows = await prisma.$queryRawUnsafe(
+    'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"',
+  );
+  const applied = new Set(rows
+    .filter((m) => m.finished_at && !m.rolled_back_at)
+    .map((m) => m.migration_name));
+  needsMigration = migrationFolders.some((name) => !applied.has(name));
+}
+if (needsMigration) {
+  console.log("[production-init] Aplicando migrations oficiais pendentes.");
+  await prisma.$disconnect();
+  execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+} else {
+  console.log("[production-init] Migrations já aplicadas; evitando lock concorrente.");
+}
 try {
   await prisma.$transaction(async (tx) => {
     await tx.configuracao.upsert({
