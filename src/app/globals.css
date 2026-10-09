@@ -2,37 +2,39 @@
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
 :root {
-  --background: #090909;
-  --foreground: #f8fafc;
-  --card: #121212;
-  --card-foreground: #f8fafc;
-  --popover: #151515;
-  --popover-foreground: #f8fafc;
+  color-scheme: light;
+  --background: #f6f7f9;
+  --foreground: #17212d;
+  --card: #ffffff;
+  --card-foreground: #17212d;
+  --popover: #ffffff;
+  --popover-foreground: #17212d;
   --primary: #facc15;
-  --primary-foreground: #0a0a0a;
-  --secondary: #222222;
-  --secondary-foreground: #f8fafc;
-  --muted: #1b1b1b;
-  --muted-foreground: #a3a3a3;
-  --accent: #2c2606;
-  --accent-foreground: #fde047;
-  --destructive: #f87171;
-  --border: #303030;
-  --input: #3a3a3a;
-  --ring: #facc15;
+  --primary-foreground: #161616;
+  --secondary: #edf0f4;
+  --secondary-foreground: #17212d;
+  --muted: #f0f2f5;
+  --muted-foreground: #586576;
+  --accent: #fff5c8;
+  --accent-foreground: #604900;
+  --destructive: #c42b3a;
+  --border: #dfe4ea;
+  --input: #cdd5df;
+  --ring: #dba900;
   --radius: 0.8rem;
-  --sidebar: #0d0d0d;
-  --sidebar-foreground: #d4d4d4;
-  --sidebar-primary: #facc15;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #272205;
-  --sidebar-accent-foreground: #fde047;
-  --sidebar-border: #2d2d2d;
-  --sidebar-ring: #facc15;
-  --chart-1: #facc15;
-  --chart-2: #f8fafc;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #17212d;
+  --sidebar-primary: #eab308;
+  --sidebar-primary-foreground: #101010;
+  --sidebar-accent: #fff6d5;
+  --sidebar-accent-foreground: #594700;
+  --sidebar-border: #e3e8ee;
+  --sidebar-ring: #dba900;
+  --chart-1: #c99a00;
+  --chart-2: #3b6887;
 }
 .dark {
+  color-scheme: dark;
   --background: #090909;
   --foreground: #f8fafc;
   --card: #121212;
@@ -169,7 +171,7 @@ textarea {
 input[type="time"],
 input[type="date"],
 input[type="datetime-local"] {
-  color-scheme: dark;
+  color-scheme: light;
 }
 .dark input[type="date"],
 .dark input[type="time"],
