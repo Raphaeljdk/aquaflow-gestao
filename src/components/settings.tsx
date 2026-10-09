@@ -98,7 +98,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="empresa">
-          <section className="panel max-w-3xl p-6">
+          <section className="panel max-w-3xl p-4 sm:p-6">
             <h2 className="mb-1 text-lg font-semibold">Dados da empresa</h2>
             <p className="mb-6 text-sm text-muted-foreground">
               Informações usadas no sistema e nos relatórios.
@@ -187,7 +187,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                       }
                     />
                     <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-                      O cliente verá somente o QR Code durante o pagamento. PNG, JPG ou WebP, até 300 KB.
+                      Envie o QR Code PIX oficial em PNG, JPG ou WebP (até 300 KB). Depois clique em “Salvar alterações” no topo. Teste a leitura com seu banco antes de receber pagamentos. Um QR fixo não confirma o pagamento automaticamente.
                     </p>
                     {values.pixChave && (
                       <Button
