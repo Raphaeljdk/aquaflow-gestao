@@ -440,7 +440,7 @@ export function OrderDetail({
                     value={payment}
                     onChange={setPayment}
                     options={[
-                      { value: "PIX", label: "PIX" },
+                      ...(pixQrSrc ? [{ value: "PIX", label: "PIX" }] : []),
                       { value: "CREDITO", label: "Cartão" },
                     ]}
                     placeholder="Selecione o pagamento"
