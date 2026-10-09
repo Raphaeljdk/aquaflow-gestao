@@ -16,8 +16,8 @@ const employeePassword = process.env.SEED_EMPLOYEE_PASSWORD;
 if (!adminEmail || !employeeEmail || adminEmail === employeeEmail) {
   throw new Error("[production-init] E-mails de ADMIN/FUNCIONARIO ausentes ou duplicados.");
 }
-if (!adminPassword || adminPassword.length < 7 || !employeePassword || employeePassword.length < 7) {
-  throw new Error("[production-init] Senhas devem conter ao menos 7 caracteres.");
+if (!adminPassword || adminPassword.length < 12 || !employeePassword || employeePassword.length < 12) {
+  throw new Error("[production-init] Senhas de produção devem ter pelo menos 12 caracteres.");
 }
 
 const prisma = new PrismaClient();
