@@ -135,10 +135,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <img
                   src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
                   alt="Ducha Elitte"
-                  className="size-full object-cover"
+                  className="size-full object-contain bg-white p-1"
                 />
               </div>
-              <span className="text-[19px] font-black tracking-[-.6px] text-white">
+              <span className="text-[19px] font-black tracking-[-.6px] text-sidebar-foreground">
                 Ducha <span className="text-primary">Elitte</span>
               </span>
             </Link>
@@ -240,7 +240,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <div className="min-w-0 flex-1">
-          <header className="flex h-[76px] items-center justify-between border-b border-border bg-card px-5 md:px-8">
+          <header className="flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
             <div className="flex items-center gap-2 text-sm">
               <SidebarTrigger className="mr-2 md:hidden" />
               <span className="hidden text-muted-foreground sm:inline">
@@ -252,7 +252,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
               <span className="font-medium">{current.label}</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 sm:gap-4">
               <Button
                 variant="ghost"
                 className="h-9 gap-2 text-muted-foreground"
@@ -279,7 +279,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
             </div>
           </header>
-          <main className="mx-auto max-w-[1600px] px-4 py-7 md:px-8 md:py-8">
+          <main className="mx-auto w-full max-w-[1600px] min-w-0 px-3 py-5 sm:px-4 sm:py-7 md:px-8 md:py-8">
             <div className="page-enter" key={path}>
               {loading ? (
                 <div className="space-y-6">
