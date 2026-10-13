@@ -47,6 +47,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     })),
     comandas: orders.map((o) => ({
       ...o,
+      clienteId: o.clienteId ?? "",
+      veiculoId: o.veiculoId ?? "",
       total: Number(o.total),
       desconto: Number(o.desconto),
       comissao: Number(o.comissao),
@@ -64,8 +66,12 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     })),
     agendamentos: appointments.map((a) => ({
       id: a.id,
-      clienteId: a.clienteId,
-      veiculoId: a.veiculoId,
+      clienteId: a.clienteId ?? "",
+      veiculoId: a.veiculoId ?? "",
+      nomeCliente: a.nomeCliente,
+      telefoneCliente: a.telefoneCliente,
+      placa: a.placa,
+      tipoVeiculo: a.tipoVeiculo,
       dataHora: a.dataHora.toISOString(),
       fim: a.fim.toISOString(),
       status: a.status,
@@ -226,6 +232,8 @@ export async function mutate(m: Mutation, actor: User) {
         const { id, itens, vistoria, ...v } = o;
         const data = {
           ...v,
+          clienteId: v.clienteId || null,
+          veiculoId: v.veiculoId || null,
           ...(vistoria
             ? { vistoria: vistoria as unknown as Prisma.InputJsonValue }
             : {}),
@@ -244,6 +252,8 @@ export async function mutate(m: Mutation, actor: User) {
         const { id, servicoIds, ...v } = a;
         const data = {
           ...v,
+          clienteId: v.clienteId || null,
+          veiculoId: v.veiculoId || null,
           dataHora: new Date(v.dataHora),
           fim: new Date(v.fim),
         };
