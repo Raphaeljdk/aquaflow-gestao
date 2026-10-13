@@ -13,6 +13,12 @@ const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
 const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 const employeeEmail = process.env.SEED_EMPLOYEE_EMAIL?.trim().toLowerCase();
 const employeePassword = process.env.SEED_EMPLOYEE_PASSWORD;
+const platformAdminEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+const platformAdminPassword = process.env.PLATFORM_ADMIN_PASSWORD;
+if (!platformAdminEmail || !platformAdminPassword || platformAdminPassword.length < 16 ||
+    [adminEmail, employeeEmail].includes(platformAdminEmail)) {
+  throw new Error("[production-init] Configure uma conta central exclusiva e senha forte (16+ caracteres).");
+}
 if (!adminEmail || !employeeEmail || adminEmail === employeeEmail) {
   throw new Error("[production-init] E-mails de ADMIN/FUNCIONARIO ausentes ou duplicados.");
 }
@@ -81,6 +87,16 @@ try {
       update: {},
     });
     await tx.user.upsert({
+      where: { email: platformAdminEmail },
+      create: {
+        name: "Administrador da Plataforma",
+        email: platformAdminEmail,
+        password: await hash(platformAdminPassword, 12),
+        role: "ADMIN", ativo: true,
+      },
+      update: {},
+    });
+    await tx.user.upsert({
       where: { email: employeeEmail },
       create: {
         name: "Funcionário Ducha Elitte",
@@ -94,9 +110,10 @@ try {
     });
   }, { timeout: 30000 });
 
-  const [admin, employee] = await Promise.all([
+  const [admin, employee, platform] = await Promise.all([
     prisma.user.findUnique({ where: { email: adminEmail } }),
     prisma.user.findUnique({ where: { email: employeeEmail } }),
+    prisma.user.findUnique({ where: { email: platformAdminEmail } }),
   ]);
   if (!admin?.ativo || admin.role !== "ADMIN" || !(await compare(adminPassword, admin.password))) {
     throw new Error("[production-init] Credencial ADMIN inválida após inicialização.");
@@ -104,6 +121,9 @@ try {
   if (!employee?.ativo || employee.role !== "FUNCIONARIO" || !employee.funcionarioId ||
       !(await compare(employeePassword, employee.password))) {
     throw new Error("[production-init] Credencial FUNCIONARIO inválida após inicialização.");
+  }
+  if (!platform?.ativo || platform.role !== "ADMIN" || !(await compare(platformAdminPassword, platform.password))) {
+    throw new Error("[production-init] Conta central não corresponde às credenciais configuradas.");
   }
   console.log("[production-init] Configuração e credenciais iniciais verificadas; registros preservados.");
 } finally {
