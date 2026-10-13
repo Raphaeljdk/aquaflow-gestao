@@ -426,6 +426,7 @@ export function OrderDetail({
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
     v = data?.veiculos.find((v) => v.id === o?.veiculoId),
+    whatsapp = normalizeWhatsappPhone(o?.telefoneCliente || c?.telefone),
     pixStored = data?.configuracao.pixChave ?? "",
     pixCode =
       o && pixStored && !pixStored.startsWith("data:image/")
@@ -495,9 +496,9 @@ export function OrderDetail({
                   </span>
                 </p>
               </div>
-              {o.status === "FINALIZADO" && (o.telefoneCliente || c?.telefone) && (
+              {o.status === "FINALIZADO" && whatsapp && (
                 <a className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"
-                  href={"https://wa.me/" + (o.telefoneCliente || c?.telefone || "").replace(/[^0-9]/g,"").replace(/^(?!55)/,"55") +
+                  href={"https://wa.me/" + whatsapp +
                     "?text=" + encodeURIComponent("Olá, " + (o.nomeCliente || c?.nome || "") + "! Sua lavagem está pronta. Você já pode retirar seu veículo.")}
                   target="_blank" rel="noopener noreferrer">
                   <span>Avisar pelo WhatsApp: lavagem pronta</span><ArrowRight size={15}/>
