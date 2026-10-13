@@ -87,7 +87,7 @@ try {
   if (!config) fail("configuração da empresa ausente.");
   // Guardião específico da branch de QA: falha o build se o Preview usar outro banco.
   if (process.env.QA_EXPECTED_WHATSAPP) {
-    const actualNumber = (config.telefone ?? "").replace(/\\D/g, "");
+    const actualNumber = (config.telefone ?? "").replace(/[^0-9]/g, "");
     if (actualNumber !== process.env.QA_EXPECTED_WHATSAPP)
       fail("banco de QA incorreto: WhatsApp de agendamento não confere.");
     console.log("[delivery-check] banco de QA confirmado pelo contato configurado");
