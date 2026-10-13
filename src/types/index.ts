@@ -72,6 +72,11 @@ export interface Vistoria {
   atualizadoEm: string;
 }
 export interface Comanda {
+  /** Informações temporárias vinculadas ao serviço (não cadastro de cliente). */
+  nomeCliente?: string;
+  telefoneCliente?: string;
+  placa?: string;
+  tipoVeiculo?: "CARRO" | "MOTO" | "CAMINHONETE" | null;
   id: string;
   numero: number;
   clienteId: string;
@@ -91,6 +96,11 @@ export interface Comanda {
   itens: ItemComanda[];
 }
 export interface Agendamento {
+  /** Informações temporárias vinculadas ao serviço (não cadastro de cliente). */
+  nomeCliente?: string;
+  telefoneCliente?: string;
+  placa?: string;
+  tipoVeiculo?: "CARRO" | "MOTO" | "CAMINHONETE" | null;
   id: string;
   clienteId: string;
   veiculoId: string;
