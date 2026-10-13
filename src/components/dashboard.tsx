@@ -440,11 +440,11 @@ export function Dashboard() {
                             <p className="text-sm font-semibold">
                               {v?.marca} {v?.modelo}
                               <span className="ml-2 hidden text-xs font-normal text-muted-foreground 2xl:inline">
-                                {v?.placa}
+                                {(o.placa || v?.placa || "")}
                               </span>
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {c?.nome}
+                              {(o.nomeCliente || c?.nome || "Atendimento")}
                             </p>
                           </div>
                         </div>
@@ -521,7 +521,7 @@ export function Dashboard() {
                         {dateLabel(a.dataHora, "HH:mm")}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{c?.nome}</p>
+                        <p className="text-sm font-semibold">{(o.nomeCliente || c?.nome || "Atendimento")}</p>
                         <p className="mt-1 truncate text-xs text-muted-foreground">
                           {v?.modelo} ·{" "}
                           {
