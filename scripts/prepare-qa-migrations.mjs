@@ -12,14 +12,26 @@ try {
   if (!c || c.telefone.replace(/[^0-9]/g, "") !== process.env.QA_EXPECTED_WHATSAPP) {
     throw new Error("[qa-migrations] Banco incorreto: telefone de segurança não corresponde ao QA.");
   }
-  console.log("[qa-migrations] Banco isolado confirmado. Aplicando somente migrations pendentes.");
+  console.log("[qa-migrations] Banco isolado confirmado.");
+  let tableExists = true;
+  try {
+    await prisma.solicitacaoEmpresa.count();
+  } catch (error) {
+    if (error?.code === "P2021") tableExists = false;
+    else throw error;
+  }
+  if (!tableExists) {
+    console.log("[qa-migrations] Preparando tabela para análise de cadastros.");
+    await prisma.$disconnect();
+    execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
+      stdio: "inherit", env: process.env,
+    });
+  } else {
+    console.log("[qa-migrations] Cadastro já preparado, sem novo bloqueio do banco.");
+  }
 } finally {
   await prisma.$disconnect();
 }
-execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
-  stdio: "inherit",
-  env: process.env,
-});
 // Conta central exclusiva de QA, nunca criada a partir de uma solicitação pública.
 const { hash, compare } = await import("bcryptjs");
 const adminEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
