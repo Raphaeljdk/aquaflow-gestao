@@ -138,8 +138,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className="size-full object-contain bg-white p-1"
                 />
               </div>
-              <span className="text-[19px] font-black tracking-[-.6px] text-sidebar-foreground">
-                Ducha <span className="text-primary">Elitte</span>
+              <span className="min-w-0 truncate text-[18px] font-black tracking-[-.6px] text-sidebar-foreground">
+                {title}
               </span>
             </Link>
           </SidebarHeader>
