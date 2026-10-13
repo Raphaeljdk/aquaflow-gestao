@@ -327,7 +327,7 @@ export function Appointments() {
                               }
                               await refresh();
                             } catch { window.alert("Falha de conexão. Tente novamente."); }
-                          }
+                          }}
                         >
                           Abrir comanda
                           <ArrowRight size={13} />
