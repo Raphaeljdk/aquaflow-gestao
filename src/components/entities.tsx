@@ -124,11 +124,28 @@ export function EntityPage({ kind }: { kind: Kind }) {
       record: RecordValue;
     } | null>(null),
     [page, setPage] = useState(0),
-    [includeInactive, setIncludeInactive] = useState(false);
+    [includeInactive, setIncludeInactive] = useState(false),
+    [pendingVehicleClient, setPendingVehicleClient] = useState<{
+      existingIds: string[];
+      nome: string;
+      telefone: string;
+    } | null>(null);
   useEffect(() => {
     setSearch(params.get("q") ?? "");
     setPage(0);
   }, [params]);
+  useEffect(() => {
+    if (!data || !pendingVehicleClient) return;
+    // Localiza apenas o registro recém-criado, nunca outro cliente homônimo.
+    const created = data.clientes.find((c) =>
+      !pendingVehicleClient.existingIds.includes(c.id) &&
+      c.nome === pendingVehicleClient.nome &&
+      c.telefone === pendingVehicleClient.telefone,
+    );
+    if (!created) return;
+    setNestedEdit({ kind: "veiculos", record: { clienteId: created.id } });
+    setPendingVehicleClient(null);
+  }, [data, pendingVehicleClient]);
   if (!data || !user) return null;
   if (kind === "funcionarios" && !canManage(user.role))
     return (
@@ -458,7 +475,23 @@ export function EntityPage({ kind }: { kind: Kind }) {
         </div>
       )}
       {!!edit && (
-        <EntityEditor kind={kind} record={edit} onClose={() => setEdit(null)} />
+        <EntityEditor
+          kind={kind}
+          record={edit}
+          onClose={() => setEdit(null)}
+          onSaveVehicleNext={kind === "clientes" ? (saved) => {
+            setEdit(null);
+            if (edit.id) {
+              setNestedEdit({ kind: "veiculos", record: { clienteId: edit.id } });
+            } else {
+              setPendingVehicleClient({
+                existingIds: data.clientes.map((c) => c.id),
+                nome: saved.nome,
+                telefone: saved.telefone.replace(/\\D/g, ""),
+              });
+            }
+          } : undefined}
+        />
       )}
       {!!nestedEdit && (
         <EntityEditor
@@ -714,12 +747,15 @@ function EntityEditor({
   kind,
   record,
   onClose,
+  onSaveVehicleNext,
 }: {
   kind: Kind;
   record: RecordValue;
   onClose: () => void;
+  onSaveVehicleNext?: (saved: RecordValue) => void;
 }) {
   const { data, user, mutate, busy } = useStore();
+  const [addVehicleNext, setAddVehicleNext] = useState(false);
   const defaults: Record<Kind, RecordValue> = {
     clientes: { nome: "", telefone: "", email: "", cpfCnpj: "", endereco: "" },
     veiculos: {
@@ -805,15 +841,17 @@ function EntityEditor({
         </DialogHeader>
         <form
           onSubmit={form.handleSubmit(async (values) => {
-            if (
-              await mutate({
-                entity: kind,
-                method: record.id ? "PATCH" : "POST",
-                id: record.id,
-                data: values,
-              })
-            )
-              onClose();
+            const saved = await mutate({
+              entity: kind,
+              method: record.id ? "PATCH" : "POST",
+              id: record.id,
+              data: values,
+            });
+            if (saved) {
+              if (kind === "clientes" && addVehicleNext && onSaveVehicleNext)
+                onSaveVehicleNext(values);
+              else onClose();
+            }
           })}
           className="space-y-5"
         >
@@ -826,6 +864,20 @@ function EntityEditor({
               </div>
               {input("email", "E-mail (opcional)", "email")}
               {input("endereco", "Endereço (opcional)")}
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-4">
+                <input
+                  type="checkbox"
+                  checked={addVehicleNext}
+                  onChange={(e) => setAddVehicleNext(e.target.checked)}
+                  className="mt-1 size-4 accent-yellow-500"
+                />
+                <span>
+                  <span className="flex items-center gap-2 text-sm font-semibold"><CarFront size={17}/> Cadastrar o carro em seguida</span>
+                  <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                    Depois de salvar o cliente, abriremos a ficha do veículo com o proprietário já selecionado.
+                  </span>
+                </span>
+              </label>
             </>
           )}
           {kind === "veiculos" && (
