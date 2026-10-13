@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         data:{
           clienteId:null,veiculoId:null,
           nomeCliente:values.nomeCliente,
-          telefoneCliente:values.telefoneCliente.startsWith("55")?values.telefoneCliente:"55"+values.telefoneCliente,
+          telefoneCliente:values.telefoneCliente.length >= 12?values.telefoneCliente:"55"+values.telefoneCliente,
           dataHora:start,fim:end,
           observacoes:values.observacoes,
           servicos:{create:services.map(s=>({servicoId:s.id}))},
