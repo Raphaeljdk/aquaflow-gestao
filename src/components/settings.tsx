@@ -147,11 +147,13 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
             </p>
             <div className="mb-7 flex flex-wrap items-center gap-5">
               <div className="flex size-20 items-center justify-center overflow-hidden rounded-2xl border border-border bg-accent">
-                <img
-                  src={values.logo || "/ducha-elitte-logo.jpg"}
-                  alt="Logo da empresa"
-                  className="size-full object-cover"
-                />
+                {values.logo || values.nome?.toLowerCase().startsWith("ducha elitte") ? (
+                  <img
+                    src={values.logo || "/ducha-elitte-logo.jpg"}
+                    alt="Logo da empresa"
+                    className="size-full object-contain bg-white p-1"
+                  />
+                ) : <Building2 size={30} className="text-muted-foreground" />}
               </div>
               <div>
                 <Label
