@@ -8,7 +8,7 @@ import { getSession, signIn } from "next-auth/react";
 import { useTheme } from "next-themes";
 import {
   ArrowRight, Eye, EyeOff, Loader2, ShieldCheck,
-  CarFront, Clock3, CheckCircle2, Moon, Sun, LockKeyhole,
+  CarFront, Clock3, CheckCircle2, Moon, Sun, LockKeyhole, MessageCircle,
 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
 import { Input } from "./ui/input";
@@ -157,6 +157,11 @@ export function Login() {
               {DEMO ? <ShieldCheck size={15} /> : <LockKeyhole size={15} />}
               {DEMO ? "Demonstração com dados fictícios" : "Ambiente protegido para sua equipe"}
             </div>
+          </div>
+          <div className="mt-5 text-center">
+            <Link href="/agendar" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
+              <MessageCircle size={17}/> Quero agendar uma lavagem <ArrowRight size={15}/>
+            </Link>
           </div>
           <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">Ducha Elitte · Tecnologia para uma operação melhor.</p>
         </div>
