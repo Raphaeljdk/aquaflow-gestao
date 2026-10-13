@@ -13,21 +13,17 @@ try {
     throw new Error("[qa-migrations] Banco incorreto: telefone de segurança não corresponde ao QA.");
   }
   console.log("[qa-migrations] Banco isolado confirmado.");
-  let tableExists = true;
-  try {
-    await prisma.solicitacaoEmpresa.count();
-  } catch (error) {
-    if (error?.code === "P2021") tableExists = false;
-    else throw error;
-  }
-  if (!tableExists) {
-    console.log("[qa-migrations] Preparando tabela para análise de cadastros.");
+  const migrationState = await prisma.$queryRawUnsafe(
+    "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='Comanda' AND column_name='telefoneCliente') AS ready"
+  );
+  if (!migrationState[0]?.ready) {
+    console.log("[qa-migrations] Aplicando migration aditiva de operações sem cadastro.");
     await prisma.$disconnect();
     execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
       stdio: "inherit", env: process.env,
     });
   } else {
-    console.log("[qa-migrations] Cadastro já preparado, sem novo bloqueio do banco.");
+    console.log("[qa-migrations] Operações sem cadastro já preparadas, sem novo bloqueio do banco.");
   }
 } finally {
   await prisma.$disconnect();
