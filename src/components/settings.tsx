@@ -183,7 +183,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                       f.setValue("logo", "", { shouldDirty: true })
                     }
                   >
-                    Restaurar logo oficial
+                    Usar logo padrão
                   </Button>
                 )}
               </div>
