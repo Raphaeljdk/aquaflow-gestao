@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { useActions } from "./layout/app-shell";
 import { ErrorText } from "./forms/order-form";
 export function Appointments() {
-  const { data, mutate, busy } = useStore(),
+  const { data, mutate, refresh, busy } = useStore(),
     actions = useActions(),
     [date, setDate] = useState(dayKey(new Date())),
     [open, setOpen] = useState(false),
@@ -282,9 +282,9 @@ export function Appointments() {
                             : "Cancelado"}
                       </span>
                     </div>
-                    <h3 className="mt-3 text-sm font-semibold">{c?.nome}</h3>
+                    <h3 className="mt-3 text-sm font-semibold">{a.nomeCliente || c?.nome || "Atendimento"}</h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {v?.marca} {v?.modelo} · {v?.placa}
+                      {v ? [v.marca,v.modelo,v.placa].filter(Boolean).join(" · ") : "Identificação do veículo na chegada"}
                     </p>
                     <p className="mt-3 text-xs">
                       {a.servicoIds
@@ -293,6 +293,13 @@ export function Appointments() {
                         )
                         .join(" + ")}
                     </p>
+                    {a.telefoneCliente && a.status === "AGENDADO" && (
+                      <a className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
+                        href={"https://wa.me/"+a.telefoneCliente.replace(/[^0-9]/g,"")+"?text="+encodeURIComponent("Olá, "+(a.nomeCliente||"")+"! Confirmando seu agendamento no lava-rápido.")}
+                        target="_blank" rel="noopener noreferrer">
+                        <MessageCircle size={14}/> WhatsApp do agendamento
+                      </a>
+                    )}
                     {a.observacoes && (
                       <p className="mt-2 text-xs text-muted-foreground">
                         {a.observacoes}
@@ -304,13 +311,22 @@ export function Appointments() {
                           size="sm"
                           className="flex-1 text-xs"
                           disabled={busy || date !== today}
-                          onClick={() =>
-                            void mutate({
-                              entity: "agendamentos",
-                              method: "PATCH",
-                              id: a.id,
-                              data: { action: "convert" },
-                            })
+                          onClick={async () => {
+                            if (a.clienteId) {
+                              await mutate({entity:"agendamentos",method:"PATCH",id:a.id,data:{action:"convert"}});
+                              return;
+                            }
+                            try {
+                              const res=await fetch("/api/agendamentos-rapidos/"+encodeURIComponent(a.id)+"/converter",{
+                                method:"POST",headers:{"Content-Type":"application/json"},
+                              });
+                              if (!res.ok) {
+                                const error=await res.json() as {error?:string};
+                                window.alert(error.error || "Não foi possível abrir a comanda.");
+                                return;
+                              }
+                              await refresh();
+                            } catch { window.alert("Falha de conexão. Tente novamente."); }
                           }
                         >
                           Abrir comanda
@@ -388,213 +404,106 @@ export function Appointments() {
   );
 }
 function AppointmentForm({
-  date,
-  preset,
-  onClose,
-}: {
-  date: string;
-  preset: string;
-  onClose: () => void;
-}) {
-  const { data, mutate, busy } = useStore(),
-    [day, setDay] = useState(date),
-    [time, setTime] = useState(preset);
-  const f = useForm<{
-    clienteId: string;
-    veiculoId: string;
-    dataHora: string;
-    servicoIds: string[];
-    observacoes: string;
-  }>({
-    resolver: zodResolver(agendamentoSchema),
-    defaultValues: {
-      clienteId: "",
-      veiculoId: "",
-      dataHora: preset ? fromLocal(date + "T" + preset) : "",
-      servicoIds: [],
-      observacoes: "",
-    },
-  });
-  const values = f.watch();
-  useEffect(() => {
-    if (day && time) f.setValue("dataHora", fromLocal(day + "T" + time));
-  }, [day, time, f]);
+  date, preset, onClose,
+}: { date: string; preset: string; onClose: () => void; }) {
+  const { data, refresh } = useStore();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [day, setDay] = useState(date);
+  const [time, setTime] = useState(preset);
+  const [services, setServices] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   if (!data) return null;
-  const minutes = values.servicoIds.reduce(
-    (sum, id) =>
-      sum + (data.servicos.find((s) => s.id === id)?.duracaoMin ?? 0),
-    0,
-  );
-  const min = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3)),
-    open = min(data.configuracao.abertura),
-    close = min(data.configuracao.fechamento);
-  const available = Array.from(
-    { length: Math.ceil((close - open) / data.configuracao.intervaloMin) },
-    (_, i) => open + i * data.configuracao.intervaloMin,
-  )
-    .filter((n) => n + Math.max(15, minutes) <= close)
-    .map(
-      (n) =>
-        String(Math.floor(n / 60)).padStart(2, "0") +
-        ":" +
-        String(n % 60).padStart(2, "0"),
-    )
-    .filter((t) => {
-      const start = new Date(fromLocal(day + "T" + t)),
-        end = new Date(start.getTime() + Math.max(15, minutes) * 60000);
-      return (
-        start > new Date() &&
-        data.configuracao.diasSemana.includes(
-          new Date(day + "T12:00:00").getDay(),
-        ) &&
-        !data.agendamentos.some(
-          (a) =>
-            a.status === "AGENDADO" &&
-            start < new Date(a.fim) &&
-            end > new Date(a.dataHora),
-        )
-      );
+  const minutes=services.reduce((sum,id)=>sum+(data.servicos.find(s=>s.id===id)?.duracaoMin??0),0);
+  const min=(h:string)=>Number(h.slice(0,2))*60+Number(h.slice(3));
+  const open=min(data.configuracao.abertura),close=min(data.configuracao.fechamento);
+  const available=Array.from({length:Math.ceil((close-open)/data.configuracao.intervaloMin)},(_,i)=>open+i*data.configuracao.intervaloMin)
+    .filter(n=>n+Math.max(15,minutes)<=close)
+    .map(n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0"))
+    .filter(t=>{
+      const start=new Date(fromLocal(day+"T"+t));
+      const end=new Date(start.getTime()+Math.max(15,minutes)*60000);
+      return start>new Date() &&
+        data.configuracao.diasSemana.includes(new Date(day+"T12:00:00").getDay()) &&
+        !data.agendamentos.some(a=>a.status==="AGENDADO" && start<new Date(a.fim) && end>new Date(a.dataHora));
     });
+  async function submit(event:React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if(saving)return;
+    setError("");setSaving(true);
+    try {
+      const res=await fetch("/api/agendamentos-rapidos",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          nomeCliente:name,telefoneCliente:phone,
+          dataHora:fromLocal(day+"T"+time),servicoIds:services,observacoes:notes,
+        }),
+      });
+      if(!res.ok){
+        const result=await res.json() as {error?:string};
+        setError(result.error||"Não foi possível reservar.");return;
+      }
+      await refresh();onClose();
+    }catch{setError("Falha de conexão. Verifique sua internet.");}
+    finally{setSaving(false);}
+  }
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[560px]">
+    <Dialog open onOpenChange={v=>!v&&onClose()}>
+      <DialogContent className="max-h-[92dvh] overflow-y-auto p-4 sm:max-w-[560px] sm:p-6">
         <DialogHeader>
           <DialogTitle>Novo agendamento</DialogTitle>
-          <DialogDescription>
-            O horário é reservado pela duração total dos serviços.
-          </DialogDescription>
+          <DialogDescription>Informe apenas o nome e WhatsApp para confirmar a lavagem. Nenhuma ficha de cliente será criada.</DialogDescription>
         </DialogHeader>
-        <form
-          className="space-y-5"
-          onSubmit={f.handleSubmit(async (v) => {
-            if (
-              await mutate({ entity: "agendamentos", method: "POST", data: v })
-            )
-              onClose();
-          })}
-        >
+        <form onSubmit={submit} className="space-y-5">
           <div className="space-y-2">
-            <Label>Cliente</Label>
-            <Controller
-              name="clienteId"
-              control={f.control}
-              render={({ field }) => (
-                <Picker
-                  value={field.value}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    f.setValue("veiculoId", "");
-                  }}
-                  options={data.clientes.map((c) => ({
-                    value: c.id,
-                    label: c.nome,
-                  }))}
-                  placeholder="Buscar cliente"
-                />
-              )}
-            />
-            <ErrorText message={f.formState.errors.clienteId?.message} />
+            <Label htmlFor="appointment-name">Nome do cliente</Label>
+            <Input id="appointment-name" required minLength={2} maxLength={120} value={name}
+              onChange={e=>setName(e.target.value)} placeholder="Nome de quem deseja agendar"
+              className="h-11 text-base sm:text-sm"/>
           </div>
           <div className="space-y-2">
-            <Label>Veículo</Label>
-            <Controller
-              name="veiculoId"
-              control={f.control}
-              render={({ field }) => (
-                <Choice
-                  value={field.value}
-                  onChange={field.onChange}
-                  options={data.veiculos
-                    .filter((v) => v.clienteId === values.clienteId)
-                    .map((v) => ({
-                      value: v.id,
-                      label: v.placa + " · " + v.modelo,
-                    }))}
-                  placeholder="Selecione o veículo"
-                />
-              )}
-            />
-            <ErrorText message={f.formState.errors.veiculoId?.message} />
+            <Label htmlFor="appointment-phone">WhatsApp com DDD (avisos do atendimento)</Label>
+            <Input id="appointment-phone" required type="tel" inputMode="tel"
+              autoComplete="tel" value={phone} maxLength={20}
+              onChange={e=>setPhone(e.target.value)} placeholder="(11) 99999-9999"
+              className="h-11 text-base sm:text-sm"/>
           </div>
           <div className="space-y-2">
             <Label>Serviços</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {data.servicos
-                .filter((s) => s.ativo)
-                .map((s) => (
-                  <label
-                    className="flex items-center gap-2 rounded-lg border border-border p-3 text-xs"
-                    key={s.id}
-                  >
-                    <Checkbox
-                      checked={values.servicoIds.includes(s.id)}
-                      onCheckedChange={(v) =>
-                        f.setValue(
-                          "servicoIds",
-                          v
-                            ? [...values.servicoIds, s.id]
-                            : values.servicoIds.filter((id) => id !== s.id),
-                        )
-                      }
-                    />
-                    {s.nome}
-                    <span className="ml-auto text-muted-foreground">
-                      {s.duracaoMin}m
-                    </span>
-                  </label>
-                ))}
+              {data.servicos.filter(s=>s.ativo).map(s=><label key={s.id}
+                className="flex items-center gap-2 rounded-lg border border-border p-3 text-xs">
+                <Checkbox checked={services.includes(s.id)}
+                  onCheckedChange={checked=>setServices(old=>checked?[...old,s.id]:old.filter(id=>id!==s.id))}/>
+                {s.nome}<span className="ml-auto text-muted-foreground">{s.duracaoMin}m</span>
+              </label>)}
             </div>
-            <ErrorText message={f.formState.errors.servicoIds?.message} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="booking-day">Data</Label>
-              <Input
-                id="booking-day"
-                type="date"
-                min={dayKey(new Date())}
-                value={day}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setDay(e.target.value);
-                    setTime("");
-                    f.setValue("dataHora", "");
-                  }
-                }}
-              />
+              <Label htmlFor="appointment-day">Data</Label>
+              <Input id="appointment-day" type="date" min={dayKey(new Date())}
+                value={day} onChange={e=>{if(e.target.value){setDay(e.target.value);setTime("");}}}/>
             </div>
             <div className="space-y-2">
               <Label>Horário</Label>
-              <Choice
-                value={time}
-                onChange={setTime}
-                options={available.map((value) => ({ value, label: value }))}
-                placeholder={available.length ? "Selecione" : "Sem horários"}
-              />
-              <ErrorText message={f.formState.errors.dataHora?.message} />
+              <Choice value={time} onChange={setTime}
+                options={available.map(value=>({value,label:value}))}
+                placeholder={available.length?"Selecione":"Sem horários"}/>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {minutes} minutos estimados ·{" "}
-            {money(
-              values.servicoIds.reduce(
-                (n, id) =>
-                  n + (data.servicos.find((s) => s.id === id)?.preco ?? 0),
-                0,
-              ),
-            )}
-          </p>
+          <p className="text-xs text-muted-foreground">{minutes} minutos estimados · {money(services.reduce((sum,id)=>sum+(data.servicos.find(s=>s.id===id)?.preco??0),0))}</p>
           <div className="space-y-2">
-            <Label htmlFor="booking-notes">Observações</Label>
-            <Textarea id="booking-notes" {...f.register("observacoes")} />
+            <Label htmlFor="appointment-notes">Observações (opcional)</Label>
+            <Textarea id="appointment-notes" maxLength={1000} value={notes} onChange={e=>setNotes(e.target.value)}/>
           </div>
+          {error&&<p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={busy || !available.includes(time)}>
-              {busy && <Loader2 className="animate-spin" size={15} />}Confirmar
-              agendamento
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" disabled={saving||!services.length||!available.includes(time)}>
+              {saving&&<Loader2 className="animate-spin" size={15}/>} Confirmar agendamento
             </Button>
           </div>
         </form>
