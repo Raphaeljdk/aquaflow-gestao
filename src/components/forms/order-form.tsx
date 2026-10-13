@@ -49,6 +49,7 @@ import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
 import { pixPayload } from "@/lib/pix";
+import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 type OrderValues = {
   clienteId: string;
   veiculoId: string;
