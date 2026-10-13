@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
+type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
   id: string; nomeEmpresa: string; nomeResponsavel: string; email: string;
   whatsapp: string; cidade: string; mensagem: string; status: Status;
@@ -11,6 +12,7 @@ type Request = {
 const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em análise",APROVADO:"Aprovada",REJEITADO:"Rejeitada"};
 export function PlatformDashboard() {
   const [requests,setRequests] = useState<Request[]>([]);
+  const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState("");
@@ -21,6 +23,11 @@ export function PlatformDashboard() {
       if(!res.ok)throw new Error(res.status===403?"Acesso restrito ao administrador central.":"Não foi possível carregar as solicitações.");
       const body=await res.json() as {solicitacoes:Request[]};
       setRequests(body.solicitacoes);
+      const usersRes = await fetch("/api/plataforma/usuarios",{cache:"no-store"});
+      if (usersRes.ok) {
+        const usersBody = await usersRes.json() as {usuarios:Account[]};
+        setAccounts(usersBody.usuarios);
+      }
     }catch(e){setError(e instanceof Error?e.message:"Erro ao carregar.");}
     finally{setLoading(false);}
   },[]);
@@ -36,6 +43,19 @@ export function PlatformDashboard() {
       await load();
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setBusy(null);}
+  }
+  async function toggleAccount(account: Account) {
+    setBusy(account.id); setError("");
+    try {
+      const res = await fetch("/api/plataforma/usuarios/" + encodeURIComponent(account.id), {
+        method:"PATCH",headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ativo: !account.ativo}),
+      });
+      const data = await res.json() as {error?:string};
+      if (!res.ok) throw new Error(data.error || "Não foi possível alterar o acesso.");
+      await load();
+    } catch(e) {setError(e instanceof Error?e.message:"Não foi possível atualizar a conta.");}
+    finally {setBusy(null);}
   }
   return <main className="min-h-dvh bg-background text-foreground">
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -84,6 +104,32 @@ export function PlatformDashboard() {
           </div>
         </article>)}
       </div>
+      <section className="mt-12 border-t border-border pt-8">
+        <h2 className="text-2xl font-bold">Logins existentes nesta instância</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Controle inicial de acessos. A administração de logins de vários estabelecimentos só estará disponível após a implementação do isolamento multiempresa.
+        </p>
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-border bg-card">
+          <table className="w-full min-w-[650px] text-left text-sm">
+            <thead className="bg-muted text-muted-foreground">
+              <tr><th className="p-4">Usuário</th><th className="p-4">Perfil</th><th className="p-4">Situação</th><th className="p-4">Ação</th></tr>
+            </thead>
+            <tbody>
+              {accounts.map(account=><tr key={account.id} className="border-t border-border">
+                <td className="p-4"><p className="font-semibold">{account.name}</p><p className="mt-1 text-xs text-muted-foreground">{account.email}</p></td>
+                <td className="p-4">{account.role}</td>
+                <td className="p-4">{account.ativo?"Ativo":"Desativado"}</td>
+                <td className="p-4">
+                  <button type="button" onClick={()=>void toggleAccount(account)} disabled={busy===account.id || account.email.toLowerCase()==="plataforma@duchaelitte.com.br"}
+                    className="rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40">
+                    {account.ativo?"Desativar acesso":"Reativar acesso"}
+                  </button>
+                </td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </main>;
 }
