@@ -98,11 +98,15 @@ model Funcionario {
 }
 model Comanda {
   id String @id @default(cuid())
+  nomeCliente String @default("")
+  telefoneCliente String @default("")
+  placa String @default("")
+  tipoVeiculo TipoVeiculo?
   numero Int @unique @default(autoincrement())
-  clienteId String
-  cliente Cliente @relation(fields:[clienteId],references:[id],onDelete:Restrict)
-  veiculoId String
-  veiculo Veiculo @relation(fields:[veiculoId],references:[id],onDelete:Restrict)
+  clienteId String?
+  cliente Cliente? @relation(fields:[clienteId],references:[id],onDelete:Restrict)
+  veiculoId String?
+  veiculo Veiculo? @relation(fields:[veiculoId],references:[id],onDelete:Restrict)
   status StatusComanda @default(AGUARDANDO)
   total Decimal @db.Decimal(12,2)
   desconto Decimal @default(0) @db.Decimal(12,2)
@@ -136,10 +140,14 @@ model ItemComanda {
 }
 model Agendamento {
   id String @id @default(cuid())
-  clienteId String
-  cliente Cliente @relation(fields:[clienteId],references:[id],onDelete:Restrict)
-  veiculoId String
-  veiculo Veiculo @relation(fields:[veiculoId],references:[id],onDelete:Restrict)
+  nomeCliente String @default("")
+  telefoneCliente String @default("")
+  placa String @default("")
+  tipoVeiculo TipoVeiculo?
+  clienteId String?
+  cliente Cliente? @relation(fields:[clienteId],references:[id],onDelete:Restrict)
+  veiculoId String?
+  veiculo Veiculo? @relation(fields:[veiculoId],references:[id],onDelete:Restrict)
   dataHora DateTime @db.Timestamptz(3)
   fim DateTime @db.Timestamptz(3)
   status StatusAgendamento @default(AGENDADO)
