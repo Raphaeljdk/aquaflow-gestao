@@ -4,6 +4,7 @@ import { atendimentoRapidoSchema } from "../src/lib/atendimento-rapido";
 
 const form = {
   nomeCliente: "Maria Oliveira",
+  telefoneCliente: "(11) 99999-9999",
   placa: "abc1d23",
   tipo: "CARRO",
   servicoIds: ["lavagem-simples"],
