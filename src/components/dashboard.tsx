@@ -521,7 +521,7 @@ export function Dashboard() {
                         {dateLabel(a.dataHora, "HH:mm")}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{(o.nomeCliente || c?.nome || "Atendimento")}</p>
+                        <p className="text-sm font-semibold">{(a.nomeCliente || c?.nome || "Agendamento")}</p>
                         <p className="mt-1 truncate text-xs text-muted-foreground">
                           {v?.modelo} ·{" "}
                           {
