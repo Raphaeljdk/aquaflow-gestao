@@ -7,6 +7,10 @@ import {
   Clock3,
   Upload,
   Loader2,
+  MessageCircle,
+  ExternalLink,
+  Copy,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/hooks/use-store";
@@ -20,6 +24,7 @@ import { configuracaoSchema } from "@/lib/validations";
 import { ErrorText } from "./forms/order-form";
 import type { Configuracao } from "@/types";
 import { canManage } from "@/lib/permissions";
+import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 export function Settings() {
   const { data, user } = useStore();
   if (!data || !user) return null;
@@ -63,6 +68,8 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
       f.setValue(field, String(reader.result), { shouldDirty: true });
     reader.readAsDataURL(file);
   }
+  const whatsappReady = Boolean(normalizeWhatsappPhone(values.telefone));
+  const bookingUrl = "/agendar";
   return (
     <form
       onSubmit={f.handleSubmit(async (v) => {
@@ -86,6 +93,42 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           Salvar alterações
         </Button>
       </PageTitle>
+      <section className="panel mb-6 max-w-3xl space-y-4 p-4 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Primeiros passos</p>
+            <h2 className="mt-1 text-xl font-bold">Personalize seu lava-rápido</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cada proprietário pode configurar estes dados diretamente, sem solicitar alterações ao desenvolvedor.
+            </p>
+          </div>
+          <span className="rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-semibold">
+            {whatsappReady ? "WhatsApp configurado" : "Configure o WhatsApp"}
+          </span>
+        </div>
+        <div className="grid gap-3 text-sm sm:grid-cols-2">
+          <span className="flex items-center gap-2"><CheckCircle2 className="shrink-0 text-primary" size={17}/> Nome e identidade do estabelecimento</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="shrink-0 text-primary" size={17}/> Telefone de agendamentos</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="shrink-0 text-primary" size={17}/> Horários de funcionamento</span>
+          <span className="flex items-center gap-2"><CheckCircle2 className="shrink-0 text-primary" size={17}/> Configuração PIX (opcional)</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+          <Button type="button" variant="outline" size="sm" disabled={!whatsappReady}
+            onClick={() => {
+              void navigator.clipboard.writeText(window.location.origin + bookingUrl)
+                .then(() => toast.success("Link de agendamento copiado."))
+                .catch(() => toast.error("Não foi possível copiar o link."));
+            }}>
+            <Copy size={15}/> Copiar link para clientes
+          </Button>
+          <Button type="button" variant="outline" size="sm" asChild>
+            <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={15}/> Ver página de agendamento
+            </a>
+          </Button>
+          {!whatsappReady && <p className="w-full text-xs text-muted-foreground">Preencha e salve o WhatsApp abaixo para ativar o link de agendamento.</p>}
+        </div>
+      </section>
       <Tabs defaultValue="empresa">
         <TabsList className="mb-6">
           <TabsTrigger value="empresa" className="gap-2">
@@ -150,8 +193,9 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               {input("nome", "Nome da empresa")}
               <div className="grid gap-5 sm:grid-cols-2">
                 {input("cnpj", "CNPJ")}
-                {input("telefone", "Telefone", "tel")}
+                {input("telefone", "WhatsApp de agendamentos (com DDD)", "tel")}
               </div>
+              <p className="-mt-3 text-xs text-muted-foreground">Ex.: +55 11 99200-3650. O número será usado na página pública de agendamentos por WhatsApp.</p>
               {input("endereco", "Endereço")}
               <div className="border-t border-border pt-5">
                 <Label>QR Code PIX</Label>
