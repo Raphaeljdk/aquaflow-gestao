@@ -195,3 +195,30 @@ model MovimentoEstoque {
   createdAt DateTime @default(now())
   @@index([materialId,createdAt])
 }
+
+enum StatusSolicitacaoEmpresa {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  REJEITADO
+}
+
+model SolicitacaoEmpresa {
+  id String @id @default(cuid())
+  nomeEmpresa String
+  nomeResponsavel String
+  email String @unique
+  whatsapp String
+  cidade String
+  mensagem String @default("")
+  status StatusSolicitacaoEmpresa @default(PENDENTE)
+  origemHash String
+  consentimentoEm DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  revisadoEm DateTime?
+  revisadoPor String?
+  observacoesInternas String @default("")
+  @@index([status, createdAt])
+  @@index([origemHash, createdAt])
+}
