@@ -132,14 +132,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="px-6 pb-8 pt-8">
             <Link href="/clientes" className="flex items-center gap-3">
               <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-                <img
-                  src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
-                  alt="Ducha Elitte"
-                  className="size-full object-contain bg-white p-1"
-                />
+                {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
+                  <img
+                    src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
+                    alt={title}
+                    className="size-full object-contain bg-white p-1"
+                  />
+                ) : (
+                  <div className="flex size-full items-center justify-center text-slate-800">
+                    <Building2 size={24} />
+                  </div>
+                )}
               </div>
-              <span className="text-[19px] font-black tracking-[-.6px] text-sidebar-foreground">
-                Ducha <span className="text-primary">Elitte</span>
+              <span className="min-w-0 truncate text-[18px] font-black tracking-[-.6px] text-sidebar-foreground">
+                {title}
               </span>
             </Link>
           </SidebarHeader>

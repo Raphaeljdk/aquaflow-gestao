@@ -29,6 +29,9 @@ const expectedMigrations = [
   "202609280003_funcionario_defaults",
 ];
 
+if (process.env.QA_EXPECTED_WHATSAPP)
+  expectedMigrations.push("202610130001_solicitacoes_empresa");
+
 const fail = (message) => {
   throw new Error("[delivery-check] " + message);
 };
@@ -85,6 +88,13 @@ try {
   ]);
 
   if (!config) fail("configuração da empresa ausente.");
+  // Guardião específico da branch de QA: falha o build se o Preview usar outro banco.
+  if (process.env.QA_EXPECTED_WHATSAPP) {
+    const actualNumber = (config.telefone ?? "").replace(/[^0-9]/g, "");
+    if (actualNumber !== process.env.QA_EXPECTED_WHATSAPP)
+      fail("banco de QA incorreto: WhatsApp de agendamento não confere.");
+    console.log("[delivery-check] banco de QA confirmado pelo contato configurado");
+  }
   if (config.timezone !== "America/Sao_Paulo")
     fail("timezone da empresa diferente de America/Sao_Paulo.");
   // Sem QR real, o painel é acessível; a interface não deve oferecer PIX até ser configurado.

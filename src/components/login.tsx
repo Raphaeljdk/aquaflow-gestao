@@ -8,7 +8,7 @@ import { getSession, signIn } from "next-auth/react";
 import { useTheme } from "next-themes";
 import {
   ArrowRight, Eye, EyeOff, Loader2, ShieldCheck,
-  CarFront, Clock3, CheckCircle2, Moon, Sun, LockKeyhole,
+  CarFront, Clock3, CheckCircle2, Moon, Sun, LockKeyhole, MessageCircle,
 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
 import { Input } from "./ui/input";
@@ -22,9 +22,20 @@ export function Login() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [branding, setBranding] = useState<{ empresa: string; logo: string | null } | null>(null);
   const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/public/contato", { cache: "no-store", signal: controller.signal })
+      .then((r) => r.ok ? r.json() as Promise<{ empresa: string; logo: string | null }> : null)
+      .then((brand) => { if (brand) setBranding(brand); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  const companyName = branding?.empresa || "Ducha Elitte";
+  const companyLogo = branding?.logo || (companyName.toLowerCase().startsWith("ducha elitte") ? "/ducha-elitte-logo.jpg" : null);
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -40,7 +51,8 @@ export function Login() {
         return;
       }
       const session = await getSession();
-      window.location.assign(session?.user?.role === "ADMIN" ? "/dashboard" : "/clientes");
+      const platform = await fetch("/api/plataforma/me", { cache:"no-store" }).then(r=>r.json() as Promise<{platformAdmin:boolean}>).catch(()=>({platformAdmin:false}));
+      window.location.assign(platform.platformAdmin ? "/plataforma" : session?.user?.role === "ADMIN" ? "/dashboard" : "/clientes");
     } catch {
       setError("Não foi possível conectar ao sistema. Tente novamente.");
     } finally {
@@ -54,7 +66,7 @@ export function Login() {
         <div aria-hidden="true" className="pointer-events-none absolute -right-48 top-1/4 size-[570px] rounded-full bg-[#2c4660]/20 blur-[100px]" />
         <div aria-hidden="true" className="pointer-events-none absolute -left-32 bottom-[-170px] size-[400px] rounded-full bg-[#facc15]/10 blur-[90px]" />
         <Link href="/login" className="relative inline-flex w-fit rounded-2xl border border-white/15 bg-white p-2 shadow-2xl shadow-black/30">
-          <img src="/ducha-elitte-logo.jpg" alt="Ducha Elitte Lava Rápido" className="h-24 w-56 rounded-lg object-contain" />
+          {companyLogo ? <img src={companyLogo} alt={companyName} className="h-24 w-56 rounded-lg object-contain" /> : <div className="flex h-24 w-56 items-center justify-center gap-2 text-xl font-bold text-slate-900"><CarFront size={26}/>{companyName}</div>}
         </Link>
         <div className="relative max-w-lg py-16">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#facc15]/20 bg-[#facc15]/10 px-4 py-2 text-xs font-bold uppercase tracking-[.17em] text-[#fde68a]">
@@ -84,14 +96,14 @@ export function Login() {
           </div>
         </div>
         <div className="relative flex items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-white/45">
-          <span>© {new Date().getFullYear()} Ducha Elitte</span>
+          <span>© {new Date().getFullYear()} {companyName}</span>
           <span>Mais cuidado. Menos complicação.</span>
         </div>
       </section>
 
       <section className="relative flex min-h-dvh flex-col bg-background px-4 py-6 sm:px-8 sm:py-9 lg:px-12 xl:px-20">
         <div className="flex w-full items-center justify-between gap-3">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-muted-foreground">Ducha Elitte • Gestão</p>
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-muted-foreground">{companyName} • Gestão</p>
           <Button type="button" variant="outline" size="sm"
             aria-label={mounted && resolvedTheme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
@@ -105,7 +117,7 @@ export function Login() {
           <div className="rounded-[28px] border border-border bg-card p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,.35)] sm:p-9">
             <div className="mb-8 flex justify-center">
               <div className="flex w-full max-w-[330px] justify-center rounded-2xl border border-border bg-white p-3 shadow-sm">
-                <img src="/ducha-elitte-logo.jpg" alt="Logo completa da Ducha Elitte" className="h-28 w-full rounded-lg object-contain sm:h-32" />
+                {companyLogo ? <img src={companyLogo} alt={companyName} className="h-28 w-full rounded-lg object-contain sm:h-32" /> : <div className="flex h-28 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900 sm:h-32"><CarFront size={28}/>{companyName}</div>}
               </div>
             </div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground">Portal da equipe</p>
@@ -150,7 +162,7 @@ export function Login() {
                 <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-sm font-bold shadow-md shadow-primary/10">
                   {pending ? <><Loader2 className="animate-spin" size={17} /> Entrando...</> : <>Entrar no sistema <ArrowRight size={18} /></>}
                 </Button>
-                <p className="text-center text-xs leading-5 text-muted-foreground">Precisa de acesso? Fale com o administrador da Ducha Elitte.</p>
+                <p className="text-center text-xs leading-5 text-muted-foreground">Precisa de acesso? Fale com o administrador do estabelecimento.</p>
               </form>
             )}
             <div className="mt-8 flex items-center justify-center gap-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
@@ -158,7 +170,17 @@ export function Login() {
               {DEMO ? "Demonstração com dados fictícios" : "Ambiente protegido para sua equipe"}
             </div>
           </div>
-          <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">Ducha Elitte · Tecnologia para uma operação melhor.</p>
+          <div className="mt-5 text-center">
+            <Link href="/agendar" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
+              <MessageCircle size={17}/> Quero agendar uma lavagem <ArrowRight size={15}/>
+            </Link>
+            <div className="mt-3">
+              <Link href="/cadastrar-lava-rapido" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
+                Tenho um lava-rápido · Solicitar cadastro <ArrowRight size={15}/>
+              </Link>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">{companyName} · Tecnologia para uma operação melhor.</p>
         </div>
       </section>
     </main>
