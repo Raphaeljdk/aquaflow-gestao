@@ -20,3 +20,27 @@ execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate",
   stdio: "inherit",
   env: process.env,
 });
+// Conta central exclusiva de QA, nunca criada a partir de uma solicitação pública.
+const { hash, compare } = await import("bcryptjs");
+const adminEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+const adminPassword = process.env.PLATFORM_ADMIN_PASSWORD;
+if (!adminEmail || !adminPassword || adminPassword.length < 16)
+  throw new Error("[qa-migrations] Credenciais de administração central ausentes ou inseguras.");
+const db = new PrismaClient();
+try {
+  const existing = await db.user.findUnique({ where: { email: adminEmail } });
+  if (!existing) {
+    await db.user.create({
+      data: {
+        name: "Administrador da Plataforma",
+        email: adminEmail, password: await hash(adminPassword, 12),
+        role: "ADMIN", ativo: true,
+      },
+    });
+  } else if (existing.role !== "ADMIN" || !existing.ativo || !(await compare(adminPassword, existing.password))) {
+    throw new Error("[qa-migrations] Conta central divergente, ajuste necessário.");
+  }
+  console.log("[qa-migrations] Administrador central QA validado.");
+} finally {
+  await db.$disconnect();
+}
