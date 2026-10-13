@@ -12,6 +12,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { PageTitle, Picker, Choice, Empty } from "./common";
@@ -91,6 +92,18 @@ export function Appointments() {
         }}
         actionLabel="Novo agendamento"
       />
+      <div className="panel mb-5 flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <MessageCircle size={22} className="mt-0.5 shrink-0 text-primary" />
+          <div>
+            <p className="font-semibold">Receber pedidos pelo WhatsApp</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compartilhe a página pública com seus clientes. A equipe confirma o horário antes de registrar na agenda.</p>
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <a href="/agendar" target="_blank" rel="noopener noreferrer">Página de agendamento <ArrowRight size={15}/></a>
+        </Button>
+      </div>
       <div className="panel mb-5 p-5">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
