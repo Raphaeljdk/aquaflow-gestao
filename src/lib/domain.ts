@@ -232,6 +232,13 @@ export function applyMutation(
       o.pagoEm = now.toISOString();
     }
     o.status = v.status;
+    // Contato só é necessário enquanto o atendimento está em andamento.
+    // O financeiro, itens e valores permanecem no histórico após a entrega.
+    if (v.status === "ENTREGUE" || v.status === "CANCELADO") {
+      o.nomeCliente = "";
+      o.telefoneCliente = "";
+      o.placa = "";
+    }
     return d;
   }
   if (m.entity === "agendamentos") {
@@ -245,6 +252,9 @@ export function applyMutation(
       need(a.status === "AGENDADO", "Agendamento já processado.", 409);
       if (input.status === "CANCELADO") {
         a.status = "CANCELADO";
+        a.nomeCliente = "";
+        a.telefoneCliente = "";
+        a.placa = "";
         return d;
       }
       need(input.action === "convert", "Ação inválida.");
