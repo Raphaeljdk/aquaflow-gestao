@@ -479,21 +479,29 @@ export function OrderDetail({
                   <CarFront size={30} className="text-primary" />
                   <div>
                     <h3 className="font-semibold">
-                      {v?.marca} {v?.modelo}
+                      {v ? [v.marca, v.modelo].join(" ") : o.tipoVeiculo === "MOTO" ? "Moto" : o.tipoVeiculo === "CAMINHONETE" ? "Caminhonete" : "Carro"}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {v?.cor} · {v?.ano}
+                      {v ? [v.cor, v.ano].join(" · ") : "Identificado na chegada"}
                     </p>
                   </div>
                 </div>
-                <span className="plate">{v?.placa}</span>
+                <span className="plate">{o.placa || v?.placa || "Sem placa"}</span>
                 <p className="mt-4 border-t border-border pt-3 text-sm">
-                  {c?.nome}
+                  {o.nomeCliente || c?.nome || "Atendimento"}
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    {c?.telefone}
+                    {o.telefoneCliente || c?.telefone || "Contato encerrado"}
                   </span>
                 </p>
               </div>
+              {o.status === "FINALIZADO" && (o.telefoneCliente || c?.telefone) && (
+                <a className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"
+                  href={"https://wa.me/" + (o.telefoneCliente || c?.telefone || "").replace(/[^0-9]/g,"").replace(/^(?!55)/,"55") +
+                    "?text=" + encodeURIComponent("Olá, " + (o.nomeCliente || c?.nome || "") + "! Sua lavagem está pronta. Você já pode retirar seu veículo.")}
+                  target="_blank" rel="noopener noreferrer">
+                  <span>Avisar pelo WhatsApp: lavagem pronta</span><ArrowRight size={15}/>
+                </a>
+              )}
               <div>
                 <h3 className="mb-3 text-sm font-semibold">Serviços</h3>
                 {o.itens.map((i, n) => (
