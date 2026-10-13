@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
@@ -67,7 +67,7 @@ export function PlatformDashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={()=>void load()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold"><RefreshCw size={16}/> Atualizar</button>
-          <Link href="/login" className="inline-flex h-10 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold">Voltar ao login</Link>
+          <button type="button" onClick={() => void signOut({ callbackUrl: "/login" })} className="inline-flex h-10 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold">Sair com segurança</button>
         </div>
       </header>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
