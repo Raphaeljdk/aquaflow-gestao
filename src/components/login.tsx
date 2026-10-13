@@ -65,8 +65,10 @@ export function Login() {
       <section className="relative hidden min-h-dvh flex-col justify-between overflow-hidden bg-[#080e16] px-10 py-12 text-white lg:flex xl:px-16 xl:py-14">
         <div aria-hidden="true" className="pointer-events-none absolute -right-48 top-1/4 size-[570px] rounded-full bg-[#2c4660]/20 blur-[100px]" />
         <div aria-hidden="true" className="pointer-events-none absolute -left-32 bottom-[-170px] size-[400px] rounded-full bg-[#facc15]/10 blur-[90px]" />
-        <Link href="/login" className="relative inline-flex w-fit rounded-2xl border border-white/15 bg-white p-2 shadow-2xl shadow-black/30">
-          {companyLogo ? <img src={companyLogo} alt={companyName} className="h-24 w-56 rounded-lg object-contain" /> : <div className="flex h-24 w-56 items-center justify-center gap-2 text-xl font-bold text-slate-900"><CarFront size={26}/>{companyName}</div>}
+        <Link href="/login" aria-label={companyName + " · início"}
+          className="relative inline-flex max-w-full items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[.06] px-4 py-3 backdrop-blur-sm">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#facc15] text-[#101820]"><CarFront size={25}/></span>
+          <span className="truncate text-base font-bold tracking-tight text-white">{companyName}</span>
         </Link>
         <div className="relative max-w-lg py-16">
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#facc15]/20 bg-[#facc15]/10 px-4 py-2 text-xs font-bold uppercase tracking-[.17em] text-[#fde68a]">
@@ -116,8 +118,8 @@ export function Login() {
         <div className="mx-auto flex w-full max-w-[450px] flex-1 flex-col justify-center py-10 sm:py-14">
           <div className="rounded-[28px] border border-border bg-card p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,.35)] sm:p-9">
             <div className="mb-8 flex justify-center">
-              <div className="flex w-full max-w-[330px] justify-center rounded-2xl border border-border bg-white p-3 shadow-sm">
-                {companyLogo ? <img src={companyLogo} alt={companyName} className="h-28 w-full rounded-lg object-contain sm:h-32" /> : <div className="flex h-28 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900 sm:h-32"><CarFront size={28}/>{companyName}</div>}
+              <div className="flex w-full max-w-[380px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-sm sm:p-3">
+                {companyLogo ? <img src={companyLogo} alt={"Logo completa de " + companyName} className="block h-auto max-h-44 w-full object-contain" /> : <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900"><CarFront size={30}/>{companyName}</div>}
               </div>
             </div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground">Portal da equipe</p>
