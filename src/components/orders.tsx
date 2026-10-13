@@ -49,7 +49,7 @@ export function Orders() {
             ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status)
           : o.status === status) &&
         (!q ||
-          [c?.nome, v?.placa, v?.modelo, String(o.numero)].some((x) =>
+          [(o.nomeCliente || c?.nome || "Atendimento"), (o.placa || v?.placa || ""), v?.modelo, String(o.numero)].some((x) =>
             x?.toLowerCase().includes(q),
           ))
       );
@@ -136,9 +136,9 @@ export function Orders() {
                         <p className="mb-1.5 text-sm">
                           {v?.marca} {v?.modelo}
                         </p>
-                        <span className="plate">{v?.placa}</span>
+                        <span className="plate">{(o.placa || v?.placa || "")}</span>
                       </TableCell>
-                      <TableCell className="text-sm">{c?.nome}</TableCell>
+                      <TableCell className="text-sm">{(o.nomeCliente || c?.nome || "Atendimento")}</TableCell>
                       <TableCell>
                         <StatusBadge status={o.status} />
                       </TableCell>
@@ -217,13 +217,13 @@ export function Orders() {
                               <span className="text-xs text-muted-foreground">
                                 #{o.numero}
                               </span>
-                              <span className="plate">{v?.placa}</span>
+                              <span className="plate">{(o.placa || v?.placa || "")}</span>
                             </div>
                             <p className="mt-4 font-semibold">
                               {v?.marca} {v?.modelo}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {c?.nome}
+                              {(o.nomeCliente || c?.nome || "Atendimento")}
                             </p>
                             <p className="my-4 text-sm">
                               {o.itens.map((i) => i.nome).join(" + ")}
