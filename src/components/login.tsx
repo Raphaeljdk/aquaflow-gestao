@@ -52,7 +52,7 @@ export function Login() {
       }
       const session = await getSession();
       const platform = await fetch("/api/plataforma/me", { cache:"no-store" }).then(r=>r.json() as Promise<{platformAdmin:boolean}>).catch(()=>({platformAdmin:false}));
-      window.location.assign(platform.platformAdmin ? "/plataforma" : session?.user?.role === "ADMIN" ? "/dashboard" : "/clientes");
+      window.location.assign(platform.platformAdmin ? "/plataforma" : session?.user?.role === "ADMIN" ? "/dashboard" : "/comandas");
     } catch {
       setError("Não foi possível conectar ao sistema. Tente novamente.");
     } finally {
