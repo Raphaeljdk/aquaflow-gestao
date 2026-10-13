@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const page = path.split("/")[1] || "dashboard";
     const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
     if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
-      router.replace("/clientes");
+      router.replace("/comandas");
   }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <WebMCPTools />
         <Sidebar className="border-r border-border" collapsible="offcanvas">
           <SidebarHeader className="px-6 pb-8 pt-8">
-            <Link href="/clientes" className="flex items-center gap-3">
+            <Link href="/comandas" className="flex items-center gap-3">
               <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
                 {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
                   <img
@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenu className="gap-1">
                 {links
                   .slice(0, 4)
-                  .filter((l) => allowed.includes(l.path))
+                  .filter((l) => l.path !== "clientes" && allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
                       <SidebarMenuButton
@@ -271,19 +271,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Plus size={16} />
                 <span className="hidden sm:inline">Receber veículo</span>
                 <span className="sm:hidden">Receber</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-9 gap-2 text-muted-foreground"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search size={16} />
-                <span className="hidden text-xs lg:inline">
-                  Buscar cliente ou placa
-                </span>
-                <kbd className="ml-6 hidden rounded border border-border px-1.5 text-xs lg:inline">
-                  ⌘ K
-                </kbd>
               </Button>
               <div className="h-5 border-l border-border" />
               <Button
