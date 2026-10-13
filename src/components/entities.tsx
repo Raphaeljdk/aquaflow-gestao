@@ -487,7 +487,7 @@ export function EntityPage({ kind }: { kind: Kind }) {
               setPendingVehicleClient({
                 existingIds: data.clientes.map((c) => c.id),
                 nome: saved.nome,
-                telefone: saved.telefone.replace(/\\D/g, ""),
+                telefone: saved.telefone.replace(/[^0-9]/g, ""),
               });
             }
           } : undefined}
