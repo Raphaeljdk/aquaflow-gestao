@@ -260,6 +260,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex items-center gap-1 sm:gap-4">
               <Button
+                type="button"
+                size="sm"
+                className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
+                onClick={() => {
+                  setOrderClientId(undefined);
+                  setOrderOpen(true);
+                }}
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Receber veículo</span>
+                <span className="sm:hidden">Receber</span>
+              </Button>
+              <Button
                 variant="ghost"
                 className="h-9 gap-2 text-muted-foreground"
                 onClick={() => setSearchOpen(true)}

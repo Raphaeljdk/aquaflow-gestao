@@ -66,7 +66,11 @@ export function OrderForm({
   initialClientId?: string;
   onClose: () => void;
 }) {
-  const { data, busy, mutate } = useStore();
+  const { data, busy, mutate, refresh } = useStore();
+  const [mode, setMode] = useState<"rapido" | "cadastrado">("rapido");
+  const [quick, setQuick] = useState({ nomeCliente: "", placa: "", tipo: "CARRO" });
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickError, setQuickError] = useState("");
   const form = useForm<OrderValues>({
     resolver: zodResolver(comandaSchema),
     defaultValues: {
@@ -78,6 +82,12 @@ export function OrderForm({
       observacoes: "",
     },
   });
+  useEffect(() => {
+    if (!open) return;
+    setMode(initialClientId ? "cadastrado" : "rapido");
+    setQuick({ nomeCliente: "", placa: "", tipo: "CARRO" });
+    setQuickError("");
+  }, [open, initialClientId]);
   useEffect(() => {
     if (!open) return;
     const firstVehicle =
@@ -103,6 +113,43 @@ export function OrderForm({
     if (await mutate({ entity: "comandas", method: "POST", data: values }))
       onClose();
   });
+  async function submitQuick() {
+    if (quickBusy) return;
+    setQuickError("");
+    const values = form.getValues();
+    if (values.servicoIds.length < 1) {
+      setQuickError("Selecione ao menos um serviço para iniciar.");
+      return;
+    }
+    setQuickBusy(true);
+    try {
+      const response = await fetch("/api/atendimentos-rapidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nomeCliente: quick.nomeCliente,
+          placa: quick.placa,
+          tipo: quick.tipo,
+          servicoIds: values.servicoIds,
+          funcionarioId: values.funcionarioId,
+          desconto: values.desconto,
+          observacoes: values.observacoes,
+        }),
+      });
+      const body = await response.json() as { error?: string };
+      if (!response.ok) {
+        setQuickError(body.error ?? "Não foi possível iniciar o atendimento.");
+        return;
+      }
+      await refresh();
+      onClose();
+    } catch {
+      setQuickError("Falha de conexão. Verifique sua internet e tente novamente.");
+    } finally {
+      setQuickBusy(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto p-0 sm:max-w-[640px]">
@@ -115,7 +162,62 @@ export function OrderForm({
             Receba o veículo e organize o próximo atendimento.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-5 p-6 pt-0">
+        <form
+          onSubmit={mode === "rapido" ? (event) => { event.preventDefault(); void submitQuick(); } : submit}
+          className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0"
+        >
+          {!initialClientId && (
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="group" aria-label="Modo de atendimento">
+              <button type="button" onClick={() => setMode("rapido")}
+                aria-pressed={mode === "rapido"}
+                className={mode === "rapido" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
+                Atendimento rápido
+              </button>
+              <button type="button" onClick={() => setMode("cadastrado")}
+                aria-pressed={mode === "cadastrado"}
+                className={mode === "cadastrado" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
+                Cliente cadastrado
+              </button>
+            </div>
+          )}
+          {mode === "rapido" ? (
+            <div className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
+              <div>
+                <p className="text-sm font-bold">Identificação na chegada</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Sem cadastro antecipado: informe o nome, tipo do veículo e placa. O sistema guardará apenas o vínculo necessário ao histórico da comanda.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quick-client-name">Nome do cliente</Label>
+                <Input id="quick-client-name" required minLength={2} maxLength={120}
+                  placeholder="Nome de quem trouxe o veículo"
+                  value={quick.nomeCliente}
+                  onChange={(event) => setQuick({ ...quick, nomeCliente: event.target.value })}
+                  className="h-11 text-base sm:text-sm" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="quick-vehicle-type">Tipo de veículo</Label>
+                  <select id="quick-vehicle-type" value={quick.tipo}
+                    onChange={(event) => setQuick({ ...quick, tipo: event.target.value })}
+                    className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base sm:text-sm">
+                    <option value="CARRO">Carro</option>
+                    <option value="MOTO">Moto</option>
+                    <option value="CAMINHONETE">Caminhonete</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quick-license-plate">Placa</Label>
+                  <Input id="quick-license-plate" required minLength={7} maxLength={8}
+                    placeholder="ABC1D23"
+                    value={quick.placa}
+                    onChange={(event) => setQuick({ ...quick, placa: event.target.value.toUpperCase() })}
+                    className="h-11 uppercase text-base sm:text-sm" />
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Cliente</Label>
@@ -164,7 +266,8 @@ export function OrderForm({
               <ErrorText message={form.formState.errors.veiculoId?.message} />
             </div>
           </div>
-          {duplicate && (
+          )}
+          {mode === "cadastrado" && duplicate && (
             <p className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
               <AlertCircle size={18} />
               Este veículo já está na fila ou aguarda retirada.
@@ -268,17 +371,20 @@ export function OrderForm({
               {money(Math.max(0, subtotal - (v.desconto || 0)))}
             </strong>
           </div>
+          {quickError && mode === "rapido" && (
+            <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{quickError}</p>
+          )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button disabled={busy || duplicate} type="submit">
-              {busy ? (
+            <Button disabled={busy || quickBusy || (mode === "cadastrado" && duplicate)} type="submit">
+              {busy || quickBusy ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Check size={16} />
               )}
-              Abrir comanda
+              {mode === "rapido" ? "Iniciar lavagem" : "Abrir comanda"}
             </Button>
           </div>
         </form>
