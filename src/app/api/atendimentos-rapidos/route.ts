@@ -38,47 +38,30 @@ export async function POST(request: Request) {
         if (!employee) throw new BusinessError("Funcionário indisponível.", 409);
       }
 
-      // Reutiliza um veículo já conhecido somente quando o nome do proprietário confere.
-      // Nunca muda de titularidade automaticamente nem altera atendimentos anteriores.
-      const previous = await tx.veiculo.findUnique({
-        where: { placa: values.placa }, include: { cliente: true },
-      });
-      if (previous && previous.cliente.nome.trim().toLocaleLowerCase("pt-BR") !== values.nomeCliente.toLocaleLowerCase("pt-BR"))
-        throw new BusinessError("Esta placa já está vinculada a outro cliente. Confirme os dados em Clientes antes de abrir a comanda.", 409);
-      if (previous?.tipo !== undefined && previous.tipo !== values.tipo)
-        throw new BusinessError("Esta placa está cadastrada com outro tipo de veículo. Confira a ficha do veículo.", 409);
-      if (previous) {
-        const existingOrder = await tx.comanda.findFirst({
-          where: { veiculoId: previous.id, status: { in: ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"] } },
-        });
-        if (existingOrder) throw new BusinessError("Este veículo já possui uma comanda em aberto.", 409);
-      }
-
-      const vehicle = previous ?? await tx.veiculo.create({
-        data: {
-          placa: values.placa,
-          tipo: values.tipo,
-          marca: "Não informado",
-          modelo: values.tipo === "MOTO" ? "Motocicleta" : values.tipo === "CAMINHONETE" ? "Caminhonete" : "Automóvel",
-          cor: "Não informado",
-          ano: new Date().getFullYear(),
-          cliente: { create: { nome: values.nomeCliente, telefone: "" } },
+      // Não cria nem atualiza uma ficha de cliente ou veículo.
+      // Conserva o contato apenas enquanto a comanda estiver em atendimento.
+      const active = await tx.comanda.findFirst({
+        where: {
+          status: { in: ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"] },
+          OR: [{ placa: values.placa }, { veiculo: { is: { placa: values.placa } } }],
         },
       });
+      if (active) throw new BusinessError("Esta placa já possui uma comanda em aberto.", 409);
       const order = await tx.comanda.create({
         data: {
-          clienteId: vehicle.clienteId,
-          veiculoId: vehicle.id,
+          clienteId: null, veiculoId: null,
+          nomeCliente: values.nomeCliente,
+          telefoneCliente: values.telefoneCliente.startsWith("55") ? values.telefoneCliente : "55" + values.telefoneCliente,
+          placa: values.placa,
+          tipoVeiculo: values.tipo,
           desconto: new Prisma.Decimal(desconto).div(100),
           total: new Prisma.Decimal(subtotal - desconto).div(100),
           observacoes: values.observacoes,
           funcionarioId: values.funcionarioId || null,
           itens: {
             create: services.map((service) => ({
-              servicoId: service.id,
-              nome: service.nome,
-              preco: service.preco,
-              quantidade: 1,
+              servicoId: service.id, nome: service.nome,
+              preco: service.preco, quantidade: 1,
             })),
           },
         },
