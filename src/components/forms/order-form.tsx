@@ -68,7 +68,7 @@ export function OrderForm({
 }) {
   const { data, busy, mutate, refresh } = useStore();
   const [mode, setMode] = useState<"rapido" | "cadastrado">("rapido");
-  const [quick, setQuick] = useState({ nomeCliente: "", placa: "", tipo: "CARRO" });
+  const [quick, setQuick] = useState({ nomeCliente: "", telefoneCliente: "", placa: "", tipo: "CARRO" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickError, setQuickError] = useState("");
   const form = useForm<OrderValues>({
@@ -85,7 +85,7 @@ export function OrderForm({
   useEffect(() => {
     if (!open) return;
     setMode(initialClientId ? "cadastrado" : "rapido");
-    setQuick({ nomeCliente: "", placa: "", tipo: "CARRO" });
+    setQuick({ nomeCliente: "", telefoneCliente: "", placa: "", tipo: "CARRO" });
     setQuickError("");
   }, [open, initialClientId]);
   useEffect(() => {
@@ -128,6 +128,7 @@ export function OrderForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nomeCliente: quick.nomeCliente,
+          telefoneCliente: quick.telefoneCliente,
           placa: quick.placa,
           tipo: quick.tipo,
           servicoIds: values.servicoIds,
@@ -195,6 +196,15 @@ export function OrderForm({
                   value={quick.nomeCliente}
                   onChange={(event) => setQuick({ ...quick, nomeCliente: event.target.value })}
                   className="h-11 text-base sm:text-sm" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quick-phone">WhatsApp com DDD (aviso de conclusão)</Label>
+                <Input id="quick-phone" required inputMode="tel" autoComplete="tel"
+                  placeholder="(11) 99999-9999" maxLength={20}
+                  value={quick.telefoneCliente}
+                  onChange={(event) => setQuick({ ...quick, telefoneCliente: event.target.value })}
+                  className="h-11 text-base sm:text-sm" />
+                <p className="text-xs leading-5 text-muted-foreground">Usado apenas para informar que a lavagem está pronta. Não é necessário cadastrar uma ficha do cliente.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
