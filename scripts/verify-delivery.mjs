@@ -31,6 +31,7 @@ const expectedMigrations = [
 
 if (process.env.QA_EXPECTED_WHATSAPP)
   expectedMigrations.push("202610130001_solicitacoes_empresa");
+expectedMigrations.push("202610130002_atendimento_sem_cadastro");
 
 const fail = (message) => {
   throw new Error("[delivery-check] " + message);
