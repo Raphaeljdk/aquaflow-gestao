@@ -29,6 +29,9 @@ const expectedMigrations = [
   "202609280003_funcionario_defaults",
 ];
 
+if (process.env.QA_EXPECTED_WHATSAPP)
+  expectedMigrations.push("202610130001_solicitacoes_empresa");
+
 const fail = (message) => {
   throw new Error("[delivery-check] " + message);
 };
