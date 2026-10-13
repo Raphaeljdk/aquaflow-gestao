@@ -9,11 +9,11 @@ export async function GET() {
   try {
     const company = await prisma.configuracao.findUnique({
       where: { id: "empresa" },
-      select: { nome: true, telefone: true },
+      select: { nome: true, telefone: true, logo: true },
     });
     const whatsapp = normalizeWhatsappPhone(company?.telefone);
     return NextResponse.json(
-      { empresa: company?.nome ?? "Lava-rápido", whatsapp, disponivel: !!whatsapp },
+      { empresa: company?.nome ?? "Lava-rápido", logo: company?.logo?.startsWith("data:image/") ? company.logo : null, whatsapp, disponivel: !!whatsapp },
       { headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   } catch (error) {
