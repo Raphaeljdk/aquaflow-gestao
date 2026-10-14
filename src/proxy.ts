@@ -1,8 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const employeePages = new Set(["clientes", "comandas", "agendamentos"]);
-
 export async function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO === "true") return NextResponse.next();
 
@@ -22,11 +20,6 @@ export async function proxy(request: NextRequest) {
       request.nextUrl.pathname + request.nextUrl.search,
     );
     return NextResponse.redirect(url);
-  }
-
-  const page = request.nextUrl.pathname.split("/")[1] || "dashboard";
-  if (token.role !== "ADMIN" && !employeePages.has(page)) {
-    return NextResponse.redirect(new URL("/comandas", request.url));
   }
 
   return NextResponse.next();
