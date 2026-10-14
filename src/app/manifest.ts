@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "AquaFlow | Gestão de Lava-Rápido",
     short_name: "AquaFlow",
     description: "Atendimentos, comandas, agendamentos e gestão do seu lava-rápido.",
-    start_url: "/login",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#081321",
