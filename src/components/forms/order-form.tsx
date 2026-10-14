@@ -229,8 +229,8 @@ export function OrderForm({
                   className="h-11 text-base sm:text-sm"
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Usado apenas para informar que a lavagem está pronta. Não é
-                  necessário cadastrar uma ficha do cliente.
+                  Usado para avisar durante o atendimento. Após a entrega,
+                  nome e telefone entram no histórico de clientes atendidos, sem ficha prévia.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -327,6 +327,11 @@ export function OrderForm({
           )}
           <div>
             <Label className="mb-3">Serviços</Label>
+            {!data.servicos.some((service) => service.ativo) && (
+              <p role="status" className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                Nenhum serviço ativo. O administrador deve configurar o catálogo para abrir comandas.
+              </p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               {data.servicos
                 .filter((s) => s.ativo)
