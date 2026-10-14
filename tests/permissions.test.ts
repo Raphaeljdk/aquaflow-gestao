@@ -40,3 +40,12 @@ test("funcionário pode manter veículo somente pelo fluxo do cliente", () => {
   assert.equal(canWrite("FUNCIONARIO", "configuracoes"), false);
   assert.equal(canWrite("FUNCIONARIO", "materiais"), false);
 });
+
+test("todos os perfis operacionais conseguem abrir e acompanhar comandas", () => {
+  for (const role of ["ADMIN", "FUNCIONARIO", "GERENTE", "ATENDENTE", "LAVADOR"] as const) {
+    assert.equal(allowedPages[role].includes("comandas"), true, role);
+    assert.equal(canWrite(role, "comandas"), true, role);
+    assert.equal(allowedPages[role].includes("agendamentos"), true, role);
+    assert.equal(canWrite(role, "agendamentos"), true, role);
+  }
+});
