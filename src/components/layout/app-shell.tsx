@@ -102,15 +102,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const allowed = allowedPages[user?.role ?? "ADMIN"],
     title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
-    data?.clientes
-      .filter((c) => {
-        const q = query.toLowerCase();
-        return (
-          c.nome.toLowerCase().includes(q) ||
-          c.telefone.includes(q) ||
-          data.veiculos.some(
-            (v) => v.clienteId === c.id && v.placa.toLowerCase().includes(q),
-          )
+    data?.comandas
+      .filter((order) => {
+        const q = query.trim().toLowerCase();
+        return [order.nomeCliente, order.placa, String(order.numero)].some(
+          (value) => value?.toLowerCase().includes(q),
         );
       })
       .slice(0, 8) ?? [];
@@ -129,25 +125,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <WebMCPTools />
         <Sidebar className="border-r border-border" collapsible="offcanvas">
-          <SidebarHeader className="px-6 pb-8 pt-8">
-            <Link href="/comandas" className="flex items-center gap-3">
-              <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-                {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
-                  <img
-                    src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
-                    alt={title}
-                    className="size-full object-contain bg-white p-1"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-slate-800">
-                    <Building2 size={24} />
-                  </div>
-                )}
-              </div>
-              <span className="min-w-0 truncate text-[18px] font-black tracking-[-.6px] text-sidebar-foreground">
-                {title}
-              </span>
+          <SidebarHeader className="px-5 pb-6 pt-6">
+            <Link
+              href="/comandas"
+              className="block"
+              aria-label={title + " · Comandas"}
+            >
+              {data?.configuracao.logo ||
+              title.toLowerCase().startsWith("ducha elitte") ? (
+                <img
+                  src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
+                  alt={title}
+                  className="h-auto w-full rounded-xl border border-sidebar-border object-contain"
+                />
+              ) : (
+                <span className="flex items-center gap-3 py-4 text-lg font-bold">
+                  <Building2 size={24} />
+                  {title}
+                </span>
+              )}
             </Link>
+            <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[.2em] text-muted-foreground">
+              Gestão do lava-rápido
+            </p>
           </SidebarHeader>
           <SidebarContent className="gap-6 px-3">
             <SidebarGroup className="p-0">
@@ -157,7 +157,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenu className="gap-1">
                 {links
                   .slice(0, 4)
-                  .filter((l) => l.path !== "clientes" && allowed.includes(l.path))
+                  .filter(
+                    (l) => l.path !== "clientes" && allowed.includes(l.path),
+                  )
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
                       <SidebarMenuButton
@@ -169,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           <l.icon className="mr-1 size-[18px]!" />
                           <span>{l.label}</span>
                           {l.path === "comandas" && queue > 0 && (
-                            <span className="ml-auto rounded-md bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                            <span className="ml-auto rounded-md bg-accent px-2 py-0.5 text-xs text-accent-foreground">
                               {queue}
                             </span>
                           )}
@@ -246,11 +248,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <div className="min-w-0 flex-1">
-          <header className="flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
+          <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
             <div className="flex items-center gap-2 text-sm">
               <SidebarTrigger className="mr-2 md:hidden" />
               <span className="hidden text-muted-foreground sm:inline">
-                Workspace
+                Operação
               </span>
               <ChevronRight
                 size={13}
@@ -313,13 +315,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
               <span>
-                © {new Date().getFullYear()} Ducha Elitte · Cada detalhe sob
+                © {new Date().getFullYear()} {title} · Cada detalhe sob
                 controle.
               </span>
               <span>
                 {DEMO
                   ? "Demonstração · alterações temporárias, reiniciadas ao recarregar"
-                  : "Ducha Elitte Gestão"}
+                  : title + " Gestão"}
               </span>
             </footer>
           </main>
@@ -342,13 +344,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DialogHeader>
               <DialogTitle>Busca rápida</DialogTitle>
               <DialogDescription>
-                Encontre clientes por nome, telefone ou placa.
+                Encontre atendimentos por nome, placa ou número da comanda.
               </DialogDescription>
             </DialogHeader>
             <SearchInput
               value={query}
               onChange={setQuery}
-              placeholder="Nome, telefone ou placa..."
+              placeholder="Nome, placa ou comanda..."
             />
             <div className="max-h-80 overflow-auto">
               {matches.map((c) => (
@@ -356,14 +358,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={c.id}
                   className="flex w-full items-center justify-between rounded-lg p-3 text-left hover:bg-muted"
                   onClick={() => {
-                    router.push("/clientes?q=" + encodeURIComponent(c.nome));
+                    setOrderId(c.id);
                     setSearchOpen(false);
                   }}
                 >
                   <span>
-                    <span className="block text-sm font-medium">{c.nome}</span>
+                    <span className="block text-sm font-medium">
+                      {c.nomeCliente || "Atendimento"} · #{c.numero}
+                    </span>
                     <span className="text-xs text-muted-foreground">
-                      {c.telefone}
+                      {c.placa || "Sem placa"}
                     </span>
                   </span>
                   <ArrowUpRight size={16} />
@@ -371,7 +375,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
               {matches.length === 0 && (
                 <p className="p-5 text-center text-sm text-muted-foreground">
-                  Nenhum cliente encontrado.
+                  Nenhum atendimento encontrado.
                 </p>
               )}
             </div>

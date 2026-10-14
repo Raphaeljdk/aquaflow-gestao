@@ -126,6 +126,7 @@ model Comanda {
   @@index([createdAt])
   @@index([finalizadoEm])
   @@index([status,funcionarioId])
+  @@index([placa,status])
 }
 model ItemComanda {
   id String @id @default(cuid())

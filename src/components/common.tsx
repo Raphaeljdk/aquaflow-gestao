@@ -44,10 +44,12 @@ export function PageTitle({
   return (
     <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 className="text-[28px] font-semibold leading-tight">{title}</h1>
+        <h1 className="text-2xl sm:text-[28px] font-semibold leading-tight">
+          {title}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {children}
         {action && (
           <Button
@@ -252,7 +254,7 @@ export function PanelHeading({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-6 py-5">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-5 sm:px-6">
       <div>
         <h2 className="text-base font-semibold">{title}</h2>
         {subtitle && (

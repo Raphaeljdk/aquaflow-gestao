@@ -44,6 +44,11 @@ import { cn } from "@/lib/utils";
 import { useActions } from "./layout/app-shell";
 import { ErrorText } from "./forms/order-form";
 export function Appointments() {
+  const [arrival, setArrival] = useState<string | null>(null);
+  const [arrivalPlate, setArrivalPlate] = useState("");
+  const [arrivalType, setArrivalType] = useState("CARRO");
+  const [arrivalError, setArrivalError] = useState("");
+  const [arriving, setArriving] = useState(false);
   const { data, mutate, refresh, busy } = useStore(),
     actions = useActions(),
     [date, setDate] = useState(dayKey(new Date())),
@@ -97,11 +102,16 @@ export function Appointments() {
           <MessageCircle size={22} className="mt-0.5 shrink-0 text-primary" />
           <div>
             <p className="font-semibold">Receber pedidos pelo WhatsApp</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compartilhe a página pública com seus clientes. A equipe confirma o horário antes de registrar na agenda.</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Compartilhe a página pública com seus clientes. A equipe confirma
+              o horário antes de registrar na agenda.
+            </p>
           </div>
         </div>
         <Button asChild variant="outline" size="sm">
-          <a href="/agendar" target="_blank" rel="noopener noreferrer">Página de agendamento <ArrowRight size={15}/></a>
+          <a href="/agendar" target="_blank" rel="noopener noreferrer">
+            Página de agendamento <ArrowRight size={15} />
+          </a>
         </Button>
       </div>
       <div className="panel mb-5 p-5">
@@ -155,14 +165,16 @@ export function Appointments() {
                 className={cn(
                   "rounded-xl border px-1 py-3 text-center transition",
                   key === date
-                    ? "border-primary bg-primary text-white"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : "border-border hover:bg-accent",
                 )}
               >
                 <span
                   className={cn(
                     "text-xs uppercase md:text-xs",
-                    key === date ? "text-white/80" : "text-muted-foreground",
+                    key === date
+                      ? "text-primary-foreground/80"
+                      : "text-muted-foreground",
                   )}
                 >
                   {dateLabel(d, "EEE")}
@@ -175,7 +187,7 @@ export function Appointments() {
                     "mx-auto mt-2 block size-1 rounded-full",
                     count
                       ? key === date
-                        ? "bg-white"
+                        ? "bg-primary-foreground"
                         : "bg-primary"
                       : "bg-transparent",
                   )}
@@ -219,7 +231,7 @@ export function Appointments() {
                     className={cn(
                       "rounded-xl border p-3 text-center disabled:cursor-not-allowed",
                       occupied
-                        ? "border-primary/20 bg-accent text-primary"
+                        ? "border-primary/20 bg-accent text-accent-foreground"
                         : past
                           ? "border-border bg-muted text-muted-foreground/50"
                           : "border-border hover:border-primary hover:bg-accent",
@@ -269,7 +281,7 @@ export function Appointments() {
                     key={a.id}
                   >
                     <div className="flex items-start justify-between">
-                      <span className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                         <Clock3 size={15} />
                         {dateLabel(a.dataHora, "HH:mm")} –{" "}
                         {dateLabel(a.fim, "HH:mm")}
@@ -282,9 +294,15 @@ export function Appointments() {
                             : "Cancelado"}
                       </span>
                     </div>
-                    <h3 className="mt-3 text-sm font-semibold">{a.nomeCliente || c?.nome || "Atendimento"}</h3>
+                    <h3 className="mt-3 text-sm font-semibold">
+                      {a.nomeCliente || c?.nome || "Atendimento"}
+                    </h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {v ? [v.marca,v.modelo,v.placa].filter(Boolean).join(" · ") : "Identificação do veículo na chegada"}
+                      {v
+                        ? [v.marca, v.modelo, v.placa]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : "Identificação do veículo na chegada"}
                     </p>
                     <p className="mt-3 text-xs">
                       {a.servicoIds
@@ -294,10 +312,22 @@ export function Appointments() {
                         .join(" + ")}
                     </p>
                     {a.telefoneCliente && a.status === "AGENDADO" && (
-                      <a className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
-                        href={"https://wa.me/"+a.telefoneCliente.replace(/[^0-9]/g,"")+"?text="+encodeURIComponent("Olá, "+(a.nomeCliente||"")+"! Confirmando seu agendamento no lava-rápido.")}
-                        target="_blank" rel="noopener noreferrer">
-                        <MessageCircle size={14}/> WhatsApp do agendamento
+                      <a
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
+                        href={
+                          "https://wa.me/" +
+                          a.telefoneCliente.replace(/[^0-9]/g, "") +
+                          "?text=" +
+                          encodeURIComponent(
+                            "Olá, " +
+                              (a.nomeCliente || "") +
+                              "! Confirmando seu agendamento no lava-rápido.",
+                          )
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <MessageCircle size={14} /> WhatsApp do agendamento
                       </a>
                     )}
                     {a.observacoes && (
@@ -313,20 +343,15 @@ export function Appointments() {
                           disabled={busy || date !== today}
                           onClick={async () => {
                             if (a.clienteId) {
-                              await mutate({entity:"agendamentos",method:"PATCH",id:a.id,data:{action:"convert"}});
+                              await mutate({
+                                entity: "agendamentos",
+                                method: "PATCH",
+                                id: a.id,
+                                data: { action: "convert" },
+                              });
                               return;
                             }
-                            try {
-                              const res=await fetch("/api/agendamentos-rapidos/"+encodeURIComponent(a.id)+"/converter",{
-                                method:"POST",headers:{"Content-Type":"application/json"},
-                              });
-                              if (!res.ok) {
-                                const error=await res.json() as {error?:string};
-                                window.alert(error.error || "Não foi possível abrir a comanda.");
-                                return;
-                              }
-                              await refresh();
-                            } catch { window.alert("Falha de conexão. Tente novamente."); }
+                            setArrival(a.id);
                           }}
                         >
                           Abrir comanda
@@ -369,6 +394,98 @@ export function Appointments() {
           onClose={() => setOpen(false)}
         />
       )}
+      <Dialog
+        open={!!arrival}
+        onOpenChange={(v) => {
+          if (!v) {
+            setArrival(null);
+            setArrivalError("");
+            setArrivalPlate("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Receber veículo</DialogTitle>
+            <DialogDescription>
+              O nome, telefone e serviços já estão na reserva. Informe o veículo
+              para abrir a comanda.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (arriving) return;
+              setArriving(true);
+              setArrivalError("");
+              try {
+                const res = await fetch(
+                  "/api/agendamentos-rapidos/" +
+                    encodeURIComponent(arrival!) +
+                    "/converter",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      placa: arrivalPlate,
+                      tipo: arrivalType,
+                    }),
+                  },
+                );
+                const result = await res.json();
+                if (!res.ok) {
+                  setArrivalError(
+                    result.error || "Não foi possível abrir a comanda.",
+                  );
+                  return;
+                }
+                await refresh();
+                setArrival(null);
+                setArrivalPlate("");
+                actions.showOrder(result.comanda.id);
+              } catch {
+                setArrivalError("Falha de conexão. Tente novamente.");
+              } finally {
+                setArriving(false);
+              }
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="arrival-plate">Placa</Label>
+              <Input
+                id="arrival-plate"
+                required
+                minLength={7}
+                maxLength={8}
+                placeholder="ABC1D23"
+                value={arrivalPlate}
+                onChange={(e) => setArrivalPlate(e.target.value.toUpperCase())}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de veículo</Label>
+              <Choice
+                value={arrivalType}
+                onChange={setArrivalType}
+                options={[
+                  { value: "CARRO", label: "Carro" },
+                  { value: "MOTO", label: "Moto" },
+                  { value: "CAMINHONETE", label: "Caminhonete" },
+                ]}
+              />
+            </div>
+            {arrivalError && (
+              <p role="alert" className="text-sm text-destructive">
+                {arrivalError}
+              </p>
+            )}
+            <Button type="submit" disabled={arriving} className="w-full">
+              {arriving ? "Abrindo..." : "Abrir comanda"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={!!cancel} onOpenChange={(v) => !v && setCancel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -404,8 +521,14 @@ export function Appointments() {
   );
 }
 function AppointmentForm({
-  date, preset, onClose,
-}: { date: string; preset: string; onClose: () => void; }) {
+  date,
+  preset,
+  onClose,
+}: {
+  date: string;
+  preset: string;
+  onClose: () => void;
+}) {
   const { data, refresh } = useStore();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -416,94 +539,203 @@ function AppointmentForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   if (!data) return null;
-  const minutes=services.reduce((sum,id)=>sum+(data.servicos.find(s=>s.id===id)?.duracaoMin??0),0);
-  const min=(h:string)=>Number(h.slice(0,2))*60+Number(h.slice(3));
-  const open=min(data.configuracao.abertura),close=min(data.configuracao.fechamento);
-  const available=Array.from({length:Math.ceil((close-open)/data.configuracao.intervaloMin)},(_,i)=>open+i*data.configuracao.intervaloMin)
-    .filter(n=>n+Math.max(15,minutes)<=close)
-    .map(n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0"))
-    .filter(t=>{
-      const start=new Date(fromLocal(day+"T"+t));
-      const end=new Date(start.getTime()+Math.max(15,minutes)*60000);
-      return start>new Date() &&
-        data.configuracao.diasSemana.includes(new Date(day+"T12:00:00").getDay()) &&
-        !data.agendamentos.some(a=>a.status==="AGENDADO" && start<new Date(a.fim) && end>new Date(a.dataHora));
+  const minutes = services.reduce(
+    (sum, id) =>
+      sum + (data.servicos.find((s) => s.id === id)?.duracaoMin ?? 0),
+    0,
+  );
+  const min = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3));
+  const open = min(data.configuracao.abertura),
+    close = min(data.configuracao.fechamento);
+  const available = Array.from(
+    { length: Math.ceil((close - open) / data.configuracao.intervaloMin) },
+    (_, i) => open + i * data.configuracao.intervaloMin,
+  )
+    .filter((n) => n + Math.max(15, minutes) <= close)
+    .map(
+      (n) =>
+        String(Math.floor(n / 60)).padStart(2, "0") +
+        ":" +
+        String(n % 60).padStart(2, "0"),
+    )
+    .filter((t) => {
+      const start = new Date(fromLocal(day + "T" + t));
+      const end = new Date(start.getTime() + Math.max(15, minutes) * 60000);
+      return (
+        start > new Date() &&
+        data.configuracao.diasSemana.includes(
+          new Date(day + "T12:00:00").getDay(),
+        ) &&
+        !data.agendamentos.some(
+          (a) =>
+            a.status === "AGENDADO" &&
+            start < new Date(a.fim) &&
+            end > new Date(a.dataHora),
+        )
+      );
     });
-  async function submit(event:React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if(saving)return;
-    setError("");setSaving(true);
+    if (saving) return;
+    setError("");
+    setSaving(true);
     try {
-      const res=await fetch("/api/agendamentos-rapidos",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          nomeCliente:name,telefoneCliente:phone,
-          dataHora:fromLocal(day+"T"+time),servicoIds:services,observacoes:notes,
+      const res = await fetch("/api/agendamentos-rapidos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nomeCliente: name,
+          telefoneCliente: phone,
+          dataHora: fromLocal(day + "T" + time),
+          servicoIds: services,
+          observacoes: notes,
         }),
       });
-      if(!res.ok){
-        const result=await res.json() as {error?:string};
-        setError(result.error||"Não foi possível reservar.");return;
+      if (!res.ok) {
+        const result = (await res.json()) as { error?: string };
+        setError(result.error || "Não foi possível reservar.");
+        return;
       }
-      await refresh();onClose();
-    }catch{setError("Falha de conexão. Verifique sua internet.");}
-    finally{setSaving(false);}
+      await refresh();
+      onClose();
+    } catch {
+      setError("Falha de conexão. Verifique sua internet.");
+    } finally {
+      setSaving(false);
+    }
   }
   return (
-    <Dialog open onOpenChange={v=>!v&&onClose()}>
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto p-4 sm:max-w-[560px] sm:p-6">
         <DialogHeader>
           <DialogTitle>Novo agendamento</DialogTitle>
-          <DialogDescription>Informe apenas o nome e WhatsApp para confirmar a lavagem. Nenhuma ficha de cliente será criada.</DialogDescription>
+          <DialogDescription>
+            Informe apenas o nome e WhatsApp para confirmar a lavagem. Nenhuma
+            ficha de cliente será criada.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="appointment-name">Nome do cliente</Label>
-            <Input id="appointment-name" required minLength={2} maxLength={120} value={name}
-              onChange={e=>setName(e.target.value)} placeholder="Nome de quem deseja agendar"
-              className="h-11 text-base sm:text-sm"/>
+            <Input
+              id="appointment-name"
+              required
+              minLength={2}
+              maxLength={120}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nome de quem deseja agendar"
+              className="h-11 text-base sm:text-sm"
+            />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="appointment-phone">WhatsApp com DDD (avisos do atendimento)</Label>
-            <Input id="appointment-phone" required type="tel" inputMode="tel"
-              autoComplete="tel" value={phone} maxLength={20}
-              onChange={e=>setPhone(e.target.value)} placeholder="(11) 99999-9999"
-              className="h-11 text-base sm:text-sm"/>
+            <Label htmlFor="appointment-phone">
+              WhatsApp com DDD (avisos do atendimento)
+            </Label>
+            <Input
+              id="appointment-phone"
+              required
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              maxLength={20}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="(11) 99999-9999"
+              className="h-11 text-base sm:text-sm"
+            />
           </div>
           <div className="space-y-2">
             <Label>Serviços</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {data.servicos.filter(s=>s.ativo).map(s=><label key={s.id}
-                className="flex items-center gap-2 rounded-lg border border-border p-3 text-xs">
-                <Checkbox checked={services.includes(s.id)}
-                  onCheckedChange={checked=>setServices(old=>checked?[...old,s.id]:old.filter(id=>id!==s.id))}/>
-                {s.nome}<span className="ml-auto text-muted-foreground">{s.duracaoMin}m</span>
-              </label>)}
+              {data.servicos
+                .filter((s) => s.ativo)
+                .map((s) => (
+                  <label
+                    key={s.id}
+                    className="flex items-center gap-2 rounded-lg border border-border p-3 text-xs"
+                  >
+                    <Checkbox
+                      checked={services.includes(s.id)}
+                      onCheckedChange={(checked) =>
+                        setServices((old) =>
+                          checked
+                            ? [...old, s.id]
+                            : old.filter((id) => id !== s.id),
+                        )
+                      }
+                    />
+                    {s.nome}
+                    <span className="ml-auto text-muted-foreground">
+                      {s.duracaoMin}m
+                    </span>
+                  </label>
+                ))}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
               <Label htmlFor="appointment-day">Data</Label>
-              <Input id="appointment-day" type="date" min={dayKey(new Date())}
-                value={day} onChange={e=>{if(e.target.value){setDay(e.target.value);setTime("");}}}/>
+              <Input
+                id="appointment-day"
+                type="date"
+                min={dayKey(new Date())}
+                value={day}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setDay(e.target.value);
+                    setTime("");
+                  }
+                }}
+              />
             </div>
             <div className="space-y-2">
               <Label>Horário</Label>
-              <Choice value={time} onChange={setTime}
-                options={available.map(value=>({value,label:value}))}
-                placeholder={available.length?"Selecione":"Sem horários"}/>
+              <Choice
+                value={time}
+                onChange={setTime}
+                options={available.map((value) => ({ value, label: value }))}
+                placeholder={available.length ? "Selecione" : "Sem horários"}
+              />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">{minutes} minutos estimados · {money(services.reduce((sum,id)=>sum+(data.servicos.find(s=>s.id===id)?.preco??0),0))}</p>
+          <p className="text-xs text-muted-foreground">
+            {minutes} minutos estimados ·{" "}
+            {money(
+              services.reduce(
+                (sum, id) =>
+                  sum + (data.servicos.find((s) => s.id === id)?.preco ?? 0),
+                0,
+              ),
+            )}
+          </p>
           <div className="space-y-2">
             <Label htmlFor="appointment-notes">Observações (opcional)</Label>
-            <Textarea id="appointment-notes" maxLength={1000} value={notes} onChange={e=>setNotes(e.target.value)}/>
+            <Textarea
+              id="appointment-notes"
+              maxLength={1000}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
-          {error&&<p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={saving||!services.length||!available.includes(time)}>
-              {saving&&<Loader2 className="animate-spin" size={15}/>} Confirmar agendamento
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving || !services.length || !available.includes(time)}
+            >
+              {saving && <Loader2 className="animate-spin" size={15} />}{" "}
+              Confirmar agendamento
             </Button>
           </div>
         </form>

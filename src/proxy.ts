@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
 
   const page = request.nextUrl.pathname.split("/")[1] || "dashboard";
   if (token.role !== "ADMIN" && !employeePages.has(page)) {
-    return NextResponse.redirect(new URL("/clientes", request.url));
+    return NextResponse.redirect(new URL("/comandas", request.url));
   }
 
   return NextResponse.next();

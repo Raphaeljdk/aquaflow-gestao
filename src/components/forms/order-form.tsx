@@ -69,7 +69,12 @@ export function OrderForm({
 }) {
   const { data, busy, mutate, refresh } = useStore();
   const [mode, setMode] = useState<"rapido" | "cadastrado">("rapido");
-  const [quick, setQuick] = useState({ nomeCliente: "", telefoneCliente: "", placa: "", tipo: "CARRO" });
+  const [quick, setQuick] = useState({
+    nomeCliente: "",
+    telefoneCliente: "",
+    placa: "",
+    tipo: "CARRO",
+  });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickError, setQuickError] = useState("");
   const form = useForm<OrderValues>({
@@ -85,15 +90,20 @@ export function OrderForm({
   });
   useEffect(() => {
     if (!open) return;
-    setMode(initialClientId ? "cadastrado" : "rapido");
-    setQuick({ nomeCliente: "", telefoneCliente: "", placa: "", tipo: "CARRO" });
+    setMode("rapido");
+    setQuick({
+      nomeCliente: "",
+      telefoneCliente: "",
+      placa: "",
+      tipo: "CARRO",
+    });
     setQuickError("");
   }, [open, initialClientId]);
   useEffect(() => {
     if (!open) return;
     const firstVehicle =
-      data?.veiculos.find((vehicle) => vehicle.clienteId === initialClientId)?.id ??
-      "";
+      data?.veiculos.find((vehicle) => vehicle.clienteId === initialClientId)
+        ?.id ?? "";
     form.reset({
       clienteId: initialClientId ?? "",
       veiculoId: firstVehicle,
@@ -138,7 +148,7 @@ export function OrderForm({
           observacoes: values.observacoes,
         }),
       });
-      const body = await response.json() as { error?: string };
+      const body = (await response.json()) as { error?: string };
       if (!response.ok) {
         setQuickError(body.error ?? "Não foi possível iniciar o atendimento.");
         return;
@@ -146,7 +156,9 @@ export function OrderForm({
       await refresh();
       onClose();
     } catch {
-      setQuickError("Falha de conexão. Verifique sua internet e tente novamente.");
+      setQuickError(
+        "Falha de conexão. Verifique sua internet e tente novamente.",
+      );
     } finally {
       setQuickBusy(false);
     }
@@ -165,54 +177,73 @@ export function OrderForm({
           </DialogDescription>
         </DialogHeader>
         <form
-          onSubmit={mode === "rapido" ? (event) => { event.preventDefault(); void submitQuick(); } : submit}
+          onSubmit={
+            mode === "rapido"
+              ? (event) => {
+                  event.preventDefault();
+                  void submitQuick();
+                }
+              : submit
+          }
           className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0"
         >
-          {!initialClientId && (
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="group" aria-label="Modo de atendimento">
-              <button type="button" onClick={() => setMode("rapido")}
-                aria-pressed={mode === "rapido"}
-                className={mode === "rapido" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
-                Atendimento rápido
-              </button>
-              <button type="button" onClick={() => setMode("cadastrado")}
-                aria-pressed={mode === "cadastrado"}
-                className={mode === "cadastrado" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
-                Cliente cadastrado
-              </button>
-            </div>
-          )}
           {mode === "rapido" ? (
             <div className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
               <div>
                 <p className="text-sm font-bold">Identificação na chegada</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Sem cadastro antecipado: informe o nome, tipo do veículo e placa. O sistema guardará apenas o vínculo necessário ao histórico da comanda.
+                  Informe o nome e WhatsApp para avisar quando estiver pronto.
+                  Identifique o veículo e escolha os serviços.
                 </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quick-client-name">Nome do cliente</Label>
-                <Input id="quick-client-name" required minLength={2} maxLength={120}
+                <Input
+                  id="quick-client-name"
+                  required
+                  minLength={2}
+                  maxLength={120}
                   placeholder="Nome de quem trouxe o veículo"
                   value={quick.nomeCliente}
-                  onChange={(event) => setQuick({ ...quick, nomeCliente: event.target.value })}
-                  className="h-11 text-base sm:text-sm" />
+                  onChange={(event) =>
+                    setQuick({ ...quick, nomeCliente: event.target.value })
+                  }
+                  className="h-11 text-base sm:text-sm"
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="quick-phone">WhatsApp com DDD (aviso de conclusão)</Label>
-                <Input id="quick-phone" required inputMode="tel" autoComplete="tel"
-                  placeholder="(11) 99999-9999" maxLength={20}
+                <Label htmlFor="quick-phone">
+                  WhatsApp com DDD (aviso de conclusão)
+                </Label>
+                <Input
+                  id="quick-phone"
+                  required
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="(11) 99999-9999"
+                  maxLength={20}
                   value={quick.telefoneCliente}
-                  onChange={(event) => setQuick({ ...quick, telefoneCliente: event.target.value })}
-                  className="h-11 text-base sm:text-sm" />
-                <p className="text-xs leading-5 text-muted-foreground">Usado apenas para informar que a lavagem está pronta. Não é necessário cadastrar uma ficha do cliente.</p>
+                  onChange={(event) =>
+                    setQuick({ ...quick, telefoneCliente: event.target.value })
+                  }
+                  className="h-11 text-base sm:text-sm"
+                />
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Usado apenas para informar que a lavagem está pronta. Não é
+                  necessário cadastrar uma ficha do cliente.
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="quick-vehicle-type">Tipo de veículo</Label>
-                  <select id="quick-vehicle-type" value={quick.tipo}
-                    onChange={(event) => setQuick({ ...quick, tipo: event.target.value })}
-                    className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base sm:text-sm">
+                  <select
+                    id="quick-vehicle-type"
+                    value={quick.tipo}
+                    onChange={(event) =>
+                      setQuick({ ...quick, tipo: event.target.value })
+                    }
+                    className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base sm:text-sm"
+                  >
                     <option value="CARRO">Carro</option>
                     <option value="MOTO">Moto</option>
                     <option value="CAMINHONETE">Caminhonete</option>
@@ -220,63 +251,73 @@ export function OrderForm({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quick-license-plate">Placa</Label>
-                  <Input id="quick-license-plate" required minLength={7} maxLength={8}
+                  <Input
+                    id="quick-license-plate"
+                    required
+                    minLength={7}
+                    maxLength={8}
                     placeholder="ABC1D23"
                     value={quick.placa}
-                    onChange={(event) => setQuick({ ...quick, placa: event.target.value.toUpperCase() })}
-                    className="h-11 uppercase text-base sm:text-sm" />
+                    onChange={(event) =>
+                      setQuick({
+                        ...quick,
+                        placa: event.target.value.toUpperCase(),
+                      })
+                    }
+                    className="h-11 uppercase text-base sm:text-sm"
+                  />
                 </div>
               </div>
             </div>
           ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Controller
-                name="clienteId"
-                control={form.control}
-                render={({ field }) => (
-                  <Picker
-                    value={field.value}
-                    onChange={(clientId) => {
-                      field.onChange(clientId);
-                      const firstVehicle = data.veiculos.find(
-                        (vehicle) => vehicle.clienteId === clientId,
-                      );
-                      form.setValue("veiculoId", firstVehicle?.id ?? "");
-                    }}
-                    options={data.clientes.map((c) => ({
-                      value: c.id,
-                      label: c.nome + " · " + c.telefone,
-                    }))}
-                    placeholder="Buscar cliente"
-                  />
-                )}
-              />
-              <ErrorText message={form.formState.errors.clienteId?.message} />
-            </div>
-            <div className="space-y-2">
-              <Label>Veículo</Label>
-              <Controller
-                name="veiculoId"
-                control={form.control}
-                render={({ field }) => (
-                  <Choice
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={data.veiculos
-                      .filter((c) => c.clienteId === v.clienteId)
-                      .map((c) => ({
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Cliente</Label>
+                <Controller
+                  name="clienteId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Picker
+                      value={field.value}
+                      onChange={(clientId) => {
+                        field.onChange(clientId);
+                        const firstVehicle = data.veiculos.find(
+                          (vehicle) => vehicle.clienteId === clientId,
+                        );
+                        form.setValue("veiculoId", firstVehicle?.id ?? "");
+                      }}
+                      options={data.clientes.map((c) => ({
                         value: c.id,
-                        label: c.placa + " · " + c.modelo,
+                        label: c.nome + " · " + c.telefone,
                       }))}
-                    placeholder="Selecione o veículo"
-                  />
-                )}
-              />
-              <ErrorText message={form.formState.errors.veiculoId?.message} />
+                      placeholder="Buscar cliente"
+                    />
+                  )}
+                />
+                <ErrorText message={form.formState.errors.clienteId?.message} />
+              </div>
+              <div className="space-y-2">
+                <Label>Veículo</Label>
+                <Controller
+                  name="veiculoId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Choice
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={data.veiculos
+                        .filter((c) => c.clienteId === v.clienteId)
+                        .map((c) => ({
+                          value: c.id,
+                          label: c.placa + " · " + c.modelo,
+                        }))}
+                      placeholder="Selecione o veículo"
+                    />
+                  )}
+                />
+                <ErrorText message={form.formState.errors.veiculoId?.message} />
+              </div>
             </div>
-          </div>
           )}
           {mode === "cadastrado" && duplicate && (
             <p className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
@@ -383,13 +424,23 @@ export function OrderForm({
             </strong>
           </div>
           {quickError && mode === "rapido" && (
-            <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{quickError}</p>
+            <p
+              role="alert"
+              className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {quickError}
+            </p>
           )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button disabled={busy || quickBusy || (mode === "cadastrado" && duplicate)} type="submit">
+            <Button
+              disabled={
+                busy || quickBusy || (mode === "cadastrado" && duplicate)
+              }
+              type="submit"
+            >
               {busy || quickBusy ? (
                 <Loader2 className="animate-spin" />
               ) : (
@@ -481,14 +532,24 @@ export function OrderDetail({
                   <CarFront size={30} className="text-primary" />
                   <div>
                     <h3 className="font-semibold">
-                      {v ? [v.marca, v.modelo].join(" ") : o.tipoVeiculo === "MOTO" ? "Moto" : o.tipoVeiculo === "CAMINHONETE" ? "Caminhonete" : "Carro"}
+                      {v
+                        ? [v.marca, v.modelo].join(" ")
+                        : o.tipoVeiculo === "MOTO"
+                          ? "Moto"
+                          : o.tipoVeiculo === "CAMINHONETE"
+                            ? "Caminhonete"
+                            : "Carro"}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {v ? [v.cor, v.ano].join(" · ") : "Identificado na chegada"}
+                      {v
+                        ? [v.cor, v.ano].join(" · ")
+                        : "Identificado na chegada"}
                     </p>
                   </div>
                 </div>
-                <span className="plate">{o.placa || v?.placa || "Sem placa"}</span>
+                <span className="plate">
+                  {o.placa || v?.placa || "Sem placa"}
+                </span>
                 <p className="mt-4 border-t border-border pt-3 text-sm">
                   {o.nomeCliente || c?.nome || "Atendimento"}
                   <span className="mt-1 block text-xs text-muted-foreground">
@@ -497,11 +558,23 @@ export function OrderDetail({
                 </p>
               </div>
               {o.status === "FINALIZADO" && whatsapp && (
-                <a className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"
-                  href={"https://wa.me/" + whatsapp +
-                    "?text=" + encodeURIComponent("Olá, " + (o.nomeCliente || c?.nome || "") + "! Sua lavagem está pronta. Você já pode retirar seu veículo.")}
-                  target="_blank" rel="noopener noreferrer">
-                  <span>Avisar pelo WhatsApp: lavagem pronta</span><ArrowRight size={15}/>
+                <a
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"
+                  href={
+                    "https://wa.me/" +
+                    whatsapp +
+                    "?text=" +
+                    encodeURIComponent(
+                      "Olá, " +
+                        (o.nomeCliente || c?.nome || "") +
+                        "! Sua lavagem está pronta. Você já pode retirar seu veículo.",
+                    )
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>Avisar pelo WhatsApp: lavagem pronta</span>
+                  <ArrowRight size={15} />
                 </a>
               )}
               <div>
@@ -575,7 +648,9 @@ export function OrderDetail({
                     <div className="rounded-xl border border-primary/35 bg-primary/5 p-4">
                       <div className="mb-3 flex items-center gap-2">
                         <QrCode size={18} className="text-primary" />
-                        <p className="text-sm font-semibold">Pagamento via PIX</p>
+                        <p className="text-sm font-semibold">
+                          Pagamento via PIX
+                        </p>
                       </div>
                       {pixQrSrc ? (
                         <div className="space-y-3">
@@ -589,20 +664,26 @@ export function OrderDetail({
                             />
                           </div>
                           <p className="text-center text-xs text-muted-foreground">
-                            Confirme o recebimento no banco e finalize a comanda para registrar como pago via PIX.
+                            Confirme o recebimento no banco e finalize a comanda
+                            para registrar como pago via PIX.
                           </p>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Envie o QR Code PIX em Configurações para liberar este pagamento.
+                          Envie o QR Code PIX em Configurações para liberar este
+                          pagamento.
                         </p>
                       )}
                     </div>
                   )}
                   {payment === "CREDITO" && (
                     <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">
-                      <CreditCard size={17} className="mt-0.5 shrink-0 text-primary" />
-                      Cartão é registrado manualmente no sistema após a aprovação na maquininha.
+                      <CreditCard
+                        size={17}
+                        className="mt-0.5 shrink-0 text-primary"
+                      />
+                      Cartão é registrado manualmente no sistema após a
+                      aprovação na maquininha.
                     </div>
                   )}
                 </div>
@@ -616,7 +697,9 @@ export function OrderDetail({
                     </strong>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {o.pagoEm ? "Pago em " + dateLabel(o.pagoEm) : "Finalizado em " + dateLabel(o.finalizadoEm)}
+                    {o.pagoEm
+                      ? "Pago em " + dateLabel(o.pagoEm)
+                      : "Finalizado em " + dateLabel(o.finalizadoEm)}
                     {" · "}Comissão {money(o.comissao)}
                   </p>
                 </div>
@@ -633,7 +716,9 @@ export function OrderDetail({
                 )}
                 {o.status === "EM_LAVAGEM" && (
                   <Button
-                    disabled={busy || !payment || (payment === "PIX" && !pixQrSrc)}
+                    disabled={
+                      busy || !payment || (payment === "PIX" && !pixQrSrc)
+                    }
                     onClick={() => void transition("FINALIZADO")}
                   >
                     Confirmar pagamento e finalizar
@@ -650,14 +735,14 @@ export function OrderDetail({
                   </Button>
                 )}
                 {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
-                    <Button
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => setCancel(true)}
-                    >
-                      Cancelar comanda
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => setCancel(true)}
+                  >
+                    Cancelar comanda
+                  </Button>
+                )}
               </div>
             </div>
           )}
