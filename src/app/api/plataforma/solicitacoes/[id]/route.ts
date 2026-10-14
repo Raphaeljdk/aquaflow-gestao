@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { decisaoSolicitacaoSchema } from "@/lib/platform-onboarding";
-import { apiError } from "@/lib/api";
+import { apiError, checkOrigin } from "@/lib/api";
 export const dynamic = "force-dynamic";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requirePlatformAdmin();
+    checkOrigin(req);
     const { id } = await params;
     const values = decisaoSolicitacaoSchema.safeParse(await req.json());
     if (!values.success) return NextResponse.json({ error: "Dados de revisão inválidos." }, { status: 400 });
