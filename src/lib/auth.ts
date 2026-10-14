@@ -90,8 +90,13 @@ export async function currentUser() {
       role: true,
       ativo: true,
       funcionarioId: true,
+      funcionario: { select: { permissoes: true } },
     },
   });
   if (!u?.ativo) throw new BusinessError("Seu acesso foi desativado.", 401);
-  return u;
+  return {
+    id: u.id, name: u.name, email: u.email, role: u.role,
+    funcionarioId: u.funcionarioId,
+    permissoes: u.funcionario?.permissoes ?? [],
+  };
 }
