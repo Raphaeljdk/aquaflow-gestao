@@ -42,6 +42,7 @@ import { agendamentoSchema } from "@/lib/validations";
 import { dayKey, fromLocal, dateLabel, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useActions } from "./layout/app-shell";
+import { pagesForUser } from "@/lib/permissions";
 import { ErrorText } from "./forms/order-form";
 export function Appointments() {
   const [arrival, setArrival] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export function Appointments() {
   const [arrivalType, setArrivalType] = useState("CARRO");
   const [arrivalError, setArrivalError] = useState("");
   const [arriving, setArriving] = useState(false);
-  const { data, mutate, refresh, busy } = useStore(),
+  const { data, user, mutate, refresh, busy } = useStore(),
     actions = useActions(),
     [date, setDate] = useState(dayKey(new Date())),
     [open, setOpen] = useState(false),
@@ -340,7 +341,7 @@ export function Appointments() {
                         <Button
                           size="sm"
                           className="flex-1 text-xs"
-                          disabled={busy || date !== today}
+                          disabled={busy || date !== today || !user || !pagesForUser(user).includes("comandas")}
                           onClick={async () => {
                             if (a.clienteId) {
                               await mutate({
