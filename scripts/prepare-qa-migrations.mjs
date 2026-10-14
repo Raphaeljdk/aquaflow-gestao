@@ -13,17 +13,24 @@ try {
     throw new Error("[qa-migrations] Banco incorreto: telefone de segurança não corresponde ao QA.");
   }
   console.log("[qa-migrations] Banco isolado confirmado.");
-  const migrationState = await prisma.$queryRawUnsafe(
-    "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='Comanda' AND column_name='telefoneCliente') AS ready"
+  const rows = await prisma.$queryRawUnsafe(
+    'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"'
   );
-  if (!migrationState[0]?.ready) {
-    console.log("[qa-migrations] Aplicando migration aditiva de operações sem cadastro.");
+  const applied = new Set(rows
+    .filter((row) => row.finished_at && !row.rolled_back_at)
+    .map((row) => row.migration_name));
+  const required = [
+    "202610130002_atendimento_sem_cadastro",
+    "202610140001_funcionario_permissoes",
+  ];
+  if (required.some((name) => !applied.has(name))) {
+    console.log("[qa-migrations] Aplicando somente migrations oficiais pendentes ao QA isolado.");
     await prisma.$disconnect();
     execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
       stdio: "inherit", env: process.env,
     });
   } else {
-    console.log("[qa-migrations] Operações sem cadastro já preparadas, sem novo bloqueio do banco.");
+    console.log("[qa-migrations] Migrations oficiais já aplicadas.");
   }
 } finally {
   await prisma.$disconnect();
