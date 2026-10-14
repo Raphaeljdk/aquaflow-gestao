@@ -100,3 +100,15 @@ export async function currentUser() {
     permissoes: u.funcionario?.permissoes ?? [],
   };
 }
+
+export async function operationalUser() {
+  const user = await currentUser();
+  const central = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+  if (central && user.email.toLowerCase() === central) {
+    throw new BusinessError(
+      "O administrador central gerencia a plataforma. Entre com a conta do estabelecimento para operar um lava-rápido.",
+      403,
+    );
+  }
+  return user;
+}
