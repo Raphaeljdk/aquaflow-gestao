@@ -57,6 +57,7 @@ const links = [
   { path: "clientes", label: "Clientes atendidos", icon: Users },
   { path: "comandas", label: "Comandas", icon: ClipboardList },
   { path: "agendamentos", label: "Agendamentos", icon: CalendarDays },
+  { path: "servicos", label: "Serviços", icon: CheckCircle2 },
   { path: "estoque", label: "Estoque", icon: Package },
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
