@@ -186,7 +186,7 @@ export const paymentLabels: Record<Payment, string> = {
 export const roleLabels: Record<Role, string> = {
   ADMIN: "Administrador",
   FUNCIONARIO: "Funcionário",
-  GERENTE: "Funcionário",
-  ATENDENTE: "Funcionário",
-  LAVADOR: "Funcionário",
+  GERENTE: "Gerente",
+  ATENDENTE: "Atendente",
+  LAVADOR: "Lavador",
 };
