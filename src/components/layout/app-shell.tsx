@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore, DEMO } from "@/hooks/use-store";
-import { allowedPages } from "@/lib/permissions";
+import { pagesForUser } from "@/lib/permissions";
 import { roleLabels, type Comanda } from "@/types";
 import { OrderForm, OrderDetail } from "@/components/forms/order-form";
 import { SearchInput } from "@/components/common";
@@ -80,9 +80,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
-    if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
-      router.replace("/comandas");
+    const visible = pagesForUser(user);
+    if (!visible.includes(page)) router.replace("/" + (visible[0] ?? "comandas"));
   }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -99,7 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       data?.comandas.filter((o) =>
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
       ).length ?? 0;
-  const allowed = allowedPages[user?.role ?? "ADMIN"],
+  const allowed = pagesForUser(user ?? { role: "FUNCIONARIO" }),
     title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
     data?.comandas
