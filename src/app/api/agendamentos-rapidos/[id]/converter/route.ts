@@ -15,8 +15,8 @@ export async function POST(
   try {
     const actor = await currentUser();
     if (
-      !canWrite(actor.role, "agendamentos") ||
-      !canWrite(actor.role, "comandas")
+      !canWrite(actor, "agendamentos") ||
+      !canWrite(actor, "comandas")
     )
       throw new BusinessError("Acesso negado.", 403);
     checkOrigin(request);
