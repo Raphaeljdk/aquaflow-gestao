@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { checkOrigin, apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { BusinessError } from "@/lib/domain";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const user = await currentUser();
-    if (!canWrite(user.role, "comandas")) throw new BusinessError("Acesso negado.", 403);
+    if (!canWrite(user, "comandas")) throw new BusinessError("Acesso negado.", 403);
     checkOrigin(request);
     if (Number(request.headers.get("content-length") ?? 0) > 16000)
       throw new BusinessError("Requisição muito grande.", 413);

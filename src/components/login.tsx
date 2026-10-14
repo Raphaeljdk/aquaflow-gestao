@@ -25,6 +25,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { DEMO } from "@/hooks/use-store";
+import { InstallAppButton } from "@/components/install-app";
 import { ErrorText } from "./forms/order-form";
 
 export function Login() {
@@ -32,36 +33,10 @@ export function Login() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [branding, setBranding] = useState<{
-    empresa: string;
-    logo: string | null;
-  } | null>(null);
   const { resolvedTheme, setTheme } = useTheme();
-
   useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/public/contato", {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((r) =>
-        r.ok
-          ? (r.json() as Promise<{ empresa: string; logo: string | null }>)
-          : null,
-      )
-      .then((brand) => {
-        if (brand) setBranding(brand);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-  const companyName = branding?.empresa || "Ducha Elitte";
-  const companyLogo =
-    branding?.logo ||
-    (companyName.toLowerCase().startsWith("ducha elitte")
-      ? "/ducha-elitte-logo.jpg"
-      : null);
+  // O portal AquaFlow não recebe marca, logo ou contato das configurações da unidade.
+  const companyName = "AquaFlow";
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -115,9 +90,7 @@ export function Login() {
           aria-label={companyName + " · início"}
           className="relative inline-flex max-w-full items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[.06] px-4 py-3 backdrop-blur-sm"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#facc15] text-[#101820]">
-            <CarFront size={25} />
-          </span>
+          <img src="/aquaflow-icon.svg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl" />
           <span className="truncate text-base font-bold tracking-tight text-white">
             {companyName}
           </span>
@@ -201,19 +174,13 @@ export function Login() {
         <div className="mx-auto flex w-full max-w-[450px] flex-1 flex-col justify-center py-10 sm:py-14">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,.35)] sm:p-9">
             <div className="mb-8 flex justify-center">
-              <div className="flex w-full max-w-[240px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                {companyLogo ? (
-                  <img
-                    src={companyLogo}
-                    alt={"Logo completa de " + companyName}
-                    className="block h-auto max-h-36 w-full object-contain"
-                  />
-                ) : (
-                  <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900">
-                    <CarFront size={30} />
-                    {companyName}
-                  </div>
-                )}
+              <div className="flex w-full max-w-[310px] items-center gap-4 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+                <img src="/aquaflow-icon.svg" alt="Símbolo AquaFlow" width={80} height={80}
+                  className="size-[76px] shrink-0 rounded-2xl sm:size-20" />
+                <div className="min-w-0">
+                  <p className="text-xl font-black tracking-[-.045em] text-foreground">AquaFlow</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">Gestão profissional de lava-rápidos</p>
+                </div>
               </div>
             </div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground">
@@ -341,6 +308,7 @@ export function Login() {
               </Link>
             </div>
           </div>
+          <InstallAppButton />
           <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
             {companyName} · Tecnologia para uma operação melhor.
           </p>

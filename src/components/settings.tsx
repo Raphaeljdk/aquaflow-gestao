@@ -10,6 +10,9 @@ import {
   ExternalLink,
   Copy,
   CheckCircle2,
+  Wrench,
+  UserRoundCog,
+  ArrowUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useStore } from "@/hooks/use-store";
@@ -127,6 +130,38 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           </Button>
           {!whatsappReady && <p className="w-full text-xs text-muted-foreground">Preencha e salve o WhatsApp abaixo para ativar o link de agendamento.</p>}
         </div>
+      </section>
+      <section className="mb-6 grid max-w-5xl gap-4 md:grid-cols-2">
+        <article className="panel flex flex-col justify-between gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-primary/10 p-3 text-primary"><Wrench size={22} /></div>
+            <div>
+              <h3 className="font-semibold">Seus serviços e preços</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Cadastre lavagens, tempos estimados, valores e disponibilidade. O catálogo fica exclusivo desta instância.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Serviços inativos não aparecem nos novos agendamentos.</p>
+            </div>
+          </div>
+          <Button variant="outline" type="button" asChild><a href="/servicos">
+            Gerenciar catálogo <ArrowUpRight size={15}/>
+          </a></Button>
+        </article>
+        <article className="panel flex flex-col justify-between gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-primary/10 p-3 text-primary"><UserRoundCog size={22}/></div>
+            <div>
+              <h3 className="font-semibold">Funcionários e acessos</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Crie o login de cada funcionário e marque quais módulos ele poderá acessar.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">Alterações são verificadas pelo servidor; não basta ocultar menus.</p>
+            </div>
+          </div>
+          <Button variant="outline" type="button" asChild><a href="/funcionarios">
+            Gerenciar equipe <ArrowUpRight size={15}/>
+          </a></Button>
+        </article>
       </section>
       <Tabs defaultValue="empresa">
         <TabsList className="mb-6">
@@ -321,7 +356,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
         </TabsContent>
       </Tabs>
       <div className="mt-5 max-w-3xl rounded-xl border border-border p-4 text-sm text-muted-foreground">
-        Veículos e serviços agora são administrados pelo cadastro do cliente. O funcionário trabalha somente em Clientes, Comandas e Agendamentos.
+        A identidade e os serviços deste estabelecimento são configurados aqui. O portal principal do AquaFlow possui identidade independente. Para atender vários lava-rápidos, cada unidade ainda exige um ambiente e banco de dados isolados.
       </div>
     </form>
   );

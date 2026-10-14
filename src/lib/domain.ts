@@ -66,7 +66,7 @@ export function applyMutation(
   now = new Date(),
 ): AppData {
   need(
-    canWrite(actor.role, m.entity),
+    canWrite(actor, m.entity),
     "Você não tem permissão para esta ação.",
     403,
   );

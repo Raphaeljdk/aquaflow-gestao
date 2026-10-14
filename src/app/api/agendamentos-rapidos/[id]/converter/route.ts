@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { checkOrigin, apiError } from "@/lib/api";
 import { BusinessError } from "@/lib/domain";
 import { canWrite } from "@/lib/permissions";
@@ -15,8 +15,8 @@ export async function POST(
   try {
     const actor = await currentUser();
     if (
-      !canWrite(actor.role, "agendamentos") ||
-      !canWrite(actor.role, "comandas")
+      !canWrite(actor, "agendamentos") ||
+      !canWrite(actor, "comandas")
     )
       throw new BusinessError("Acesso negado.", 403);
     checkOrigin(request);

@@ -92,6 +92,7 @@ model Funcionario {
   email String @default("")
   cargo Role @default(FUNCIONARIO)
   comissao Decimal @default(0) @db.Decimal(5,2)
+  permissoes String[] @default([])
   ativo Boolean @default(true)
   user User?
   comandas Comanda[]

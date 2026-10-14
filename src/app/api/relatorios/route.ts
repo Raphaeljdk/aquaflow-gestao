@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { snapshot } from "@/lib/repository";
-import { canManage } from "@/lib/permissions";
+import { pagesForUser } from "@/lib/permissions";
 import { BusinessError } from "@/lib/domain";
 import { apiError } from "@/lib/api";
 import { reportRows, csvReport, pdfReport } from "@/lib/reports";
 export async function GET(request: Request) {
   try {
     const user = await currentUser();
-    if (!canManage(user.role)) throw new BusinessError("Sem permissão.", 403);
+    if (!pagesForUser(user).includes("relatorios")) throw new BusinessError("Sem permissão.", 403);
     const params = new URL(request.url).searchParams;
     const input = z
       .object({

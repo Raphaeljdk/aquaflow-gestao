@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore, DEMO } from "@/hooks/use-store";
-import { allowedPages } from "@/lib/permissions";
+import { pagesForUser } from "@/lib/permissions";
 import { roleLabels, type Comanda } from "@/types";
 import { OrderForm, OrderDetail } from "@/components/forms/order-form";
 import { SearchInput } from "@/components/common";
@@ -57,6 +57,7 @@ const links = [
   { path: "clientes", label: "Clientes atendidos", icon: Users },
   { path: "comandas", label: "Comandas", icon: ClipboardList },
   { path: "agendamentos", label: "Agendamentos", icon: CalendarDays },
+  { path: "servicos", label: "Serviços", icon: CheckCircle2 },
   { path: "estoque", label: "Estoque", icon: Package },
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
@@ -80,9 +81,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
-    if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
-      router.replace("/comandas");
+    const visible = pagesForUser(user);
+    if (!visible.includes(page)) router.replace("/" + (visible[0] ?? "comandas"));
   }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       data?.comandas.filter((o) =>
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
       ).length ?? 0;
-  const allowed = allowedPages[user?.role ?? "ADMIN"],
+  const allowed = pagesForUser(user ?? { role: "FUNCIONARIO" }),
     title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
     data?.comandas
@@ -260,19 +260,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-medium">{current.label}</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-4">
-              <Button
-                type="button"
-                size="sm"
-                className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
-                onClick={() => {
-                  setOrderClientId(undefined);
-                  setOrderOpen(true);
-                }}
-              >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Receber veículo</span>
-                <span className="sm:hidden">Receber</span>
-              </Button>
+              {allowed.includes("comandas") && (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
+                  onClick={() => {
+                    setOrderClientId(undefined);
+                    setOrderOpen(true);
+                  }}
+                >
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Receber veículo</span>
+                  <span className="sm:hidden">Receber</span>
+                </Button>
+              )}
               <div className="h-5 border-l border-border" />
               <Button
                 variant="ghost"

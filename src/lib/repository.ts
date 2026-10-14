@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import type { AppData, Mutation, User, Vistoria } from "@/types";
 import { applyMutation, BusinessError } from "./domain";
 import { funcionarioSchema } from "./validations";
+import { pagesForUser } from "./permissions";
 type DB = Prisma.TransactionClient;
 export async function snapshot(db: DB = prisma): Promise<AppData> {
   const [
@@ -44,6 +45,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     funcionarios: funcionarios.map((f) => ({
       ...f,
       comissao: Number(f.comissao),
+      permissoes: f.permissoes,
     })),
     comandas: orders.map((o) => ({
       ...o,
@@ -98,11 +100,20 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
 }
 export function scopeData(d: AppData, u: User): AppData {
   if (u.role === "ADMIN") return d;
+  const pages = pagesForUser(u);
+  const visibleOrders = pages.some((p) => ["comandas", "dashboard", "relatorios"].includes(p)) ? d.comandas : [];
+  const referencedClients = new Set(visibleOrders.map((o) => o.clienteId).filter(Boolean));
+  const referencedVehicles = new Set(visibleOrders.map((o) => o.veiculoId).filter(Boolean));
   return {
     ...d,
-    funcionarios: d.funcionarios.filter((f) => f.ativo),
-    materiais: [],
-    movimentosEstoque: [],
+    clientes: pages.includes("clientes") ? d.clientes : d.clientes.filter((c) => referencedClients.has(c.id)),
+    veiculos: pages.includes("clientes") ? d.veiculos : d.veiculos.filter((v) => referencedVehicles.has(v.id)),
+    comandas: visibleOrders,
+    agendamentos: pages.some((p) => ["agendamentos", "dashboard"].includes(p)) ? d.agendamentos : [],
+    servicos: pages.some((p) => ["comandas", "agendamentos", "dashboard"].includes(p)) ? d.servicos : [],
+    funcionarios: d.funcionarios.filter((f) => f.ativo).map(({permissoes: _permissoes, ...f}) => f),
+    materiais: pages.includes("estoque") ? d.materiais : [],
+    movimentosEstoque: pages.includes("estoque") ? d.movimentosEstoque : [],
   };
 }
 export async function mutate(m: Mutation, actor: User) {
