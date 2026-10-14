@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { useActions } from "@/components/layout/app-shell";
+import { pagesForUser } from "@/lib/permissions";
 import {
   PageTitle,
   PanelHeading,
@@ -160,7 +161,7 @@ export function Dashboard() {
       <PageTitle
         title="Visão geral"
         description="Seu lava rápido em movimento. Tudo sob controle."
-        action={!isWasher ? actions.newOrder : undefined}
+        action={user && pagesForUser(user).includes("comandas") ? actions.newOrder : undefined}
         actionLabel="Nova comanda"
       >
         <span className="hidden h-10 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-sm text-muted-foreground xl:inline-flex">
