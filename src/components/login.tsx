@@ -32,36 +32,11 @@ export function Login() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [branding, setBranding] = useState<{
-    empresa: string;
-    logo: string | null;
-  } | null>(null);
   const { resolvedTheme, setTheme } = useTheme();
-
   useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/public/contato", {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((r) =>
-        r.ok
-          ? (r.json() as Promise<{ empresa: string; logo: string | null }>)
-          : null,
-      )
-      .then((brand) => {
-        if (brand) setBranding(brand);
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-  const companyName = branding?.empresa || "Ducha Elitte";
-  const companyLogo =
-    branding?.logo ||
-    (companyName.toLowerCase().startsWith("ducha elitte")
-      ? "/ducha-elitte-logo.jpg"
-      : null);
+  // O portal AquaFlow não recebe marca, logo ou contato das configurações da unidade.
+  const companyName = "AquaFlow";
+  const companyLogo: string | null = null;
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -209,7 +184,7 @@ export function Login() {
                     className="block h-auto max-h-36 w-full object-contain"
                   />
                 ) : (
-                  <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900">
+                  <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-foreground">
                     <CarFront size={30} />
                     {companyName}
                   </div>
