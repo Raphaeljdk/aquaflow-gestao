@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { snapshot, scopeData } from "@/lib/repository";
 import { apiError } from "@/lib/api";
 export const dynamic = "force-dynamic";
