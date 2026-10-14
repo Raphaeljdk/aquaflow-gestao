@@ -25,6 +25,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { DEMO } from "@/hooks/use-store";
+import { InstallAppButton } from "@/components/install-app";
 import { ErrorText } from "./forms/order-form";
 
 export function Login() {
@@ -316,6 +317,7 @@ export function Login() {
               </Link>
             </div>
           </div>
+          <InstallAppButton />
           <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
             {companyName} · Tecnologia para uma operação melhor.
           </p>
