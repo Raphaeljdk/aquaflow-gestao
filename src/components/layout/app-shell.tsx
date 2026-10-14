@@ -260,19 +260,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-medium">{current.label}</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-4">
-              <Button
-                type="button"
-                size="sm"
-                className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
-                onClick={() => {
-                  setOrderClientId(undefined);
-                  setOrderOpen(true);
-                }}
-              >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Receber veículo</span>
-                <span className="sm:hidden">Receber</span>
-              </Button>
+              {allowed.includes("comandas") && (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
+                  onClick={() => {
+                    setOrderClientId(undefined);
+                    setOrderOpen(true);
+                  }}
+                >
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Receber veículo</span>
+                  <span className="sm:hidden">Receber</span>
+                </Button>
+              )}
               <div className="h-5 border-l border-border" />
               <Button
                 variant="ghost"
