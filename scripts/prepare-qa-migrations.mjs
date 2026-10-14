@@ -1,9 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 
-// Nunca executa alterações no banco de produção a partir de um Preview.
-if (process.env.VERCEL_ENV !== "preview" || !process.env.QA_EXPECTED_WHATSAPP) {
-  console.log("[qa-migrations] Ignorado fora da branch isolada de QA.");
+// Preview deve possuir identificação inequívoca do QA. Caso contrário,
+// interrompa o build ANTES de conectar ao banco, inclusive para verificações.
+if (process.env.VERCEL_ENV === "preview" && !process.env.QA_EXPECTED_WHATSAPP) {
+  throw new Error("[qa-migrations] Preview bloqueado: configure QA_EXPECTED_WHATSAPP e DATABASE_URL de um banco QA isolado.");
+}
+if (process.env.VERCEL_ENV !== "preview") {
+  console.log("[qa-migrations] Ignorado fora de Preview.");
   process.exit(0);
 }
 const prisma = new PrismaClient();
