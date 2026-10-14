@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { snapshot, scopeData, mutate } from "@/lib/repository";
 import { checkOrigin, apiError } from "@/lib/api";
 import { canRead, canWrite } from "@/lib/permissions";
