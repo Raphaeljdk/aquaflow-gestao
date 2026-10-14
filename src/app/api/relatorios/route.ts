@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { snapshot } from "@/lib/repository";
 import { pagesForUser } from "@/lib/permissions";
 import { BusinessError } from "@/lib/domain";
