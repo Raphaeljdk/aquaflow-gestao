@@ -371,3 +371,65 @@ test("pagamento e responsável ficam imutáveis após finalizar", () => {
   );
   assert.equal(transition(done, "ENTREGUE").comandas[0].comissao, 18);
 });
+
+test("o cliente entra no histórico somente após entrega, sem ficha prévia", () => {
+  const initial = setup();
+  initial.clientes = [];
+  initial.veiculos = [];
+  initial.comandas = [{
+    id: "quick-1", numero: 2450, clienteId: "", veiculoId: "",
+    nomeCliente: "Maria Silva", telefoneCliente: "5511999887766",
+    placa: "ABC1D23", tipoVeiculo: "CARRO",
+    status: "AGUARDANDO", total: 85, desconto: 0, formaPagamento: null,
+    observacoes: "", vistoria: null, funcionarioId: "f1",
+    comissao: 0, comissaoPercentual: 0, createdAt: now.toISOString(),
+    finalizadoEm: null, pagoEm: null,
+    itens: [{ servicoId: "s1", nome: "Lavagem completa", preco: 85, quantidade: 1 }],
+  }];
+  assert.equal(initial.clientes.length, 0);
+  const washing = transition(initial, "EM_LAVAGEM");
+  const ready = transition(washing, "FINALIZADO", { formaPagamento: "PIX" });
+  assert.equal(ready.clientes.length, 0, "lavagem pronta ainda não cria cadastro");
+  const delivered = transition(ready, "ENTREGUE");
+  assert.equal(delivered.clientes.length, 1);
+  assert.equal(delivered.clientes[0].nome, "Maria Silva");
+  assert.equal(delivered.clientes[0].telefone, "5511999887766");
+  assert.equal(delivered.clientes[0].cpfCnpj, "");
+  assert.equal(delivered.veiculos.length, 0, "não criar ficha de veículo");
+  assert.equal(delivered.comandas[0].clienteId, delivered.clientes[0].id);
+  assert.equal(delivered.comandas[0].placa, "ABC1D23");
+  assert.equal(delivered.comandas[0].telefoneCliente, "", "contato sem duplicação");
+  assert.equal(initial.clientes.length, 0, "original preservado");
+
+  const repeated = structuredClone(delivered);
+  repeated.comandas.unshift({
+    ...initial.comandas[0], id: "quick-2", numero: 2451,
+    nomeCliente: "maria silva", telefoneCliente: "(11) 99988-7766", placa: "XYZ9X99",
+  });
+  const finishedAgain = transition(transition(repeated, "EM_LAVAGEM"), "FINALIZADO", { formaPagamento: "PIX" });
+  const deliveredAgain = transition(finishedAgain, "ENTREGUE");
+  assert.equal(deliveredAgain.clientes.length, 1, "reutiliza mesmo nome e telefone");
+  assert.equal(deliveredAgain.comandas[0].clienteId, delivered.clientes[0].id);
+});
+
+test("cancelamento não cadastra cliente e mantém registros financeiros seguros", () => {
+  const initial = setup();
+  initial.clientes = [];
+  initial.veiculos = [];
+  initial.comandas = [{
+    id: "quick-cancel", numero: 2460, clienteId: "", veiculoId: "",
+    nomeCliente: "João Teste", telefoneCliente: "5511999887766",
+    placa: "ABC1D23", tipoVeiculo: "CARRO",
+    status: "AGUARDANDO", total: 45, desconto: 0, formaPagamento: null,
+    observacoes: "", vistoria: null, funcionarioId: "f1",
+    comissao: 0, comissaoPercentual: 0, createdAt: now.toISOString(),
+    finalizadoEm: null, pagoEm: null,
+    itens: [{ servicoId: "s2", nome: "Lavagem simples", preco: 45, quantidade: 1 }],
+  }];
+  const cancelled = transition(initial, "CANCELADO");
+  assert.equal(cancelled.clientes.length, 0);
+  assert.equal(cancelled.comandas[0].nomeCliente, "");
+  assert.equal(cancelled.comandas[0].telefoneCliente, "");
+  assert.equal(cancelled.comandas[0].placa, "");
+  assert.equal(cancelled.comandas[0].total, 45);
+});
