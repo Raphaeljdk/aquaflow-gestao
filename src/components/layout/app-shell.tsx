@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 import { WebMCPTools } from "@/components/webmcp-tools";
 const links = [
   { path: "dashboard", label: "Visão geral", icon: LayoutDashboard },
-  { path: "clientes", label: "Clientes", icon: Users },
+  { path: "clientes", label: "Clientes atendidos", icon: Users },
   { path: "comandas", label: "Comandas", icon: ClipboardList },
   { path: "agendamentos", label: "Agendamentos", icon: CalendarDays },
   { path: "estoque", label: "Estoque", icon: Package },
@@ -105,7 +105,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     data?.comandas
       .filter((order) => {
         const q = query.trim().toLowerCase();
-        return [order.nomeCliente, order.placa, String(order.numero)].some(
+        const client = data?.clientes.find((item) => item.id === order.clienteId);
+        return [order.nomeCliente, client?.nome, client?.telefone, order.placa, String(order.numero)].some(
           (value) => value?.toLowerCase().includes(q),
         );
       })
@@ -157,9 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenu className="gap-1">
                 {links
                   .slice(0, 4)
-                  .filter(
-                    (l) => l.path !== "clientes" && allowed.includes(l.path),
-                  )
+                  .filter((l) => allowed.includes(l.path))
                   .map((l) => (
                     <SidebarMenuItem key={l.path}>
                       <SidebarMenuButton
