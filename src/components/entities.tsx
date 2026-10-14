@@ -35,6 +35,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
+import { Checkbox } from "./ui/checkbox";
 import {
   Table,
   TableBody,
@@ -80,7 +81,7 @@ import {
   funcionarioSchema,
 } from "@/lib/validations";
 import { money, dateLabel } from "@/lib/format";
-import { canManage } from "@/lib/permissions";
+import { canManage, employeeModules } from "@/lib/permissions";
 import { roleLabels, type Entity } from "@/types";
 import { ErrorText } from "./forms/order-form";
 type Kind = "clientes" | "veiculos" | "servicos" | "funcionarios";
@@ -107,7 +108,7 @@ const meta = {
   funcionarios: {
     title: "Sua equipe",
     single: "funcionário",
-    description: "Pessoas que fazem cada atendimento brilhar.",
+    description: "Cadastre os profissionais, crie os logins e escolha quais módulos cada um poderá acessar.",
     add: "Novo funcionário",
   },
 };
@@ -778,6 +779,7 @@ function EntityEditor({
       nome: "",
       email: "",
       cargo: "FUNCIONARIO",
+      permissoes: ["clientes", "comandas", "agendamentos"],
       comissao: 0,
       ativo: true,
       password: "",
@@ -791,7 +793,9 @@ function EntityEditor({
   };
   const form = useForm<RecordValue>({
     resolver: zodResolver(schemas[kind]),
-    defaultValues: { ...defaults[kind], ...record, password: "" },
+    defaultValues: { ...defaults[kind], ...record,
+      ...(kind === "funcionarios" && !record.permissoes?.length ? {permissoes: ["clientes", "comandas", "agendamentos"]} : {}),
+      password: "" },
   });
   if (!data) return null;
   const input = (
@@ -949,6 +953,9 @@ function EntityEditor({
               <div className="grid grid-cols-2 gap-4">
                 {select("cargo", "Perfil", [
                   { value: "FUNCIONARIO", label: "Funcionário" },
+                  { value: "GERENTE", label: "Gerente" },
+                  { value: "ATENDENTE", label: "Atendente" },
+                  { value: "LAVADOR", label: "Lavador" },
                   { value: "ADMIN", label: "Administrador" },
                 ])}
                 {input("comissao", "Comissão (%)", "number", {
@@ -957,6 +964,43 @@ function EntityEditor({
                   step: 0.1,
                 })}
               </div>
+              <section className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+                <div>
+                  <p className="font-semibold">Módulos liberados</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {form.watch("cargo") === "ADMIN"
+                      ? "Administradores têm gestão completa nesta instância. Reserve este perfil ao proprietário ou responsável autorizado."
+                      : "Marque as áreas que este funcionário poderá consultar ou operar. Ações administrativas permanecem exclusivas dos administradores."}
+                  </p>
+                </div>
+                {form.watch("cargo") !== "ADMIN" && (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {employeeModules.map((module) => {
+                      const values = (form.watch("permissoes") as string[] | undefined) ?? [];
+                      return (
+                        <label key={module.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card px-3 py-3 text-sm">
+                          <Checkbox
+                            checked={values.includes(module.id)}
+                            onCheckedChange={(checked) => form.setValue(
+                              "permissoes",
+                              checked
+                                ? [...new Set([...values, module.id])]
+                                : values.filter((id) => id !== module.id),
+                              { shouldValidate: true, shouldDirty: true },
+                            )}
+                          />
+                          {module.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {form.watch("cargo") !== "ADMIN" &&
+                  <ErrorText message={form.formState.errors.permissoes?.message as string} />}
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Acesso ao estoque e aos relatórios é somente de consulta. Funcionários não podem editar configurações, catálogo ou contas.
+                </p>
+              </section>
               {input(
                 "password",
                 record.id
