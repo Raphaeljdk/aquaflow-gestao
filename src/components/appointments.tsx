@@ -610,8 +610,8 @@ function AppointmentForm({
         <DialogHeader>
           <DialogTitle>Novo agendamento</DialogTitle>
           <DialogDescription>
-            Informe apenas o nome e WhatsApp para confirmar a lavagem. Nenhuma
-            ficha de cliente será criada.
+            Informe nome e WhatsApp sem cadastro prévio. Após a entrega,
+            o cliente passa automaticamente ao histórico de atendidos.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-5">
@@ -647,6 +647,11 @@ function AppointmentForm({
           </div>
           <div className="space-y-2">
             <Label>Serviços</Label>
+            {!data.servicos.some((service) => service.ativo) && (
+              <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                Nenhum serviço ativo. Peça ao administrador para configurar o catálogo antes de agendar.
+              </p>
+            )}
             <div className="grid gap-2 sm:grid-cols-2">
               {data.servicos
                 .filter((s) => s.ativo)
