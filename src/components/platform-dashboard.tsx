@@ -267,8 +267,8 @@ export function PlatformDashboard() {
                         className="mt-2 w-full resize-y rounded-xl border border-input bg-background p-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         placeholder="Próximos passos, requisitos ou motivo da decisão..."/>
                       <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                        <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void change(item, "EM_ANALISE")}>
-                          <Clock3 size={14}/> {item.status === "PENDENTE" ? "Iniciar análise" : "Salvar / Em análise"}
+                        <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void change(item, item.status === "PENDENTE" ? "EM_ANALISE" : item.status)}>
+                          <Clock3 size={14}/> {item.status === "PENDENTE" ? "Iniciar análise" : "Salvar observação"}
                         </Button>
                         <Button size="sm" disabled={busy !== null} onClick={() => void change(item, "APROVADO")}>
                           <Check size={14}/> Aprovar análise
