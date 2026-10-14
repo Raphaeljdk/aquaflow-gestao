@@ -9,6 +9,7 @@ export interface User {
   email: string;
   role: Role;
   funcionarioId?: string | null;
+  permissoes?: string[];
 }
 export interface Cliente {
   id: string;
@@ -43,6 +44,7 @@ export interface Funcionario {
   cargo: Role;
   comissao: number;
   email: string;
+  permissoes?: string[];
   ativo: boolean;
 }
 export interface ItemComanda {
