@@ -237,9 +237,9 @@ export function applyMutation(
     // Comandas canceladas não formam base de clientes.
     if (v.status === "ENTREGUE" && o.nomeCliente?.trim() && o.telefoneCliente?.trim()) {
       const name = o.nomeCliente.trim();
-      const phone = o.telefoneCliente.replace(/\\D/g, "");
+      const phone = o.telefoneCliente.replace(/\D/g, "");
       const normalizePhone = (value: string) => {
-        const digits = value.replace(/\\D/g, "");
+        const digits = value.replace(/\D/g, "");
         return digits.length >= 12 && digits.startsWith("55") ? digits.slice(2) : digits;
       };
       const existing = d.clientes.find(
