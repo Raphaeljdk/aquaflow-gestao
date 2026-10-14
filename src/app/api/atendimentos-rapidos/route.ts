@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { currentUser } from "@/lib/auth";
+import { operationalUser as currentUser } from "@/lib/auth";
 import { checkOrigin, apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { BusinessError } from "@/lib/domain";
