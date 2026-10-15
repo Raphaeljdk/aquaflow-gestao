@@ -3,19 +3,19 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "AquaFlow | Gestão de Lava-Rápido",
-    short_name: "AquaFlow",
-    description: "Atendimentos, comandas, agendamentos e gestão do seu lava-rápido.",
+    name: "Ducha Elitte | Gestão do Lava-Rápido",
+    short_name: "Ducha Elitte",
+    description: "Atendimentos, comandas, agendamentos e gestão do lava-rápido.",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#081321",
-    theme_color: "#081321",
+    background_color: "#071734",
+    theme_color: "#071734",
     lang: "pt-BR",
     icons: [
-      { src: "/pwa-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/pwa-192.png?v=2", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/pwa-512.png?v=2", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/pwa-512.png?v=2", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
       { name: "Comandas", short_name: "Comandas", url: "/comandas" },
