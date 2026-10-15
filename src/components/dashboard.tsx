@@ -419,13 +419,13 @@ export function Dashboard() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
-                        {order.placa || vehicle?.placa || vehicle?.modelo || "Veículo"}
+                        {vehicle?.placa || vehicle?.modelo || "Veículo"}
                         <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                           #{order.numero}
                         </span>
                       </p>
                       <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {order.nomeCliente || client?.nome || "Cliente de passagem"} · {order.itens[0]?.nome || "Serviço"}
+                        {client?.nome || "Cliente de passagem"} · {order.itens[0]?.nome || "Serviço"}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
