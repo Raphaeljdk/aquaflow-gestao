@@ -14,6 +14,7 @@ import {
 } from "./validations";
 import { cents, decimal, dayKey, dateLabel } from "./format";
 import { canWrite } from "./permissions";
+import { contatoComandaSchema } from "./atendimento-rapido";
 export class BusinessError extends Error {
   constructor(
     message: string,
@@ -182,6 +183,19 @@ export function applyMutation(
     }
     const o = d.comandas.find((o) => o.id === m.id);
     need(o, "Comanda não encontrada.", 404);
+    if (input.action === "contato") {
+      need(
+        ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status),
+        "Dados de contato não podem ser alterados após a entrega ou cancelamento.",
+        409,
+      );
+      const contact = contatoComandaSchema.parse(input);
+      o.nomeCliente = contact.nomeCliente;
+      o.telefoneCliente = contact.telefoneCliente
+        ? (contact.telefoneCliente.length >= 12 ? contact.telefoneCliente : "55" + contact.telefoneCliente)
+        : "";
+      return d;
+    }
     if (input.action === "vistoria") {
       need(
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),

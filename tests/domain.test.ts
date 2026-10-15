@@ -433,3 +433,33 @@ test("cancelamento não cadastra cliente e mantém registros financeiros seguros
   assert.equal(cancelled.comandas[0].placa, "");
   assert.equal(cancelled.comandas[0].total, 45);
 });
+
+test("identificação pode ser complementada depois, sem criar ficha antecipada", () => {
+  const d = setup();
+  d.clientes = [];
+  d.comandas = [{
+    id: "o-avulsa", numero: 9100, clienteId: "", veiculoId: "",
+    nomeCliente: "", telefoneCliente: "", placa: "ABC1D23", tipoVeiculo: "CARRO",
+    status: "AGUARDANDO", total: 50, desconto: 0, formaPagamento: null,
+    observacoes: "", vistoria: null, funcionarioId: "f1",
+    comissao: 0, comissaoPercentual: 0, createdAt: now.toISOString(),
+    finalizadoEm: null, pagoEm: null,
+    itens: [{ servicoId: "s1", nome: "Lavagem completa", preco: 50, quantidade: 1 }],
+  }];
+  const identified = applyMutation(
+    d, { entity: "comandas", method: "PATCH", id: "o-avulsa",
+      data: { action: "contato", nomeCliente: "Cliente de fora", telefoneCliente: "(11) 98888-7777" } },
+    admin, now,
+  );
+  assert.equal(identified.clientes.length, 0);
+  assert.equal(identified.comandas[0].telefoneCliente, "5511988887777");
+  assert.equal(d.comandas[0].telefoneCliente, "");
+  const finished = transition(transition(identified, "EM_LAVAGEM"), "FINALIZADO", { formaPagamento: "PIX" });
+  const delivered = transition(finished, "ENTREGUE");
+  assert.equal(delivered.clientes.length, 1);
+  assert.equal(delivered.clientes[0].nome, "Cliente de fora");
+  assert.throws(() => applyMutation(delivered, {
+    entity: "comandas", method: "PATCH", id: "o-avulsa",
+    data: { action: "contato", nomeCliente: "Outro", telefoneCliente: "" }
+  }, admin, now), /após a entrega/);
+});

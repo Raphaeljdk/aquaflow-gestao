@@ -19,3 +19,9 @@ export const atendimentoRapidoSchema = z.object({
   desconto: z.coerce.number().finite().min(0).max(100000).default(0),
   observacoes: z.string().trim().max(1000).default(""),
 });
+
+// Complementar a identificação não cria cadastro permanente antes da entrega.
+export const contatoComandaSchema = atendimentoRapidoSchema.pick({
+  nomeCliente: true,
+  telefoneCliente: true,
+});

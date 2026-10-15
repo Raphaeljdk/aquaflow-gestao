@@ -472,12 +472,18 @@ export function OrderDetail({
   const { data, user, mutate, busy } = useStore(),
     [payment, setPayment] = useState(""),
     [washer, setWasher] = useState(""),
+    [contactName, setContactName] = useState(""),
+    [contactPhone, setContactPhone] = useState(""),
     [cancel, setCancel] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
+  useEffect(() => {
+    setContactName(o?.nomeCliente ?? "");
+    setContactPhone(o?.telefoneCliente ?? "");
+  }, [id, o?.nomeCliente, o?.telefoneCliente]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
     v = data?.veiculos.find((v) => v.id === o?.veiculoId),
     whatsapp = normalizeWhatsappPhone(o?.telefoneCliente || c?.telefone),
@@ -560,6 +566,39 @@ export function OrderDetail({
                   </span>
                 </p>
               </div>
+              {["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status) && (
+                <details className="rounded-xl border border-border bg-card p-4">
+                  <summary className="cursor-pointer text-sm font-semibold">
+                    Adicionar dados depois (opcional)
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Não é necessário cadastrar cliente ou veículo para atender.
+                    Preencha o contato apenas se desejar avisar pelo WhatsApp.
+                    O cliente passa ao histórico somente depois da entrega.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="order-contact-name">Nome</Label>
+                      <Input id="order-contact-name" value={contactName}
+                        onChange={(event) => setContactName(event.target.value)}
+                        maxLength={120} placeholder="Opcional" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="order-contact-phone">WhatsApp com DDD</Label>
+                      <Input id="order-contact-phone" value={contactPhone}
+                        onChange={(event) => setContactPhone(event.target.value)}
+                        maxLength={20} inputMode="tel" placeholder="Opcional" />
+                    </div>
+                    <Button type="button" variant="outline" disabled={busy}
+                      onClick={() => void mutate({
+                        entity: "comandas", method: "PATCH", id: o.id,
+                        data: { action: "contato", nomeCliente: contactName, telefoneCliente: contactPhone },
+                      })}>
+                      Salvar contato
+                    </Button>
+                  </div>
+                </details>
+              )}
               {o.status === "FINALIZADO" && whatsapp && (
                 <a
                   className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"
