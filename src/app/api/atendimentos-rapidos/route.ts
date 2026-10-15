@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         data: {
           clienteId: null, veiculoId: null,
           nomeCliente: values.nomeCliente,
-          telefoneCliente: values.telefoneCliente.length >= 12 ? values.telefoneCliente : "55" + values.telefoneCliente,
+          telefoneCliente: values.telefoneCliente ? (values.telefoneCliente.length >= 12 ? values.telefoneCliente : "55" + values.telefoneCliente) : "",
           placa: values.placa,
           tipoVeiculo: values.tipo,
           desconto: new Prisma.Decimal(desconto).div(100),

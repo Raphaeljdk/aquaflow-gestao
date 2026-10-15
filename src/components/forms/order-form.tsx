@@ -192,18 +192,17 @@ export function OrderForm({
               <div>
                 <p className="text-sm font-bold">Identificação na chegada</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Informe o nome e WhatsApp para avisar quando estiver pronto.
-                  Identifique o veículo e escolha os serviços.
+                  Atendimento avulso: informe o tipo e a placa, escolha os serviços e comece.
+                  Nome e WhatsApp são opcionais e podem ser completados depois.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="quick-client-name">Nome do cliente</Label>
+                <Label htmlFor="quick-client-name">Nome (opcional)</Label>
                 <Input
                   id="quick-client-name"
-                  required
                   minLength={2}
                   maxLength={120}
-                  placeholder="Nome de quem trouxe o veículo"
+                  placeholder="Cliente de passagem — pode deixar vazio"
                   value={quick.nomeCliente}
                   onChange={(event) =>
                     setQuick({ ...quick, nomeCliente: event.target.value })
@@ -213,11 +212,10 @@ export function OrderForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quick-phone">
-                  WhatsApp com DDD (aviso de conclusão)
+                  WhatsApp com DDD (opcional, para avisos)
                 </Label>
                 <Input
                   id="quick-phone"
-                  required
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="(11) 99999-9999"
@@ -229,8 +227,8 @@ export function OrderForm({
                   className="h-11 text-base sm:text-sm"
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Usado para avisar durante o atendimento. Após a entrega,
-                  nome e telefone entram no histórico de clientes atendidos, sem ficha prévia.
+                  Sem telefone não há aviso automático. Se preencher nome e WhatsApp,
+                  o contato será guardado no histórico somente após a entrega.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -474,12 +472,18 @@ export function OrderDetail({
   const { data, user, mutate, busy } = useStore(),
     [payment, setPayment] = useState(""),
     [washer, setWasher] = useState(""),
+    [contactName, setContactName] = useState(""),
+    [contactPhone, setContactPhone] = useState(""),
     [cancel, setCancel] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
+  useEffect(() => {
+    setContactName(o?.nomeCliente ?? "");
+    setContactPhone(o?.telefoneCliente ?? "");
+  }, [id, o?.nomeCliente, o?.telefoneCliente]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
     v = data?.veiculos.find((v) => v.id === o?.veiculoId),
     whatsapp = normalizeWhatsappPhone(o?.telefoneCliente || c?.telefone),
@@ -562,6 +566,39 @@ export function OrderDetail({
                   </span>
                 </p>
               </div>
+              {["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status) && (
+                <details className="rounded-xl border border-border bg-card p-4">
+                  <summary className="cursor-pointer text-sm font-semibold">
+                    Adicionar dados depois (opcional)
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Não é necessário cadastrar cliente ou veículo para atender.
+                    Preencha o contato apenas se desejar avisar pelo WhatsApp.
+                    O cliente passa ao histórico somente depois da entrega.
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="order-contact-name">Nome</Label>
+                      <Input id="order-contact-name" value={contactName}
+                        onChange={(event) => setContactName(event.target.value)}
+                        maxLength={120} placeholder="Opcional" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="order-contact-phone">WhatsApp com DDD</Label>
+                      <Input id="order-contact-phone" value={contactPhone}
+                        onChange={(event) => setContactPhone(event.target.value)}
+                        maxLength={20} inputMode="tel" placeholder="Opcional" />
+                    </div>
+                    <Button type="button" variant="outline" disabled={busy}
+                      onClick={() => void mutate({
+                        entity: "comandas", method: "PATCH", id: o.id,
+                        data: { action: "contato", nomeCliente: contactName, telefoneCliente: contactPhone },
+                      })}>
+                      Salvar contato
+                    </Button>
+                  </div>
+                </details>
+              )}
               {o.status === "FINALIZADO" && whatsapp && (
                 <a
                   className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-semibold hover:bg-muted"

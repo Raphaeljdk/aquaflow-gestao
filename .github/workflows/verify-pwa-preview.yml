@@ -1,7 +1,7 @@
-name: Validate AquaFlow mobile preview
+name: Validar AquaFlow sem banco
 on:
   push:
-    branches: [codex/controles-por-lava-rapido]
+    branches: [codex/controles-por-lava-rapido, codex/recepcao-avulsa-catalogo-provisorio]
   workflow_dispatch:
 
 jobs:
