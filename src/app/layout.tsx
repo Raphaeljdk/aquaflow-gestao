@@ -13,9 +13,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: [{ url: "/pwa-192.png?v=3", type: "image/png", sizes: "192x192" }],
-    shortcut: "/pwa-192.png?v=3",
-    apple: [{ url: "/apple-icon?v=3", sizes: "180x180" }],
+    icon: [{ url: "/pwa-192.png?v=4", type: "image/png", sizes: "192x192" }],
+    shortcut: "/pwa-192.png?v=4",
+    apple: [{ url: "/apple-icon?v=4", sizes: "180x180" }],
   },
 };
 export const viewport: Viewport = {
