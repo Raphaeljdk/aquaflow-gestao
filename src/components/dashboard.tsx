@@ -170,7 +170,7 @@ export function Dashboard() {
       </PageTitle>
       <div
         className={cn(
-          "mb-6 grid gap-4 sm:grid-cols-2",
+          "mb-5 grid grid-cols-2 gap-2.5 sm:mb-6 sm:gap-4",
           !isWasher && "xl:grid-cols-4",
         )}
       >
@@ -179,27 +179,27 @@ export function Dashboard() {
           .map((m, i) => (
             <div
               key={m.label}
-              className="panel group px-5 py-5 transition-shadow hover:shadow-md hover:shadow-slate-900/3"
+              className="panel group min-w-0 p-3.5 transition-shadow hover:shadow-md hover:shadow-slate-900/3 sm:px-5 sm:py-5"
             >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">
+              <div className="flex min-h-8 items-start justify-between gap-1.5 sm:items-center">
+                <p className="min-w-0 text-[11px] font-medium leading-snug text-muted-foreground sm:text-sm">
                   {m.label}
                 </p>
                 <div
                   className={cn(
-                    "flex size-9 items-center justify-center rounded-xl",
+                    "flex size-7 shrink-0 items-center justify-center rounded-lg sm:size-9 sm:rounded-xl",
                     m.color,
                   )}
                 >
-                  <m.icon size={18} />
+                  <m.icon className="size-4 sm:size-[18px]" />
                 </div>
               </div>
-              <p className="metric-number mt-3 text-[29px] font-semibold leading-tight">
+              <p className="metric-number mt-3 truncate text-[clamp(1.05rem,4.8vw,1.45rem)] font-semibold leading-tight sm:text-[29px]">
                 {m.value}
               </p>
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <p className="mt-2 min-h-7 flex items-start gap-1.5 text-[10px] leading-[1.4] text-muted-foreground sm:mt-3 sm:min-h-0 sm:items-center sm:text-xs">
                 {i === 0 && (
-                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-500 sm:mt-0" />
                 )}
                 {m.description}
               </p>
@@ -207,7 +207,7 @@ export function Dashboard() {
           ))}
       </div>
       {!isWasher && (
-        <div className="mb-6 grid gap-5 xl:grid-cols-[1.85fr_1fr]">
+        <div className="mb-5 grid min-w-0 gap-3 sm:mb-6 sm:gap-5 xl:grid-cols-[1.85fr_1fr]">
           <section className="panel min-w-0">
             <PanelHeading
               title="Faturamento"
@@ -227,8 +227,8 @@ export function Dashboard() {
                 </TabsList>
               </Tabs>
             </PanelHeading>
-            <div className="flex flex-wrap items-baseline gap-3 px-6">
-              <strong className="metric-number text-[28px] font-semibold">
+            <div className="flex flex-wrap items-baseline gap-2 px-4 sm:gap-3 sm:px-6">
+              <strong className="metric-number text-2xl font-semibold sm:text-[28px]">
                 {money(chartTotal)}
               </strong>
               <span
@@ -245,7 +245,7 @@ export function Dashboard() {
                 vs. período anterior
               </span>
             </div>
-            <div className="mt-5 h-[210px] w-full pr-5 pb-4">
+            <div className="mt-4 h-[180px] min-w-0 w-full pr-2 pb-3 sm:mt-5 sm:h-[210px] sm:pr-5 sm:pb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={chart}
@@ -290,7 +290,7 @@ export function Dashboard() {
                       v >= 1000 ? (v / 1000).toFixed(1) + "k" : String(v)
                     }
                     tickMargin={10}
-                    width={58}
+                    width={44}
                   />
                   <Tooltip
                     formatter={(v) => [money(Number(v)), "Faturamento"]}
@@ -329,7 +329,7 @@ export function Dashboard() {
                 <SparklesIcon />
               </div>
             </PanelHeading>
-            <div className="space-y-5 px-6 pb-5">
+            <div className="space-y-4 px-4 pb-4 sm:space-y-5 sm:px-6 sm:pb-5">
               {ranked.map((s, i) => (
                 <div key={s.id}>
                   <div className="mb-2 flex items-center gap-3">
@@ -365,7 +365,7 @@ export function Dashboard() {
           </section>
         </div>
       )}
-      <div className="grid items-start gap-5 xl:grid-cols-[1.85fr_1fr]">
+      <div className="grid min-w-0 items-start gap-3 sm:gap-5 xl:grid-cols-[1.85fr_1fr]">
         <section className="panel min-w-0 overflow-hidden">
           <PanelHeading
             title="Operação em tempo real"
@@ -376,11 +376,11 @@ export function Dashboard() {
               {active.length} veículos
             </span>
           </PanelHeading>
-          <Tabs value={filter} onValueChange={setFilter} className="px-6">
-            <TabsList className="h-auto gap-4 rounded-none border-b border-border bg-transparent p-0">
+          <Tabs value={filter} onValueChange={setFilter} className="px-4 sm:px-6">
+            <TabsList className="h-auto w-full justify-start gap-3 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 sm:gap-4">
               <TabsTrigger
                 value="todos"
-                className="rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-sm shadow-none! data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                className="shrink-0 rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-xs shadow-none! sm:text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
               >
                 Todos
                 <span className="ml-1 rounded bg-muted px-1.5 py-.5 text-xs">
@@ -389,18 +389,54 @@ export function Dashboard() {
               </TabsTrigger>
               <TabsTrigger
                 value="EM_LAVAGEM"
-                className="rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-sm shadow-none! data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                className="shrink-0 rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-xs shadow-none! sm:text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
               >
                 Em lavagem
               </TabsTrigger>
               <TabsTrigger
                 value="AGUARDANDO"
-                className="rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-sm shadow-none! data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                className="shrink-0 rounded-none border-0 border-b-2 border-transparent px-0 pb-3 text-xs shadow-none! sm:text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
               >
                 Aguardando
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          {/* No celular a fila aparece como cartões, evitando uma tabela espremida. */}
+          <div className="divide-y divide-border sm:hidden">
+            {active
+              .filter((order) => filter === "todos" || order.status === filter)
+              .slice(0, 5)
+              .map((order) => {
+                const vehicle = data.veiculos.find((v) => v.id === order.veiculoId);
+                const client = data.clientes.find((c) => c.id === order.clienteId);
+                return (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onClick={() => actions.showOrder(order.id)}
+                    aria-label={"Abrir comanda " + order.numero}
+                    className="flex w-full min-w-0 items-center justify-between gap-3 px-4 py-3 text-left hover:bg-accent/30"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {order.placa || vehicle?.placa || vehicle?.modelo || "Veículo"}
+                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                          #{order.numero}
+                        </span>
+                      </p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        {order.nomeCliente || client?.nome || "Cliente de passagem"} · {order.itens[0]?.nome || "Serviço"}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <StatusBadge status={order.status} />
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </div>
+                  </button>
+                );
+              })}
+          </div>
+          <div className="hidden sm:block">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -478,6 +514,7 @@ export function Dashboard() {
                 })}
             </TableBody>
           </Table>
+          </div>
           {active.length === 0 && (
             <Empty
               title="Fila livre"
@@ -502,7 +539,7 @@ export function Dashboard() {
                 Ver agenda
               </Link>
             </PanelHeading>
-            <div className="px-6 pb-2">
+            <div className="px-4 pb-2 sm:px-6">
               {upcoming.length === 0 ? (
                 <p className="py-7 text-sm text-muted-foreground">
                   Nenhum agendamento para hoje.

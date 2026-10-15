@@ -42,17 +42,17 @@ export function PageTitle({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+    <div className="mb-5 flex flex-col items-start justify-between gap-3 sm:mb-7 sm:flex-row sm:flex-wrap sm:gap-4">
       <div>
-        <h1 className="text-[28px] font-semibold leading-tight">{title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        <h1 className="text-2xl font-semibold leading-tight sm:text-[28px]">{title}</h1>
+        <p className="mt-1 text-[13px] leading-5 text-muted-foreground sm:mt-2 sm:text-sm">{description}</p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex max-w-full flex-wrap items-center gap-2 sm:gap-3">
         {children}
         {action && (
           <Button
             onClick={action}
-            className="h-11 gap-2 rounded-lg px-4 font-medium shadow-sm shadow-primary/10"
+            className="h-10 gap-2 rounded-lg px-3 text-sm font-medium shadow-sm shadow-primary/10 sm:h-11 sm:px-4"
           >
             <Plus size={17} />
             {actionLabel}
@@ -252,7 +252,7 @@ export function PanelHeading({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-6 py-5">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
       <div>
         <h2 className="text-base font-semibold">{title}</h2>
         {subtitle && (
