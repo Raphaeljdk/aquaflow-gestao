@@ -1,24 +1,21 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const APP_ICON_SVG = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\">\n<defs>\n  <linearGradient id=\"bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\"><stop stop-color=\"#071321\"/><stop offset=\"1\" stop-color=\"#15324B\"/></linearGradient>\n  <linearGradient id=\"flow\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\"><stop stop-color=\"#62E0F6\"/><stop offset=\"1\" stop-color=\"#0995D6\"/></linearGradient>\n  <linearGradient id=\"gold\" x1=\"0\" x2=\"1\"><stop stop-color=\"#FFE073\"/><stop offset=\"1\" stop-color=\"#F3B319\"/></linearGradient>\n</defs>\n<rect x=\"8\" y=\"8\" width=\"496\" height=\"496\" rx=\"124\" fill=\"url(#bg)\"/>\n<circle cx=\"386\" cy=\"120\" r=\"150\" fill=\"#4AC5EA\" opacity=\".08\"/>\n<path d=\"M102 390C166 360 202 373 248 390s96 25 162-10\" fill=\"none\" stroke=\"#55D3ED\" stroke-width=\"13\" stroke-linecap=\"round\" opacity=\".58\"/>\n<path d=\"M104 426c75-25 120-7 165 4s88 11 139-10\" fill=\"none\" stroke=\"#3A7499\" stroke-width=\"10\" stroke-linecap=\"round\" opacity=\".5\"/>\n<path d=\"M257 80c-30 44-50 73-50 101a50 50 0 0 0 100 0c0-28-20-57-50-101Z\" fill=\"url(#flow)\"/>\n<path d=\"M244 132c-11 18-20 32-20 48\" fill=\"none\" stroke=\"#E0FDFF\" stroke-width=\"10\" stroke-linecap=\"round\" opacity=\".75\"/>\n<path d=\"M158 279l31-65c9-17 25-27 43-27h48c19 0 34 10 43 27l31 65\" fill=\"none\" stroke=\"#F3FAFF\" stroke-width=\"18\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>\n<path d=\"M147 278h218c22 0 38 17 38 37v29c0 16-13 29-29 29H138c-16 0-29-13-29-29v-29c0-20 17-37 38-37Z\" fill=\"#15516A\" stroke=\"#F3FAFF\" stroke-width=\"15\"/>\n<path d=\"M158 320h40m116 0h40\" stroke=\"url(#gold)\" stroke-width=\"19\" stroke-linecap=\"round\"/>\n<path d=\"M227 335h58\" stroke=\"#B7EFFF\" stroke-width=\"10\" stroke-linecap=\"round\"/>\n<path d=\"M163 373v16m186-16v16\" stroke=\"#F6FAFC\" stroke-width=\"19\" stroke-linecap=\"round\"/>\n</svg>";
-
+// Todas as dimensões são renderizadas a partir da imagem real fornecida pelo cliente.
+// Não há captura de tela, botão de compartilhamento ou URL de hospedagem externa.
 export function renderPwaIcon(size: number) {
+  const image = readFileSync(join(process.cwd(), "public", "ducha-elitte-app.jpg"));
+  const src = "data:image/jpeg;base64," + image.toString("base64");
   return new ImageResponse(
-    (
-      <div style={{
-        height: "100%", width: "100%", display: "flex",
-        alignItems: "center", justifyContent: "center",
-        background: "#091626",
-      }}>
-        <img
-          src={"data:image/svg+xml;base64," + Buffer.from(APP_ICON_SVG).toString("base64")}
-          width={size}
-          height={size}
-          alt="AquaFlow"
-          style={{ width: size, height: size }}
-        />
-      </div>
-    ),
+    <div style={{
+      display: "flex", width: "100%", height: "100%",
+      background: "#071734", alignItems: "center", justifyContent: "center",
+    }}>
+      {/* Sem bordas recortadas aqui: o sistema operacional faz o arredondamento. */}
+      <img src={src} alt="Ducha Elitte" width={size} height={size}
+        style={{ display: "block", width: size, height: size }} />
+    </div>,
     { width: size, height: size },
   );
 }
