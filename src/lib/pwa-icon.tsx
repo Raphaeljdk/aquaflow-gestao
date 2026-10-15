@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-// O escudo enviado pelo proprietário, sem o botão de compartilhamento.
+// Escudo azul centralizado enviado pelo proprietário, sem texto e sem controles de captura.
 export function renderPwaIcon(size: number) {
-  const image = readFileSync(join(process.cwd(), "public", "ducha-elitte-app.jpg"));
+  const image = readFileSync(join(process.cwd(), "public", "ducha-elitte-emblema.jpg"));
   const src = "data:image/jpeg;base64," + image.toString("base64");
   return new ImageResponse(
     <div style={{

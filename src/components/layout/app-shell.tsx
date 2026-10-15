@@ -131,12 +131,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar className="border-r border-border" collapsible="offcanvas">
           <SidebarHeader className="px-6 pb-8 pt-8">
             <Link href="/clientes" className="flex items-center gap-3">
-              <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-                {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#071734] shadow-sm">
+                {title.toLowerCase().startsWith("ducha elitte") || data?.configuracao.logo ? (
                   <img
-                    src={data?.configuracao.logo || "/ducha-elitte-app.jpg"}
-                    alt={title}
-                    className="size-full object-contain bg-white p-1"
+                    src={title.toLowerCase().startsWith("ducha elitte")
+                      ? "/ducha-elitte-emblema.jpg"
+                      : data?.configuracao.logo || "/ducha-elitte-emblema.jpg"}
+                    alt={"Símbolo " + title}
+                    width={48}
+                    height={48}
+                    className="size-full object-cover"
                   />
                 ) : (
                   <div className="flex size-full items-center justify-center text-slate-800">
@@ -246,7 +250,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <div className="min-w-0 flex-1">
-          <header className="flex h-14 min-w-0 items-center justify-between gap-1.5 border-b border-border bg-card px-3 sm:h-[68px] sm:gap-2 sm:px-5 md:h-[76px] md:px-8">
+          <header className="app-topbar sticky z-30 flex h-14 min-w-0 items-center justify-between gap-1.5 border-b border-border bg-card px-3 shadow-sm sm:top-0 sm:h-[68px] sm:gap-2 sm:px-5 md:h-[76px] md:px-8">
             <div className="flex min-w-0 items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
               <SidebarTrigger className="mr-2 md:hidden" />
               <span className="hidden text-muted-foreground sm:inline">

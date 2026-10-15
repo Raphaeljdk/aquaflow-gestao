@@ -214,3 +214,28 @@ input[type="datetime-local"] {
     break-inside: avoid;
   }
 }
+
+/* No iPhone instalado como app Web, a barra de navegação permanece visível
+   abaixo da área do relógio, sem compensar a altura do header no conteúdo. */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  isolation: isolate;
+}
+@media (max-width: 639px) {
+  .app-topbar {
+    top: env(safe-area-inset-top, 0px);
+  }
+  .app-topbar::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 100%;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--card);
+    pointer-events: none;
+  }
+}
+html { scroll-padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
+body { min-height: 100svh; }

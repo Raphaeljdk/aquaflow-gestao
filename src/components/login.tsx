@@ -40,7 +40,9 @@ export function Login() {
     return () => controller.abort();
   }, []);
   const companyName = branding?.empresa || "Ducha Elitte";
-  const companyLogo = branding?.logo || (companyName.toLowerCase().startsWith("ducha elitte") ? "/ducha-elitte-app.jpg" : null);
+  const companyLogo = companyName.toLowerCase().startsWith("ducha elitte")
+    ? "/ducha-elitte-emblema.jpg"
+    : branding?.logo || null;
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -72,7 +74,7 @@ export function Login() {
         <div aria-hidden="true" className="pointer-events-none absolute -left-32 bottom-[-170px] size-[400px] rounded-full bg-[#facc15]/10 blur-[90px]" />
         <Link href="/login" aria-label={companyName + " · início"}
           className="relative inline-flex max-w-full items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[.06] px-4 py-3 backdrop-blur-sm">
-          <img src="/ducha-elitte-app.jpg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl object-cover" />
+          <img src="/ducha-elitte-emblema.jpg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl object-cover" />
           <span className="truncate text-base font-bold tracking-tight text-white">{companyName}</span>
         </Link>
         <div className="relative max-w-lg py-16">
@@ -123,8 +125,20 @@ export function Login() {
         <div className="mx-auto flex w-full max-w-[450px] flex-1 flex-col justify-center py-10 sm:py-14">
           <div className="rounded-[28px] border border-border bg-card p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,.35)] sm:p-9">
             <div className="mb-8 flex justify-center">
-              <div className="flex w-full max-w-[380px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-sm sm:p-3">
-                {companyLogo ? <img src={companyLogo} alt={"Logo completa de " + companyName} className="block h-auto max-h-44 w-full object-contain" /> : <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-slate-900"><CarFront size={30}/>{companyName}</div>}
+              <div className="flex w-full max-w-[330px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-[#071734] p-2 shadow-sm sm:p-3">
+                {companyLogo ? (
+                  <img
+                    src={companyLogo}
+                    alt={"Logo de " + companyName}
+                    width={240}
+                    height={240}
+                    className="block aspect-square max-h-44 w-auto max-w-full rounded-xl object-contain"
+                  />
+                ) : (
+                  <div className="flex min-h-32 w-full items-center justify-center gap-3 rounded-lg px-3 text-center text-lg font-bold text-white">
+                    <CarFront size={30}/>{companyName}
+                  </div>
+                )}
               </div>
             </div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground">Portal da equipe</p>
