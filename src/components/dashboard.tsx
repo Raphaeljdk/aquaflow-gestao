@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { useActions } from "@/components/layout/app-shell";
+import { pagesForUser } from "@/lib/permissions";
 import {
   PageTitle,
   PanelHeading,
@@ -160,7 +161,7 @@ export function Dashboard() {
       <PageTitle
         title="Visão geral"
         description="Seu lava rápido em movimento. Tudo sob controle."
-        action={!isWasher ? actions.newOrder : undefined}
+        action={user && pagesForUser(user).includes("comandas") ? actions.newOrder : undefined}
         actionLabel="Nova comanda"
       >
         <span className="hidden h-10 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-sm text-muted-foreground xl:inline-flex">
@@ -440,11 +441,11 @@ export function Dashboard() {
                             <p className="text-sm font-semibold">
                               {v?.marca} {v?.modelo}
                               <span className="ml-2 hidden text-xs font-normal text-muted-foreground 2xl:inline">
-                                {v?.placa}
+                                {(o.placa || v?.placa || "")}
                               </span>
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {c?.nome}
+                              {(o.nomeCliente || c?.nome || "Atendimento")}
                             </p>
                           </div>
                         </div>
@@ -521,7 +522,7 @@ export function Dashboard() {
                         {dateLabel(a.dataHora, "HH:mm")}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{c?.nome}</p>
+                        <p className="text-sm font-semibold">{(a.nomeCliente || c?.nome || "Agendamento")}</p>
                         <p className="mt-1 truncate text-xs text-muted-foreground">
                           {v?.modelo} ·{" "}
                           {

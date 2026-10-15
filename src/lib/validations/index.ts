@@ -55,6 +55,7 @@ export const funcionarioSchema = z
     email,
     cargo: z.enum(["ADMIN", "FUNCIONARIO", "GERENTE", "ATENDENTE", "LAVADOR"]),
     comissao: z.coerce.number().min(0).max(100),
+    permissoes: z.array(z.enum(["dashboard", "clientes", "comandas", "agendamentos", "estoque", "relatorios"])).min(1).max(6).optional(),
     ativo: z.boolean().default(true),
     password: z
       .string()

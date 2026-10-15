@@ -30,14 +30,16 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
 import { statusLabels, type Status } from "@/types";
 import { money, dateLabel } from "@/lib/format";
+import { boardStatuses, orderVehicleName } from "@/lib/order-ui";
 export function Orders() {
-  const { data, user } = useStore(),
+  const { data } = useStore(),
     a = useActions(),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("ATIVAS"),
     [view, setView] = useState("table"),
     [page, setPage] = useState(0);
   if (!data) return null;
+  const statuses = boardStatuses(status);
   const filtered = data.comandas
     .filter((o) => {
       const c = data.clientes.find((c) => c.id === o.clienteId),
@@ -49,7 +51,7 @@ export function Orders() {
             ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status)
           : o.status === status) &&
         (!q ||
-          [c?.nome, v?.placa, v?.modelo, String(o.numero)].some((x) =>
+          [(o.nomeCliente || c?.nome || "Atendimento"), o.telefoneCliente, (o.placa || v?.placa || ""), v?.modelo, String(o.numero)].some((x) =>
             x?.toLowerCase().includes(q),
           ))
       );
@@ -112,7 +114,7 @@ export function Orders() {
                 <TableRow>
                   <TableHead className="pl-5">Comanda</TableHead>
                   <TableHead>Veículo</TableHead>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Identificação</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Total</TableHead>
@@ -134,11 +136,11 @@ export function Orders() {
                       </TableCell>
                       <TableCell>
                         <p className="mb-1.5 text-sm">
-                          {v?.marca} {v?.modelo}
+                          {orderVehicleName(o, v)}
                         </p>
-                        <span className="plate">{v?.placa}</span>
+                        <span className="plate">{(o.placa || v?.placa || "")}</span>
                       </TableCell>
-                      <TableCell className="text-sm">{c?.nome}</TableCell>
+                      <TableCell className="text-sm">{(o.nomeCliente || c?.nome || "Atendimento")}</TableCell>
                       <TableCell>
                         <StatusBadge status={o.status} />
                       </TableCell>
@@ -189,8 +191,8 @@ export function Orders() {
             </div>
           </>
         ) : (
-          <div className="grid gap-4 bg-background p-5 lg:grid-cols-3">
-            {(["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"] as Status[]).map(
+          <div className={"grid gap-4 bg-background p-5 " + (statuses.length > 1 ? "lg:grid-cols-3" : "")}>
+            {statuses.map(
               (s) => (
                 <div key={s} className="min-w-0">
                   <div className="mb-4 flex items-center justify-between">
@@ -217,13 +219,13 @@ export function Orders() {
                               <span className="text-xs text-muted-foreground">
                                 #{o.numero}
                               </span>
-                              <span className="plate">{v?.placa}</span>
+                              <span className="plate">{(o.placa || v?.placa || "")}</span>
                             </div>
                             <p className="mt-4 font-semibold">
-                              {v?.marca} {v?.modelo}
+                              {orderVehicleName(o, v)}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {c?.nome}
+                              {(o.nomeCliente || c?.nome || "Atendimento")}
                             </p>
                             <p className="my-4 text-sm">
                               {o.itens.map((i) => i.nome).join(" + ")}

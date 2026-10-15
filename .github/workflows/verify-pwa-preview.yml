@@ -1,0 +1,28 @@
+name: Validate AquaFlow mobile preview
+on:
+  push:
+    branches: [codex/controles-por-lava-rapido]
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/unused
+      NEXTAUTH_SECRET: ci-placeholder-not-used-for-real-authentication
+      NEXT_PUBLIC_DEMO: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Check TypeScript and unit tests
+        run: npm run typecheck && npm test
+      - name: Compile website, PWA icons and manifest (no database migrations)
+        run: npx next build --webpack

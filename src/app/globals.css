@@ -35,31 +35,31 @@
 }
 .dark {
   color-scheme: dark;
-  --background: #090909;
+  --background: #0b121b;
   --foreground: #f8fafc;
-  --card: #121212;
+  --card: #121e2b;
   --card-foreground: #f8fafc;
-  --popover: #151515;
+  --popover: #162331;
   --popover-foreground: #f8fafc;
   --primary: #facc15;
   --primary-foreground: #0a0a0a;
-  --secondary: #222222;
+  --secondary: #203044;
   --secondary-foreground: #f8fafc;
-  --muted: #1b1b1b;
-  --muted-foreground: #a3a3a3;
+  --muted: #1a2939;
+  --muted-foreground: #a7b5c5;
   --accent: #2c2606;
   --accent-foreground: #fde047;
   --destructive: #f87171;
-  --border: #303030;
-  --input: #3a3a3a;
+  --border: #293b4f;
+  --input: #364b62;
   --ring: #facc15;
-  --sidebar: #0d0d0d;
+  --sidebar: #0e1824;
   --sidebar-foreground: #d4d4d4;
   --sidebar-primary: #facc15;
   --sidebar-primary-foreground: #0a0a0a;
   --sidebar-accent: #272205;
   --sidebar-accent-foreground: #fde047;
-  --sidebar-border: #2d2d2d;
+  --sidebar-border: #293b4f;
   --sidebar-ring: #facc15;
 }
 @theme inline {
@@ -139,7 +139,7 @@ textarea {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 2px 3px #1e3b4c02;
+  box-shadow: 0 4px 20px -12px #16324f24;
 }
 .page-enter {
   animation: enter 0.3s ease-out;
@@ -212,5 +212,53 @@ input[type="datetime-local"] {
   }
   .panel {
     break-inside: avoid;
+  }
+}
+
+/* Shared operational surfaces: clear focus, readable controls and stable spacing. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+[data-slot="table-head"] {
+  background: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+[data-slot="table-cell"] {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+[data-slot="sidebar-menu-button"][data-active="true"] {
+  box-shadow: inset 3px 0 0 var(--sidebar-primary);
+}
+[data-slot="dialog-header"] {
+  padding-right: 28px;
+}
+[data-slot="dialog-description"] {
+  line-height: 1.65;
+}
+[data-slot="input"],
+[data-slot="select-trigger"],
+[data-slot="textarea"] {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea,
+  [data-slot="input"],
+  [data-slot="select-trigger"] {
+    font-size: 16px;
+  }
+  [data-slot="dialog-content"] {
+    max-width: calc(100% - 1rem);
+  }
+  [data-slot="table-container"] {
+    overscroll-behavior-x: contain;
   }
 }

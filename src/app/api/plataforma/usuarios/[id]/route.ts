@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
-import { apiError } from "@/lib/api";
+import { apiError, checkOrigin } from "@/lib/api";
 export const dynamic = "force-dynamic";
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requirePlatformAdmin();
+    checkOrigin(request);
     const { id } = await params;
     const input = z.object({ ativo: z.boolean() }).safeParse(await request.json());
     if (!input.success) return NextResponse.json({ error: "Status inválido." }, { status: 400 });

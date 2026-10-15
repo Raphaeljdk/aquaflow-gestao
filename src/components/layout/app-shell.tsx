@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStore, DEMO } from "@/hooks/use-store";
-import { allowedPages } from "@/lib/permissions";
+import { pagesForUser } from "@/lib/permissions";
 import { roleLabels, type Comanda } from "@/types";
 import { OrderForm, OrderDetail } from "@/components/forms/order-form";
 import { SearchInput } from "@/components/common";
@@ -54,9 +54,10 @@ import { cn } from "@/lib/utils";
 import { WebMCPTools } from "@/components/webmcp-tools";
 const links = [
   { path: "dashboard", label: "Visão geral", icon: LayoutDashboard },
-  { path: "clientes", label: "Clientes", icon: Users },
+  { path: "clientes", label: "Clientes atendidos", icon: Users },
   { path: "comandas", label: "Comandas", icon: ClipboardList },
   { path: "agendamentos", label: "Agendamentos", icon: CalendarDays },
+  { path: "servicos", label: "Serviços", icon: CheckCircle2 },
   { path: "estoque", label: "Estoque", icon: Package },
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
@@ -80,9 +81,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
-    if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
-      router.replace("/clientes");
+    const visible = pagesForUser(user);
+    if (!visible.includes(page)) router.replace("/" + (visible[0] ?? "comandas"));
   }, [user, path, router]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -99,18 +99,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       data?.comandas.filter((o) =>
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
       ).length ?? 0;
-  const allowed = allowedPages[user?.role ?? "ADMIN"],
+  const allowed = pagesForUser(user ?? { role: "FUNCIONARIO" }),
     title = data?.configuracao.nome ?? "Ducha Elitte";
   const matches =
-    data?.clientes
-      .filter((c) => {
-        const q = query.toLowerCase();
-        return (
-          c.nome.toLowerCase().includes(q) ||
-          c.telefone.includes(q) ||
-          data.veiculos.some(
-            (v) => v.clienteId === c.id && v.placa.toLowerCase().includes(q),
-          )
+    data?.comandas
+      .filter((order) => {
+        const q = query.trim().toLowerCase();
+        const client = data?.clientes.find((item) => item.id === order.clienteId);
+        return [order.nomeCliente, client?.nome, client?.telefone, order.placa, String(order.numero)].some(
+          (value) => value?.toLowerCase().includes(q),
         );
       })
       .slice(0, 8) ?? [];
@@ -129,25 +126,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <WebMCPTools />
         <Sidebar className="border-r border-border" collapsible="offcanvas">
-          <SidebarHeader className="px-6 pb-8 pt-8">
-            <Link href="/clientes" className="flex items-center gap-3">
-              <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
-                {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
-                  <img
-                    src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
-                    alt={title}
-                    className="size-full object-contain bg-white p-1"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-slate-800">
-                    <Building2 size={24} />
-                  </div>
-                )}
+          <SidebarHeader className="px-5 pb-6 pt-6">
+            <Link
+              href="/comandas"
+              className="block"
+              aria-label={title + " · Comandas"}
+            >
+              <div className="flex items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/25 p-2">
+                <img
+                  src={data?.configuracao.logo || "/ducha-elitte-app.jpg"}
+                  alt={title + " · logo"}
+                  className="size-12 shrink-0 rounded-xl object-contain"
+                  width={48}
+                  height={48}
+                />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{title}</span>
+                  <span className="mt-1 block truncate text-[11px] text-muted-foreground">
+                    Gestão do lava-rápido
+                  </span>
+                </span>
               </div>
-              <span className="min-w-0 truncate text-[18px] font-black tracking-[-.6px] text-sidebar-foreground">
-                {title}
-              </span>
             </Link>
+            <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[.2em] text-muted-foreground">
+              Gestão do lava-rápido
+            </p>
           </SidebarHeader>
           <SidebarContent className="gap-6 px-3">
             <SidebarGroup className="p-0">
@@ -169,7 +172,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           <l.icon className="mr-1 size-[18px]!" />
                           <span>{l.label}</span>
                           {l.path === "comandas" && queue > 0 && (
-                            <span className="ml-auto rounded-md bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                            <span className="ml-auto rounded-md bg-accent px-2 py-0.5 text-xs text-accent-foreground">
                               {queue}
                             </span>
                           )}
@@ -246,11 +249,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <div className="min-w-0 flex-1">
-          <header className="flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
+          <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
             <div className="flex items-center gap-2 text-sm">
               <SidebarTrigger className="mr-2 md:hidden" />
               <span className="hidden text-muted-foreground sm:inline">
-                Workspace
+                Operação
               </span>
               <ChevronRight
                 size={13}
@@ -259,32 +262,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-medium">{current.label}</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-4">
-              <Button
-                type="button"
-                size="sm"
-                className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
-                onClick={() => {
-                  setOrderClientId(undefined);
-                  setOrderOpen(true);
-                }}
-              >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Receber veículo</span>
-                <span className="sm:hidden">Receber</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-9 gap-2 text-muted-foreground"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search size={16} />
-                <span className="hidden text-xs lg:inline">
-                  Buscar cliente ou placa
-                </span>
-                <kbd className="ml-6 hidden rounded border border-border px-1.5 text-xs lg:inline">
-                  ⌘ K
-                </kbd>
-              </Button>
+              {allowed.includes("comandas") && (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
+                  onClick={() => {
+                    setOrderClientId(undefined);
+                    setOrderOpen(true);
+                  }}
+                >
+                  <Plus size={16} />
+                  <span className="hidden sm:inline">Receber veículo</span>
+                  <span className="sm:hidden">Receber</span>
+                </Button>
+              )}
               <div className="h-5 border-l border-border" />
               <Button
                 variant="ghost"
@@ -326,13 +318,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
               <span>
-                © {new Date().getFullYear()} Ducha Elitte · Cada detalhe sob
+                © {new Date().getFullYear()} {title} · Cada detalhe sob
                 controle.
               </span>
               <span>
                 {DEMO
                   ? "Demonstração · alterações temporárias, reiniciadas ao recarregar"
-                  : "Ducha Elitte Gestão"}
+                  : title + " Gestão"}
               </span>
             </footer>
           </main>
@@ -355,13 +347,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DialogHeader>
               <DialogTitle>Busca rápida</DialogTitle>
               <DialogDescription>
-                Encontre clientes por nome, telefone ou placa.
+                Encontre atendimentos por nome, placa ou número da comanda.
               </DialogDescription>
             </DialogHeader>
             <SearchInput
               value={query}
               onChange={setQuery}
-              placeholder="Nome, telefone ou placa..."
+              placeholder="Nome, placa ou comanda..."
             />
             <div className="max-h-80 overflow-auto">
               {matches.map((c) => (
@@ -369,14 +361,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={c.id}
                   className="flex w-full items-center justify-between rounded-lg p-3 text-left hover:bg-muted"
                   onClick={() => {
-                    router.push("/clientes?q=" + encodeURIComponent(c.nome));
+                    setOrderId(c.id);
                     setSearchOpen(false);
                   }}
                 >
                   <span>
-                    <span className="block text-sm font-medium">{c.nome}</span>
+                    <span className="block text-sm font-medium">
+                      {c.nomeCliente || "Atendimento"} · #{c.numero}
+                    </span>
                     <span className="text-xs text-muted-foreground">
-                      {c.telefone}
+                      {c.placa || "Sem placa"}
                     </span>
                   </span>
                   <ArrowUpRight size={16} />
@@ -384,7 +378,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
               {matches.length === 0 && (
                 <p className="p-5 text-center text-sm text-muted-foreground">
-                  Nenhum cliente encontrado.
+                  Nenhum atendimento encontrado.
                 </p>
               )}
             </div>

@@ -66,7 +66,7 @@ export function applyMutation(
   now = new Date(),
 ): AppData {
   need(
-    canWrite(actor.role, m.entity),
+    canWrite(actor, m.entity),
     "Você não tem permissão para esta ação.",
     403,
   );
@@ -232,6 +232,40 @@ export function applyMutation(
       o.pagoEm = now.toISOString();
     }
     o.status = v.status;
+    // O cadastro nasce somente depois que um atendimento real foi entregue.
+    // Não exigimos ficha antecipada, endereço, CPF ou dados adicionais.
+    // Comandas canceladas não formam base de clientes.
+    if (v.status === "ENTREGUE" && o.nomeCliente?.trim() && o.telefoneCliente?.trim()) {
+      const name = o.nomeCliente.trim();
+      const phone = o.telefoneCliente.replace(/\D/g, "");
+      const normalizePhone = (value: string) => {
+        const digits = value.replace(/\D/g, "");
+        return digits.length >= 12 && digits.startsWith("55") ? digits.slice(2) : digits;
+      };
+      const existing = d.clientes.find(
+        (client) =>
+          normalizePhone(client.telefone) === normalizePhone(phone) &&
+          client.nome.trim().toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"),
+      );
+      if (existing) {
+        o.clienteId = existing.id;
+      } else {
+        const clientId = uid();
+        d.clientes.push({
+          id: clientId, nome: name, telefone: phone,
+          email: "", cpfCnpj: "", endereco: "", createdAt: now.toISOString(),
+        });
+        o.clienteId = clientId;
+      }
+      // Mantém o vínculo com o histórico sem duplicar o contato na comanda.
+      o.nomeCliente = "";
+      o.telefoneCliente = "";
+    }
+    if (v.status === "CANCELADO") {
+      o.nomeCliente = "";
+      o.telefoneCliente = "";
+      o.placa = "";
+    }
     return d;
   }
   if (m.entity === "agendamentos") {
@@ -245,6 +279,9 @@ export function applyMutation(
       need(a.status === "AGENDADO", "Agendamento já processado.", 409);
       if (input.status === "CANCELADO") {
         a.status = "CANCELADO";
+        a.nomeCliente = "";
+        a.telefoneCliente = "";
+        a.placa = "";
         return d;
       }
       need(input.action === "convert", "Ação inválida.");

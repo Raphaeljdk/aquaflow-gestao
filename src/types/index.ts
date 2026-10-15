@@ -9,6 +9,7 @@ export interface User {
   email: string;
   role: Role;
   funcionarioId?: string | null;
+  permissoes?: string[];
 }
 export interface Cliente {
   id: string;
@@ -43,6 +44,7 @@ export interface Funcionario {
   cargo: Role;
   comissao: number;
   email: string;
+  permissoes?: string[];
   ativo: boolean;
 }
 export interface ItemComanda {
@@ -72,6 +74,11 @@ export interface Vistoria {
   atualizadoEm: string;
 }
 export interface Comanda {
+  /** Informações temporárias vinculadas ao serviço (não cadastro de cliente). */
+  nomeCliente?: string;
+  telefoneCliente?: string;
+  placa?: string;
+  tipoVeiculo?: "CARRO" | "MOTO" | "CAMINHONETE" | null;
   id: string;
   numero: number;
   clienteId: string;
@@ -91,6 +98,11 @@ export interface Comanda {
   itens: ItemComanda[];
 }
 export interface Agendamento {
+  /** Informações temporárias vinculadas ao serviço (não cadastro de cliente). */
+  nomeCliente?: string;
+  telefoneCliente?: string;
+  placa?: string;
+  tipoVeiculo?: "CARRO" | "MOTO" | "CAMINHONETE" | null;
   id: string;
   clienteId: string;
   veiculoId: string;
@@ -174,7 +186,7 @@ export const paymentLabels: Record<Payment, string> = {
 export const roleLabels: Record<Role, string> = {
   ADMIN: "Administrador",
   FUNCIONARIO: "Funcionário",
-  GERENTE: "Funcionário",
-  ATENDENTE: "Funcionário",
-  LAVADOR: "Funcionário",
+  GERENTE: "Gerente",
+  ATENDENTE: "Atendente",
+  LAVADOR: "Lavador",
 };
