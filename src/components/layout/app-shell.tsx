@@ -246,8 +246,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <div className="min-w-0 flex-1">
-          <header className="flex h-[68px] items-center justify-between gap-2 border-b border-border bg-card px-3 sm:px-5 md:h-[76px] md:px-8">
-            <div className="flex items-center gap-2 text-sm">
+          <header className="flex h-14 min-w-0 items-center justify-between gap-1.5 border-b border-border bg-card px-3 sm:h-[68px] sm:gap-2 sm:px-5 md:h-[76px] md:px-8">
+            <div className="flex min-w-0 items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
               <SidebarTrigger className="mr-2 md:hidden" />
               <span className="hidden text-muted-foreground sm:inline">
                 Workspace
@@ -256,13 +256,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 size={13}
                 className="hidden text-muted-foreground/60 sm:block"
               />
-              <span className="font-medium">{current.label}</span>
+              <span className="truncate font-medium">{current.label}</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-4">
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-4">
               <Button
                 type="button"
                 size="sm"
-                className="h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4"
+                className={cn(
+                  "h-9 gap-1.5 rounded-lg px-2.5 text-xs font-bold sm:px-4",
+                  path === "/dashboard" && "hidden sm:inline-flex",
+                )}
                 onClick={() => {
                   setOrderClientId(undefined);
                   setOrderOpen(true);
@@ -274,7 +277,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
               <Button
                 variant="ghost"
-                className="h-9 gap-2 text-muted-foreground"
+                className="size-9 gap-2 text-muted-foreground sm:w-auto"
                 onClick={() => setSearchOpen(true)}
               >
                 <Search size={16} />
@@ -285,7 +288,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ⌘ K
                 </kbd>
               </Button>
-              <div className="h-5 border-l border-border" />
+              <div className="hidden h-5 border-l border-border sm:block" />
               <Button
                 variant="ghost"
                 size="icon"
@@ -298,7 +301,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Button>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-[1600px] min-w-0 px-3 py-5 sm:px-4 sm:py-7 md:px-8 md:py-8">
+          <main className="mx-auto w-full max-w-[1600px] min-w-0 px-3 py-4 pb-[max(20px,env(safe-area-inset-bottom))] sm:px-4 sm:py-7 md:px-8 md:py-8">
             <div className="page-enter" key={path}>
               {loading ? (
                 <div className="space-y-6">
