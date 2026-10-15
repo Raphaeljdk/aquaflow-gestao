@@ -27,6 +27,11 @@ export function Login() {
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
+    if ("serviceWorker" in navigator && window.isSecureContext) {
+      void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    }
+  }, []);
+  useEffect(() => {
     const controller = new AbortController();
     fetch("/api/public/contato", { cache: "no-store", signal: controller.signal })
       .then((r) => r.ok ? r.json() as Promise<{ empresa: string; logo: string | null }> : null)
@@ -35,7 +40,7 @@ export function Login() {
     return () => controller.abort();
   }, []);
   const companyName = branding?.empresa || "Ducha Elitte";
-  const companyLogo = branding?.logo || (companyName.toLowerCase().startsWith("ducha elitte") ? "/ducha-elitte-logo.jpg" : null);
+  const companyLogo = branding?.logo || (companyName.toLowerCase().startsWith("ducha elitte") ? "/ducha-elitte-app.jpg" : null);
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -67,7 +72,7 @@ export function Login() {
         <div aria-hidden="true" className="pointer-events-none absolute -left-32 bottom-[-170px] size-[400px] rounded-full bg-[#facc15]/10 blur-[90px]" />
         <Link href="/login" aria-label={companyName + " · início"}
           className="relative inline-flex max-w-full items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[.06] px-4 py-3 backdrop-blur-sm">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#facc15] text-[#101820]"><CarFront size={25}/></span>
+          <img src="/ducha-elitte-app.jpg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl object-cover" />
           <span className="truncate text-base font-bold tracking-tight text-white">{companyName}</span>
         </Link>
         <div className="relative max-w-lg py-16">

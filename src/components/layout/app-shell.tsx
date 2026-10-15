@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="h-12 w-20 overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm">
                 {data?.configuracao.logo || title.toLowerCase().startsWith("ducha elitte") ? (
                   <img
-                    src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
+                    src={data?.configuracao.logo || "/ducha-elitte-app.jpg"}
                     alt={title}
                     className="size-full object-contain bg-white p-1"
                   />
