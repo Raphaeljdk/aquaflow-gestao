@@ -132,19 +132,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="block"
               aria-label={title + " · Comandas"}
             >
-              {data?.configuracao.logo ||
-              title.toLowerCase().startsWith("ducha elitte") ? (
+              <div className="flex items-center gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/25 p-2">
                 <img
-                  src={data?.configuracao.logo || "/ducha-elitte-logo.jpg"}
-                  alt={title}
-                  className="h-auto w-full rounded-xl border border-sidebar-border object-contain"
+                  src={data?.configuracao.logo || "/ducha-elitte-app.jpg"}
+                  alt={title + " · logo"}
+                  className="size-12 shrink-0 rounded-xl object-contain"
+                  width={48}
+                  height={48}
                 />
-              ) : (
-                <span className="flex items-center gap-3 py-4 text-lg font-bold">
-                  <Building2 size={24} />
-                  {title}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{title}</span>
+                  <span className="mt-1 block truncate text-[11px] text-muted-foreground">
+                    Gestão do lava-rápido
+                  </span>
                 </span>
-              )}
+              </div>
             </Link>
             <p className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[.2em] text-muted-foreground">
               Gestão do lava-rápido
