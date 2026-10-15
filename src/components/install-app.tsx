@@ -68,7 +68,7 @@ export function InstallAppButton() {
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="rounded-xl bg-[#152e43] p-2 text-sky-200"><Smartphone size={20}/></div>
           <div>
-            <p className="text-sm font-bold">AquaFlow no seu celular</p>
+            <p className="text-sm font-bold">Ducha Elitte no seu celular</p>
             <p className="text-xs text-muted-foreground">Acesso rápido pela tela inicial.</p>
           </div>
         </div>
