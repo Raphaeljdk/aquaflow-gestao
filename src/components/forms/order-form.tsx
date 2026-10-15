@@ -192,18 +192,17 @@ export function OrderForm({
               <div>
                 <p className="text-sm font-bold">Identificação na chegada</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Informe o nome e WhatsApp para avisar quando estiver pronto.
-                  Identifique o veículo e escolha os serviços.
+                  Atendimento avulso: informe o tipo e a placa, escolha os serviços e comece.
+                  Nome e WhatsApp são opcionais e podem ser completados depois.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="quick-client-name">Nome do cliente</Label>
+                <Label htmlFor="quick-client-name">Nome (opcional)</Label>
                 <Input
                   id="quick-client-name"
-                  required
                   minLength={2}
                   maxLength={120}
-                  placeholder="Nome de quem trouxe o veículo"
+                  placeholder="Cliente de passagem — pode deixar vazio"
                   value={quick.nomeCliente}
                   onChange={(event) =>
                     setQuick({ ...quick, nomeCliente: event.target.value })
@@ -213,11 +212,10 @@ export function OrderForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quick-phone">
-                  WhatsApp com DDD (aviso de conclusão)
+                  WhatsApp com DDD (opcional, para avisos)
                 </Label>
                 <Input
                   id="quick-phone"
-                  required
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="(11) 99999-9999"
@@ -229,8 +227,8 @@ export function OrderForm({
                   className="h-11 text-base sm:text-sm"
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Usado para avisar durante o atendimento. Após a entrega,
-                  nome e telefone entram no histórico de clientes atendidos, sem ficha prévia.
+                  Sem telefone não há aviso automático. Se preencher nome e WhatsApp,
+                  o contato será guardado no histórico somente após a entrega.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">

@@ -30,3 +30,16 @@ test("não aceita placa inválida, sem serviço ou valores absurdos", () => {
 test("rejeita tipo de veículo desconhecido", () => {
   assert.equal(atendimentoRapidoSchema.safeParse({ ...form, tipo: "ONIBUS" }).success, false);
 });
+
+test("cliente de passagem abre comanda sem nome e sem telefone", () => {
+  const avulso = atendimentoRapidoSchema.parse({
+    placa: "ABC1D23", tipo: "CARRO", servicoIds: ["lavagem-simples"],
+  });
+  assert.equal(avulso.nomeCliente, "");
+  assert.equal(avulso.telefoneCliente, "");
+});
+test("contato é opcional, mas se informado precisa ser válido", () => {
+  assert.equal(atendimentoRapidoSchema.safeParse({ ...form, telefoneCliente: "" }).success, true);
+  assert.equal(atendimentoRapidoSchema.safeParse({ ...form, telefoneCliente: "12345" }).success, false);
+  assert.equal(atendimentoRapidoSchema.safeParse({ ...form, nomeCliente: "A" }).success, false);
+});
