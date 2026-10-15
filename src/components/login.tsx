@@ -36,7 +36,7 @@ export function Login() {
   const { resolvedTheme, setTheme } = useTheme();
   useEffect(() => setMounted(true), []);
   // O portal AquaFlow não recebe marca, logo ou contato das configurações da unidade.
-  const companyName = "AquaFlow";
+  const companyName = "Ducha Elitte";
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),
@@ -90,7 +90,7 @@ export function Login() {
           aria-label={companyName + " · início"}
           className="relative inline-flex max-w-full items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[.06] px-4 py-3 backdrop-blur-sm"
         >
-          <img src="/aquaflow-icon.svg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl" />
+          <img src="/ducha-elitte-app.jpg" alt="" width={44} height={44} className="size-11 shrink-0 rounded-xl object-cover" />
           <span className="truncate text-base font-bold tracking-tight text-white">
             {companyName}
           </span>
@@ -175,10 +175,10 @@ export function Login() {
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,.35)] sm:p-9">
             <div className="mb-8 flex justify-center">
               <div className="flex w-full max-w-[310px] items-center gap-4 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
-                <img src="/aquaflow-icon.svg" alt="Símbolo AquaFlow" width={80} height={80}
+                <img src="/ducha-elitte-app.jpg" alt="Escudo Ducha Elitte" width={80} height={80}
                   className="size-[76px] shrink-0 rounded-2xl sm:size-20" />
                 <div className="min-w-0">
-                  <p className="text-xl font-black tracking-[-.045em] text-foreground">AquaFlow</p>
+                  <p className="text-xl font-black tracking-[-.045em] text-foreground">Ducha Elitte</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">Gestão profissional de lava-rápidos</p>
                 </div>
               </div>
