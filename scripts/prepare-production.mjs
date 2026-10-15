@@ -1,7 +1,8 @@
 // Primeira configuração de produção. Idempotente: nunca apaga nem sobrescreve usuários existentes.
 import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
-import { hash, compare } from "bcryptjs";
+import { hash } from "bcryptjs";
+import { validProvisionedUser } from "./bootstrap-account-guard.mjs";
 
 if (process.env.VERCEL_ENV !== "production") {
   console.log("[production-init] Ignorado fora de produção.");
@@ -115,17 +116,18 @@ try {
     prisma.user.findUnique({ where: { email: employeeEmail } }),
     prisma.user.findUnique({ where: { email: platformAdminEmail } }),
   ]);
-  if (!admin?.ativo || admin.role !== "ADMIN" || !(await compare(adminPassword, admin.password))) {
-    throw new Error("[production-init] Credencial ADMIN inválida após inicialização.");
+  // Hashes existentes podem ser de senhas alteradas pelo proprietário; não
+  // compara com o SEED_* usado somente para criar usuários quando ausentes.
+  if (!validProvisionedUser(admin, "ADMIN")) {
+    throw new Error("[production-init] Administrador ausente, inativo ou sem hash bcrypt válido.");
   }
-  if (!employee?.ativo || employee.role !== "FUNCIONARIO" || !employee.funcionarioId ||
-      !(await compare(employeePassword, employee.password))) {
-    throw new Error("[production-init] Credencial FUNCIONARIO inválida após inicialização.");
+  if (!validProvisionedUser(employee, "FUNCIONARIO", true)) {
+    throw new Error("[production-init] Funcionário ausente, inativo, sem vínculo ou sem hash bcrypt válido.");
   }
-  if (!platform?.ativo || platform.role !== "ADMIN" || !(await compare(platformAdminPassword, platform.password))) {
-    throw new Error("[production-init] Conta central não corresponde às credenciais configuradas.");
+  if (!validProvisionedUser(platform, "ADMIN")) {
+    throw new Error("[production-init] Administrador central ausente, inativo ou sem hash bcrypt válido.");
   }
-  console.log("[production-init] Configuração e credenciais iniciais verificadas; registros preservados.");
+  console.log("[production-init] Contas existentes ativas, com papéis e hashes verificados; senhas preservadas.");
 } finally {
   await prisma.$disconnect();
 }

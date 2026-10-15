@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { compare, hash } from "bcryptjs";
+import { validProvisionedUser } from "./bootstrap-account-guard.mjs";
 
 const databaseUrl =
   process.env.DATABASE_URL ??
@@ -106,21 +106,20 @@ try {
   console.log("[delivery-check] timezone: America/Sao_Paulo");
 
   if (!activeAdmins.length) fail("nenhum administrador ativo.");
-  if (!activeAdmins.every((u) => /^\$2[aby]\$/.test(u.password)))
+  if (!activeAdmins.every((u) => validProvisionedUser({ ...u, ativo: true, role: "ADMIN" }, "ADMIN")))
     fail("administrador sem hash bcrypt válido.");
 
   const seedAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
-  if (!seedAdminEmail || !seedAdminPassword)
-    fail("credenciais de validação do administrador não estão configuradas.");
+  if (!seedAdminEmail)
+    fail("e-mail de validação do administrador não está configurado.");
   const configuredAdmin = activeAdmins.find(
     (u) => u.email.toLowerCase() === seedAdminEmail,
   );
   if (!configuredAdmin)
     fail("administrador configurado para validação não existe ou está inativo.");
-  if (!(await compare(seedAdminPassword, configuredAdmin.password)))
-    fail("senha configurada para validação do administrador não corresponde ao banco.");
-  console.log("[delivery-check] login administrador: credencial validada");
+  // Não bloquear deploy quando o administrador trocou a senha inicial.
+  // O hash e o estado ativo são verificados; autenticação real é tratada no login.
+  console.log("[delivery-check] administrador provisionado: ativo e hash bcrypt válido");
 
   if (!activeEmployees.length) fail("nenhum usuário funcionário ativo.");
   if (
