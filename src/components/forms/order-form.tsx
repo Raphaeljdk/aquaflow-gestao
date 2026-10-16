@@ -11,6 +11,7 @@ import {
   Loader2,
   QrCode,
   CreditCard,
+  ChevronDown,
 } from "lucide-react";
 import {
   Dialog,
@@ -292,45 +293,46 @@ export function OrderForm({
               Este veículo já está na fila ou aguarda retirada.
             </p>
           )}
-          <div>
-            <Label className="mb-3">Serviços</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {activeServices.map((s) => (
-                  <label
-                    key={s.id}
-                    className={
-                      "flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition " +
-                      (v.servicoIds.includes(s.id)
-                        ? "border-primary bg-accent/60"
-                        : "border-border hover:bg-muted")
-                    }
-                  >
-                    <Checkbox
-                      checked={v.servicoIds.includes(s.id)}
-                      onCheckedChange={(checked) =>
-                        form.setValue(
-                          "servicoIds",
-                          checked
-                            ? [...v.servicoIds, s.id]
-                            : v.servicoIds.filter((x) => x !== s.id),
-                          { shouldValidate: true },
-                        )
-                      }
-                    />
-                    <div className="flex-1">
-                      <span className="block text-sm font-medium">
-                        {s.nome}
+          <div className="space-y-2">
+            <Label>Serviços</Label>
+            <details className="group rounded-lg border border-input bg-background">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+                <span className={selected.length ? "min-w-0 font-medium text-foreground" : "min-w-0 text-muted-foreground"}>
+                  {selected.length
+                    ? selected.length === 1
+                      ? selected[0].nome + " · " + money(selected[0].preco)
+                      : selected.length + " serviços selecionados · " + money(subtotal)
+                    : "Selecione os serviços"}
+                </span>
+                <ChevronDown size={16} className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="max-h-64 space-y-1 overflow-y-auto border-t border-border p-2" role="group" aria-label="Lista de serviços disponíveis">
+                {activeServices.map((service) => {
+                  const checked = v.servicoIds.includes(service.id);
+                  return (
+                    <label key={service.id} className={"flex cursor-pointer items-center gap-3 rounded-md px-3 py-3 transition-colors " + (checked ? "bg-primary/10" : "hover:bg-muted")}>
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          form.setValue("servicoIds", value
+                            ? [...v.servicoIds, service.id]
+                            : v.servicoIds.filter((id) => id !== service.id),
+                            { shouldValidate: true, shouldDirty: true },
+                          )
+                        }
+                        aria-label={service.nome}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium">{service.nome}</span>
+                        <span className="text-xs text-muted-foreground">{service.duracaoMin} min</span>
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.duracaoMin} min
-                      </span>
-                    </div>
-                    <span className="text-sm font-semibold">
-                      {money(s.preco)}
-                    </span>
-                  </label>
-                ))}
-            </div>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums">{money(service.preco)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </details>
+            {selected.length > 0 && <p className="text-xs text-muted-foreground">{selected.length} selecionado(s) · {selected.reduce((sum, service) => sum + service.duracaoMin, 0)} minutos estimados</p>}
             {!activeServices.length && (
               <div role="alert" className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
                 <p className="font-semibold">Ainda não há serviços disponíveis.</p>
