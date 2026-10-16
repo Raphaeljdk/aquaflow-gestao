@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -49,6 +49,7 @@ import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
 import { pixPayload } from "@/lib/pix";
+import { toast } from "sonner";
 type OrderValues = {
   clienteId: string;
   veiculoId: string;
@@ -66,11 +67,13 @@ export function OrderForm({
   initialClientId?: string;
   onClose: () => void;
 }) {
-  const { data, busy, mutate, refresh } = useStore();
+  const { data, user, busy, mutate, refresh } = useStore();
   const [mode, setMode] = useState<"rapido" | "cadastrado">("rapido");
   const [quick, setQuick] = useState({ nomeCliente: "", placa: "", tipo: "CARRO" });
   const [quickBusy, setQuickBusy] = useState(false);
   const [quickError, setQuickError] = useState("");
+  const initializedFor = useRef<string | null>(null);
+  const quickSubmitLock = useRef(false);
   const form = useForm<OrderValues>({
     resolver: zodResolver(comandaSchema),
     defaultValues: {
@@ -89,10 +92,18 @@ export function OrderForm({
     setQuickError("");
   }, [open, initialClientId]);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedFor.current = null;
+      return;
+    }
+    if (!data) return;
+    // A atualização periódica do snapshot não pode apagar os serviços já
+    // selecionados ou o desconto enquanto o funcionário preenche a comanda.
+    const session = initialClientId ?? "__novo_atendimento__";
+    if (initializedFor.current === session) return;
+    initializedFor.current = session;
     const firstVehicle =
-      data?.veiculos.find((vehicle) => vehicle.clienteId === initialClientId)?.id ??
-      "";
+      data.veiculos.find((vehicle) => vehicle.clienteId === initialClientId)?.id ?? "";
     form.reset({
       clienteId: initialClientId ?? "",
       veiculoId: firstVehicle,
@@ -104,7 +115,8 @@ export function OrderForm({
   }, [open, initialClientId, data, form]);
   if (!data) return null;
   const v = form.watch(),
-    selected = data.servicos.filter((s) => v.servicoIds.includes(s.id)),
+    activeServices = data.servicos.filter((s) => s.ativo),
+    selected = activeServices.filter((s) => v.servicoIds.includes(s.id)),
     subtotal = selected.reduce((n, s) => n + s.preco, 0),
     duplicate = data.comandas.some(
       (o) => o.veiculoId === v.veiculoId && activeStatus.includes(o.status),
@@ -114,13 +126,18 @@ export function OrderForm({
       onClose();
   });
   async function submitQuick() {
-    if (quickBusy) return;
+    if (quickSubmitLock.current) return;
     setQuickError("");
     const values = form.getValues();
-    if (values.servicoIds.length < 1) {
-      setQuickError("Selecione ao menos um serviço para iniciar.");
+    if (!activeServices.length) {
+      setQuickError("Nenhum serviço ativo. Peça ao administrador para cadastrar os serviços e valores.");
       return;
     }
+    if (!values.servicoIds.length || values.servicoIds.some((id) => !activeServices.some((s) => s.id === id))) {
+      setQuickError("Selecione pelo menos um serviço disponível antes de criar a comanda.");
+      return;
+    }
+    quickSubmitLock.current = true;
     setQuickBusy(true);
     try {
       const response = await fetch("/api/atendimentos-rapidos", {
@@ -142,10 +159,12 @@ export function OrderForm({
         return;
       }
       await refresh();
+      toast.success("Comanda criada. O veículo foi adicionado à fila.");
       onClose();
     } catch {
-      setQuickError("Falha de conexão. Verifique sua internet e tente novamente.");
+      setQuickError("Falha de conexão. Confira se a comanda foi criada antes de tentar novamente.");
     } finally {
+      quickSubmitLock.current = false;
       setQuickBusy(false);
     }
   }
@@ -276,9 +295,7 @@ export function OrderForm({
           <div>
             <Label className="mb-3">Serviços</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {data.servicos
-                .filter((s) => s.ativo)
-                .map((s) => (
+              {activeServices.map((s) => (
                   <label
                     key={s.id}
                     className={
@@ -314,6 +331,21 @@ export function OrderForm({
                   </label>
                 ))}
             </div>
+            {!activeServices.length && (
+              <div role="alert" className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                <p className="font-semibold">Ainda não há serviços disponíveis.</p>
+                <p className="mt-1 text-muted-foreground">
+                  {user?.role === "ADMIN"
+                    ? "Cadastre os serviços e os respectivos preços para liberar novas comandas."
+                    : "Peça ao administrador do lava-rápido para cadastrar os serviços e preços."}
+                </p>
+                {user?.role === "ADMIN" && (
+                  <a href="/servicos" className="mt-2 inline-block font-semibold text-primary underline underline-offset-4">
+                    Configurar serviços
+                  </a>
+                )}
+              </div>
+            )}
             <ErrorText message={form.formState.errors.servicoIds?.message} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -378,13 +410,13 @@ export function OrderForm({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button disabled={busy || quickBusy || (mode === "cadastrado" && duplicate)} type="submit">
+            <Button disabled={busy || quickBusy || !activeServices.length || (mode === "cadastrado" && duplicate)} type="submit">
               {busy || quickBusy ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Check size={16} />
               )}
-              {mode === "rapido" ? "Iniciar lavagem" : "Abrir comanda"}
+              {mode === "rapido" ? "Criar comanda e adicionar à fila" : "Abrir comanda"}
             </Button>
           </div>
         </form>
