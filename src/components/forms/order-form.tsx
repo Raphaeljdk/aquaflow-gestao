@@ -172,8 +172,8 @@ export function OrderForm({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-h-[92dvh] overflow-y-auto p-0 sm:max-w-[640px]">
-        <DialogHeader className="border-b border-border p-6">
+      <DialogContent className="flex max-h-[calc(100dvh-1rem)] min-h-0 flex-col overflow-hidden p-0 sm:max-h-[92dvh] sm:max-w-[640px]">
+        <DialogHeader className="shrink-0 border-b border-border p-4 sm:p-6">
           <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
             <CarFront size={22} />
           </div>
@@ -184,7 +184,7 @@ export function OrderForm({
         </DialogHeader>
         <form
           onSubmit={mode === "rapido" ? (event) => { event.preventDefault(); void submitQuick(); } : submit}
-          className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0"
+          className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 [-webkit-overflow-scrolling:touch] sm:p-6"
         >
           {!initialClientId && (
             <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="group" aria-label="Modo de atendimento">
@@ -262,6 +262,7 @@ export function OrderForm({
                   />
                 )}
               />
+              {!initialClientId && <button type="button" className="mt-2 text-left text-sm font-semibold text-primary underline underline-offset-4" onClick={() => { setMode("rapido"); form.setValue("clienteId", ""); form.setValue("veiculoId", ""); }}>Cliente não cadastrado? Criar comanda rápida</button>}
               <ErrorText message={form.formState.errors.clienteId?.message} />
             </div>
             <div className="space-y-2">
