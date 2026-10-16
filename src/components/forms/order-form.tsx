@@ -187,31 +187,31 @@ export function OrderForm({
           className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 [-webkit-overflow-scrolling:touch] sm:p-6"
         >
           {!initialClientId && (
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="group" aria-label="Modo de atendimento">
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1" role="group" aria-label="Identificação do cliente">
               <button type="button" onClick={() => setMode("rapido")}
                 aria-pressed={mode === "rapido"}
                 className={mode === "rapido" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
-                Atendimento rápido
+                Cliente novo
               </button>
               <button type="button" onClick={() => setMode("cadastrado")}
                 aria-pressed={mode === "cadastrado"}
                 className={mode === "cadastrado" ? "rounded-lg bg-card px-3 py-2.5 text-sm font-bold shadow-sm" : "rounded-lg px-3 py-2.5 text-sm text-muted-foreground"}>
-                Cliente cadastrado
+                Buscar cliente anterior
               </button>
             </div>
           )}
           {mode === "rapido" ? (
             <div className="space-y-4 rounded-2xl border border-border bg-muted/30 p-4">
               <div>
-                <p className="text-sm font-bold">Identificação na chegada</p>
+                <p className="text-sm font-bold">Dados para iniciar a lavagem</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Sem cadastro antecipado: informe o nome, tipo do veículo e placa. O sistema guardará apenas o vínculo necessário ao histórico da comanda.
+                  Preencha só o necessário. Ao abrir a comanda, o cliente e o veículo entram automaticamente no histórico para os próximos atendimentos.
                 </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quick-client-name">Nome do cliente</Label>
                 <Input id="quick-client-name" required minLength={2} maxLength={120}
-                  placeholder="Nome de quem trouxe o veículo"
+                  placeholder="Nome do cliente"
                   value={quick.nomeCliente}
                   onChange={(event) => setQuick({ ...quick, nomeCliente: event.target.value })}
                   className="h-11 text-base sm:text-sm" />
@@ -262,7 +262,7 @@ export function OrderForm({
                   />
                 )}
               />
-              {!initialClientId && <button type="button" className="mt-2 text-left text-sm font-semibold text-primary underline underline-offset-4" onClick={() => { setMode("rapido"); form.setValue("clienteId", ""); form.setValue("veiculoId", ""); }}>Cliente não cadastrado? Criar comanda rápida</button>}
+              {!initialClientId && <button type="button" className="mt-2 text-left text-sm font-semibold text-primary underline underline-offset-4" onClick={() => { setMode("rapido"); form.setValue("clienteId", ""); form.setValue("veiculoId", ""); }}>Não encontrou? Atender como cliente novo</button>}
               <ErrorText message={form.formState.errors.clienteId?.message} />
             </div>
             <div className="space-y-2">
@@ -419,7 +419,7 @@ export function OrderForm({
               ) : (
                 <Check size={16} />
               )}
-              {mode === "rapido" ? "Criar comanda e adicionar à fila" : "Abrir comanda"}
+              {mode === "rapido" ? "Abrir comanda e colocar na fila" : "Abrir comanda"}
             </Button>
           </div>
         </form>
