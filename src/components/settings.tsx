@@ -321,7 +321,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
         </TabsContent>
       </Tabs>
       <div className="mt-5 max-w-3xl rounded-xl border border-border p-4 text-sm text-muted-foreground">
-        Veículos e serviços agora são administrados pelo cadastro do cliente. O funcionário trabalha somente em Clientes, Comandas e Agendamentos.
+        Os serviços e preços são gerenciados em Gestão → Serviços pelo administrador. O funcionário trabalha somente em Clientes, Comandas e Agendamentos.
       </div>
     </form>
   );
