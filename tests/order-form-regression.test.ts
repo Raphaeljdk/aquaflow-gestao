@@ -24,5 +24,12 @@ test("impede envio duplicado do atendimento rápido", () => {
 });
 
 test("criação rápida adiciona à fila sem fingir início da lavagem", () => {
-  assert.match(source, /Criar comanda e adicionar à fila/);
+  assert.match(source, /Abrir comanda e colocar na fila/);
+});
+
+
+test("cliente novo é o fluxo padrão e cliente recorrente pode ser buscado", () => {
+  assert.match(source, /setMode\(initialClientId \? "cadastrado" : "rapido"\)/);
+  assert.match(source, /Cliente novo/);
+  assert.match(source, /Buscar cliente anterior/);
 });

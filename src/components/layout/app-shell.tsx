@@ -131,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <WebMCPTools />
         <Sidebar className="border-r border-border" collapsible="offcanvas">
-          <SidebarHeader className="px-6 pb-8 pt-8">
+          <SidebarHeader className="px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pb-8 sm:pt-8">
             <Link href="/clientes" className="flex items-center gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#071734] shadow-sm">
                 {title.toLowerCase().startsWith("ducha elitte") || data?.configuracao.logo ? (
@@ -210,7 +210,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="gap-4 p-4">
+          <SidebarFooter className="gap-2 border-t border-border p-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4">
             <div className="rounded-xl border border-border bg-background p-3.5">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
                 <Building2 size={14} className="text-primary" />
