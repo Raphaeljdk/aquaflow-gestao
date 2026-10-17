@@ -239,3 +239,67 @@ input[type="datetime-local"] {
 }
 html { scroll-padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
 body { min-height: 100svh; }
+
+/* Keep overlays usable on short screens and when browser bars change height. */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] {
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-width: 0;
+  overscroll-behavior-y: contain;
+  overflow-wrap: anywhere;
+}
+[data-slot="dialog-content"]:not(.overflow-hidden),
+[data-slot="alert-dialog-content"] {
+  overflow-y: auto;
+}
+[data-slot="dialog-header"] {
+  padding-inline-end: 1.5rem;
+}
+[data-slot="sheet-content"] {
+  max-height: 100dvh;
+  overscroll-behavior-y: contain;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+[data-slot="sidebar-content"] {
+  overscroll-behavior-y: contain;
+}
+/* Let the entire drawer scroll in landscape: a fixed footer otherwise
+   consumes the space needed by the navigation links. */
+@media (max-height: 540px) {
+  [data-slot="sidebar"][data-mobile="true"] > div:not([data-slot]) {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  [data-mobile="true"] [data-slot="sidebar-content"] {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+@media (max-width: 767px), (pointer: coarse) {
+  /* Prevent focus zoom without disabling the user's pinch-to-zoom. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+@media (max-width: 639px) {
+  [data-slot="dialog-content"]:not(.p-0),
+  [data-slot="alert-dialog-content"] {
+    padding: 1rem;
+  }
+  [data-slot="dialog-footer"],
+  [data-slot="alert-dialog-footer"] {
+    min-width: 0;
+  }
+  [data-slot="dialog-footer"] button,
+  [data-slot="alert-dialog-footer"] button {
+    min-height: 44px;
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within { scroll-behavior: auto; }
+}
