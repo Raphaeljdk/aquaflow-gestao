@@ -1,7 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, CheckCircle2, Landmark, Loader2, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, CreditCard, Landmark, Loader2, ShieldCheck, Wallet } from "lucide-react";
 type Fields = { nomeEmpresa: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
 export default function CadastroEmpresaPage() {
   const [form, setForm] = useState<Fields>({
@@ -92,13 +92,26 @@ export default function CadastroEmpresaPage() {
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">Cobrança recorrente para uso e manutenção do sistema.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
-                  <Landmark size={21} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground">Forma principal de pagamento prevista</p>
-                    <p className="mt-1 text-sm font-bold">Pix pelo Banco Inter</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As instruções de pagamento serão enviadas após a aprovação e a definição dos valores.</p>
+                <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold text-muted-foreground">Formas de pagamento previstas</p>
+                  <div className="flex items-start gap-3">
+                    <Landmark size={21} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
+                    <div>
+                      <p className="text-sm font-bold">Pix pelo Banco Inter</p>
+                      <p className="text-xs text-muted-foreground">Forma principal de pagamento</p>
+                    </div>
                   </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
+                      <CreditCard size={18} className="shrink-0 text-primary" aria-hidden="true"/>
+                      <span className="text-sm font-semibold">Cartão de crédito</span>
+                    </div>
+                    <div className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
+                      <CreditCard size={18} className="shrink-0 text-primary" aria-hidden="true"/>
+                      <span className="text-sm font-semibold">Cartão de débito</span>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-5 text-muted-foreground">A disponibilidade dos meios de pagamento, eventuais taxas e as instruções serão confirmadas após a aprovação e antes da contratação.</p>
                 </div>
                 <p className="text-xs leading-5 text-muted-foreground">Nenhuma cobrança é realizada nesta página. Os valores, o vencimento e as condições serão apresentados antes da contratação.</p>
               </section>

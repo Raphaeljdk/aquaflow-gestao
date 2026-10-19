@@ -94,7 +94,7 @@ export function PlatformDashboard() {
             <div className="space-y-1 rounded-xl border border-border bg-muted/50 p-3 text-xs leading-5">
               <p className="font-semibold">Condições comerciais previstas</p>
               <p>Implantação: valor a definir · Mensalidade: valor a definir</p>
-              <p>Pagamento: {item.formaPagamentoPrevista === "PIX_INTER" ? "Pix pelo Banco Inter" : "Método a confirmar"}</p>
+              <p>Formas previstas: {item.formaPagamentoPrevista === "PIX_INTER" ? "Pix pelo Banco Inter (principal), cartão de crédito e cartão de débito" : "Método principal a confirmar, cartão de crédito e cartão de débito previstos"}</p>
               <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente de que os valores serão informados antes da contratação." : "Solicitação anterior à confirmação das condições comerciais."}</p>
               <p className="text-muted-foreground">Cobranças não são emitidas pelo cadastro.</p>
             </div>
