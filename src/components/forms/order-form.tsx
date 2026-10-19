@@ -487,7 +487,7 @@ export function OrderDetail({
   return (
     <>
       <Sheet open={!!id} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-[470px]">
+        <SheetContent className="w-screen max-w-full gap-0 overflow-y-auto overscroll-contain sm:w-[min(94vw,880px)] sm:max-w-[880px]">
           <SheetHeader className="border-b border-border p-6">
             <SheetTitle className="text-xl">Comanda #{o?.numero}</SheetTitle>
             <SheetDescription>
@@ -497,7 +497,7 @@ export function OrderDetail({
             </SheetDescription>
           </SheetHeader>
           {o && data && (
-            <div className="space-y-6 p-6">
+            <div className="min-w-0 space-y-6 p-4 sm:p-6">
               <StatusBadge status={o.status} />
               <div className="rounded-xl bg-muted p-4">
                 <div className="mb-3 flex items-center gap-3">
@@ -549,6 +549,7 @@ export function OrderDetail({
                 </div>
               )}
               <VehicleInspection
+                key={o.id}
                 value={o.vistoria}
                 busy={busy}
                 readOnly={!["AGUARDANDO", "EM_LAVAGEM"].includes(o.status)}
