@@ -211,6 +211,8 @@ model SolicitacaoEmpresa {
   whatsapp String
   cidade String
   mensagem String @default("")
+  formaPagamentoPrevista String @default("PIX_INTER")
+  cienciaCondicoesComerciaisEm DateTime?
   status StatusSolicitacaoEmpresa @default(PENDENTE)
   origemHash String
   consentimentoEm DateTime

@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     await prisma.solicitacaoEmpresa.create({
       data: {
         nomeEmpresa, nomeResponsavel, email, cidade, mensagem,
+        formaPagamentoPrevista: "PIX_INTER",
+        cienciaCondicoesComerciaisEm: new Date(),
         whatsapp: body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55" + body.data.whatsapp,
         origemHash,
         consentimentoEm: new Date(),

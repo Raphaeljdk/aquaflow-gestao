@@ -8,6 +8,7 @@ export const solicitacaoEmpresaSchema = z.object({
   cidade: z.string().trim().min(2).max(120),
   mensagem: z.string().trim().max(500).default(""),
   aceitePrivacidade: z.literal(true),
+  cienteCondicoesComerciais: z.literal(true),
   site: z.string().max(100).default(""),
 });
 export const decisaoSolicitacaoSchema = z.object({

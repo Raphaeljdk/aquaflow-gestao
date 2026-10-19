@@ -7,6 +7,7 @@ type Account = { id: string; name:string; email:string; role:string; ativo:boole
 type Request = {
   id: string; nomeEmpresa: string; nomeResponsavel: string; email: string;
   whatsapp: string; cidade: string; mensagem: string; status: Status;
+  formaPagamentoPrevista: string; cienciaCondicoesComerciaisEm: string | null;
   createdAt: string; revisadoEm: string | null; observacoesInternas: string;
 };
 const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em análise",APROVADO:"Aprovada",REJEITADO:"Rejeitada"};
@@ -90,6 +91,13 @@ export function PlatformDashboard() {
             <a href={"mailto:"+item.email} className="block break-all font-medium underline underline-offset-4">{item.email}</a>
             <a href={"https://wa.me/"+item.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium underline underline-offset-4"><ExternalLink size={14}/> {item.whatsapp}</a>
             {item.mensagem&&<p className="rounded-xl bg-muted p-3 text-sm leading-6">{item.mensagem}</p>}
+            <div className="space-y-1 rounded-xl border border-border bg-muted/50 p-3 text-xs leading-5">
+              <p className="font-semibold">Condições comerciais previstas</p>
+              <p>Implantação: valor a definir · Mensalidade: valor a definir</p>
+              <p>Pagamento: {item.formaPagamentoPrevista === "PIX_INTER" ? "Pix pelo Banco Inter" : "Método a confirmar"}</p>
+              <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente de que os valores serão informados antes da contratação." : "Solicitação anterior à confirmação das condições comerciais."}</p>
+              <p className="text-muted-foreground">Cobranças não são emitidas pelo cadastro.</p>
+            </div>
           </div>
           <label className="mt-5 block space-y-2 text-xs font-semibold text-muted-foreground">
             <span>Notas internas (somente administrador)</span>
