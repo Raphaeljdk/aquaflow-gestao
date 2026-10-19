@@ -1,13 +1,14 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Landmark, Loader2, ShieldCheck, Wallet } from "lucide-react";
 type Fields = { nomeEmpresa: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
 export default function CadastroEmpresaPage() {
   const [form, setForm] = useState<Fields>({
     nomeEmpresa:"", nomeResponsavel:"", email:"", whatsapp:"", cidade:"", mensagem:"",site:"",
   });
   const [consent, setConsent] = useState(false);
+  const [cienteCondicoesComerciais, setCienteCondicoesComerciais] = useState(false);
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +19,7 @@ export default function CadastroEmpresaPage() {
     try {
       const response = await fetch("/api/solicitacoes", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...form, aceitePrivacidade: consent}),
+        body:JSON.stringify({...form, aceitePrivacidade: consent, cienteCondicoesComerciais}),
       });
       const data = await response.json() as {error?:string};
       if(!response.ok) {setError(data.error || "Não foi possível enviar.");return;}
@@ -46,7 +47,7 @@ export default function CadastroEmpresaPage() {
           <div className="space-y-3 text-sm">
             {["Cadastre seu estabelecimento sem compromisso","Aguarde a análise do administrador","Receba orientações para ativar seu painel"].map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
           </div>
-          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> Uma solicitação não cria uma conta nem permite acesso aos dados de outros estabelecimentos.</p>
+          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> Uma solicitação não cria uma conta, não gera cobrança e não permite acesso aos dados de outros estabelecimentos.</p>
         </section>
         <section className="rounded-3xl border border-border bg-card p-5 shadow-lg sm:p-8">
           {success ? <div role="status" className="space-y-5 py-12 text-center">
@@ -71,7 +72,41 @@ export default function CadastroEmpresaPage() {
                   className="w-full rounded-xl border border-input bg-background p-3 text-base font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   placeholder="Quantos funcionários? O que precisa organizar?" />
               </label>
+              <section aria-labelledby="condicoes-comerciais" className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
+                  <div>
+                    <h3 id="condicoes-comerciais" className="text-base font-bold">Investimento e forma de pagamento</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Condições previstas para contratar o sistema após a aprovação.</p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold text-muted-foreground">Taxa inicial do sistema</p>
+                    <p className="mt-2 text-lg font-bold">Valor a definir</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Pagamento único pela implantação e configuração.</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold text-muted-foreground">Mensalidade</p>
+                    <p className="mt-2 text-lg font-bold">Valor a definir</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Cobrança recorrente para uso e manutenção do sistema.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+                  <Landmark size={21} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground">Forma principal de pagamento prevista</p>
+                    <p className="mt-1 text-sm font-bold">Pix pelo Banco Inter</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As instruções de pagamento serão enviadas após a aprovação e a definição dos valores.</p>
+                  </div>
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">Nenhuma cobrança é realizada nesta página. Os valores, o vencimento e as condições serão apresentados antes da contratação.</p>
+              </section>
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
+              <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
+                <input type="checkbox" required checked={cienteCondicoesComerciais} onChange={e=>setCienteCondicoesComerciais(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
+                <span>Estou ciente de que haverá taxa inicial e mensalidade, mas os valores serão informados antes de qualquer contratação ou cobrança.</span>
+              </label>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
                 <span>Autorizo o uso destes dados para avaliar meu cadastro e entrar em contato sobre a plataforma, conforme a LGPD.</span>
