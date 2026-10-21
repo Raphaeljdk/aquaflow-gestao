@@ -224,3 +224,15 @@ model SolicitacaoEmpresa {
   @@index([status, createdAt])
   @@index([origemHash, createdAt])
 }
+
+/** Lista curada pela administração; aprovação de cadastro não publica automaticamente um parceiro. */
+model ParceiroLavaRapido {
+  id String @id @default(cuid())
+  nome String
+  cidade String @default("")
+  whatsapp String
+  ativo Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([ativo, nome])
+}
