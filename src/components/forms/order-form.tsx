@@ -549,8 +549,8 @@ export function OrderDetail({
                 </div>
               )}
               <VehicleInspection
-                tipo={v?.tipo ?? "CARRO"}
                 key={o.id}
+                tipo={v?.tipo ?? "CARRO"}
                 value={o.vistoria}
                 busy={busy}
                 readOnly={!["AGUARDANDO", "EM_LAVAGEM"].includes(o.status)}
