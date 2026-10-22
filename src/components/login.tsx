@@ -23,6 +23,7 @@ export function Login() {
   const [pending, setPending] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [branding, setBranding] = useState<{ empresa: string; logo: string | null } | null>(null);
+  const [hasBookingPartners, setHasBookingPartners] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => setMounted(true), []);
@@ -36,6 +37,14 @@ export function Login() {
     fetch("/api/public/contato", { cache: "no-store", signal: controller.signal })
       .then((r) => r.ok ? r.json() as Promise<{ empresa: string; logo: string | null }> : null)
       .then((brand) => { if (brand) setBranding(brand); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/public/parceiros", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() as Promise<{ parceiros: Array<{ id: string }> }> : null)
+      .then((body) => setHasBookingPartners(Boolean(body?.parceiros?.length)))
       .catch(() => {});
     return () => controller.abort();
   }, []);
@@ -192,9 +201,11 @@ export function Login() {
             </div>
           </div>
           <div className="mt-5 text-center">
+            {hasBookingPartners && (
             <Link href="/agendar" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
               <MessageCircle size={17}/> Agendar em um lava-rápido parceiro <ArrowRight size={15}/>
             </Link>
+            )}
             <div className="mt-3">
               <Link href="/cadastrar-lava-rapido" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
                 Tenho um lava-rápido · Solicitar cadastro <ArrowRight size={15}/>
