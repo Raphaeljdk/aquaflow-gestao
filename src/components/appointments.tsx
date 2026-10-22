@@ -1,4 +1,5 @@
 "use client";
+import { PublicBookingRequests } from "@/components/public-booking-requests";
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,16 +93,17 @@ export function Appointments() {
         }}
         actionLabel="Novo agendamento"
       />
+      <PublicBookingRequests />
       <div className="panel mb-5 flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <MessageCircle size={22} className="mt-0.5 shrink-0 text-primary" />
           <div>
             <p className="font-semibold">Receber pedidos pelo WhatsApp</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compartilhe a página pública com seus clientes. A equipe confirma o horário antes de registrar na agenda.</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Compartilhe o link do seu lava-rápido. Os pedidos ficam pendentes acima até a equipe confirmar o horário.</p>
           </div>
         </div>
         <Button asChild variant="outline" size="sm">
-          <a href="/agendar" target="_blank" rel="noopener noreferrer">Página de agendamento <ArrowRight size={15}/></a>
+          <a href="/agendar/empresa" target="_blank" rel="noopener noreferrer">Página de agendamento <ArrowRight size={15}/></a>
         </Button>
       </div>
       <div className="panel mb-5 p-5">
