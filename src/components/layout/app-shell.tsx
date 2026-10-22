@@ -136,19 +136,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pb-8 sm:pt-8">
             <Link href="/clientes" className="flex items-center gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#071734] shadow-sm">
-                {true ? (
-                  <img
-                    src={data?.configuracao.logo || "/ducha-elitte-emblema.jpg"}
-                    alt={"Símbolo " + title}
-                    width={48}
-                    height={48}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center text-slate-800">
-                    <Building2 size={24} />
-                  </div>
-                )}
+                <img src={data?.configuracao.logo || "/ducha-elitte-emblema.jpg"} alt={"Símbolo " + title}
+                   width={48} height={48} className="size-full object-contain" />
               </div>
               <span className="min-w-0 truncate text-[18px] font-black tracking-[-.6px] text-sidebar-foreground">
                 {title}
@@ -349,6 +338,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {data && (
           <>
             <OrderForm
+              onCreated={(id) => setOrderId(id)}
               open={orderOpen}
               initialClientId={orderClientId}
               onClose={() => {
