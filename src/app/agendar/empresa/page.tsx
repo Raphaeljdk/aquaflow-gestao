@@ -15,6 +15,10 @@ export default function EmpresaAgendamento() {
   const [error,setError]=useState("");
   const [nome,setNome]=useState("");
   const [telefone,setTelefone]=useState("");
+  const [placa,setPlaca]=useState("");
+  const [aceitePrivacidade,setAceitePrivacidade]=useState(false);
+  const [enviando,setEnviando]=useState(false);
+  const [enviado,setEnviado]=useState(false);
   const [tipo,setTipo]=useState("CARRO");
   const [veiculo,setVeiculo]=useState("");
   const [servicoId,setServicoId]=useState("");
@@ -43,27 +47,32 @@ export default function EmpresaAgendamento() {
   const enoughTime=service && horario
     ? (Number(horario.slice(0,2))*60+Number(horario.slice(3)))+service.duracaoMin <= Number(maxTime.slice(0,2))*60+Number(maxTime.slice(3))
     : false;
-  function enviar(event:FormEvent<HTMLFormElement>){
+  async function enviar(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
-    if(!business?.disponivel||!service||!dateIsOpen||!enoughTime||data<today||horario<minTime){
-      setError("Escolha um horário dentro do funcionamento e um serviço disponível.");
+    if(enviando || !business || !service || !dateIsOpen || !enoughTime || data<today || horario<minTime || !aceitePrivacidade) {
+      setError("Confira o cadastro e selecione um horário válido dentro do expediente.");
       return;
     }
-    setError("");
-    const message = [
-      "Olá! Gostaria de solicitar um horário para lavagem.",
-      "Estabelecimento: "+business.empresa,
-      "Cliente: "+nome.trim(), "Contato: "+telefone.trim(),
-      "Veículo: "+(tipo==="MOTO"?"Moto":tipo==="CAMINHONETE"?"Caminhonete":"Carro")+" · "+veiculo.trim(),
-      "Serviço: "+service.nome,
-      "Data desejada: "+data.split("-").reverse().join("/"),
-      "Horário: "+horario,
-      observacoes.trim()?"Observações: "+observacoes.trim():"",
-      "Podem confirmar a disponibilidade e o valor?"
-    ].filter(Boolean).join("\n");
-    const url=whatsappLink(business.whatsapp,message);
-    if(url)window.location.assign(url);
+    setEnviando(true);setError("");
+    try {
+      const response = await fetch("/api/public/empresa/agendamentos", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({nome,telefone,tipo,placa,descricaoVeiculo:veiculo,servicoId,data,
+          horario,observacoes,aceitePrivacidade}),
+      });
+      const result = await response.json() as {error?:string};
+      if(!response.ok) throw new Error(result.error || "Não foi possível registrar o pedido.");
+      setEnviado(true);
+    } catch(e) {
+      setError(e instanceof Error ? e.message : "Não foi possível salvar o pedido. Confira seus dados e tente novamente.");
+    } finally {setEnviando(false);}
   }
+  const whatsappMsg = business && service
+    ? "Olá! Enviei um pedido de agendamento para " + business.empresa + " em " +
+      data.split("-").reverse().join("/") + " às " + horario + ". Nome: " + nome.trim() +
+      ". Placa: " + placa.trim().toUpperCase() + ". Podem confirmar a disponibilidade?"
+    : "";
+  const whatsappUrl = whatsappLink(business?.whatsapp,whatsappMsg);
   const field="h-12 w-full min-w-0 rounded-xl border border-input bg-background px-4 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return <main className="min-h-dvh bg-background text-foreground">
     <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
@@ -74,15 +83,24 @@ export default function EmpresaAgendamento() {
           {business?.logo && <img src={business.logo} width={88} height={88} alt={"Logo "+business.empresa} className="size-20 rounded-2xl bg-white object-contain p-1" />}
           <h1 className="text-4xl font-black leading-[1.08] tracking-tight">{business?.empresa??"Agende sua lavagem"}</h1>
           <p className="text-sm leading-7 text-muted-foreground">Selecione o serviço, informe seu carro ou moto e envie sua preferência diretamente para a equipe do estabelecimento.</p>
-          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={17} className="mt-1 shrink-0"/> O pedido abre uma conversa no WhatsApp. Ele não cria uma reserva confirmada e não grava dados do veículo no sistema.</p>
+          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={17} className="mt-1 shrink-0"/> O pedido é registrado para análise da equipe. O horário só vira reserva depois da confirmação; os dados informados são utilizados para atendimento.</p>
         </section>
         <section className="rounded-3xl border border-border bg-card p-4 shadow-lg sm:p-7">
           <h2 className="mb-2 flex items-center gap-2 text-xl font-bold"><Clock3 className="text-primary"/> Escolher horário</h2>
           {loading ? <p role="status" className="flex gap-2 py-6 text-sm"><Loader2 size={16} className="animate-spin"/> Carregando configurações...</p> :
-            !business?.disponivel ? <p role="status" className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
-              {error || "O WhatsApp de agendamentos ainda não está configurado por este lava-rápido."}
+            !business ? <p role="status" className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">
+              {error || "Os dados do estabelecimento ainda não estão disponíveis."}
             </p> :
             !business.servicos.length ? <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">O estabelecimento ainda não cadastrou serviços. Entre em contato com a equipe.</p> :
+            enviado ? <div role="status" className="space-y-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+              <CheckCircle2 size={34} className="text-emerald-500" />
+              <h3 className="text-lg font-bold">Pedido registrado!</h3>
+              <p className="text-sm leading-6">A equipe recebeu sua solicitação e poderá confirmar ou recusar o horário na agenda do lava-rápido. Até lá, o horário não está reservado.</p>
+              {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
+                <MessageCircle size={18}/> Acompanhar pelo WhatsApp
+              </a>}
+            </div> :
             <form onSubmit={enviar} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2 text-sm font-semibold">Seu nome
@@ -102,6 +120,10 @@ export default function EmpresaAgendamento() {
                   <input required minLength={2} maxLength={100} className={field} value={veiculo} onChange={e=>setVeiculo(e.target.value)} placeholder={tipo==="MOTO"?"Ex.: CG 160":"Ex.: Onix preto"} />
                 </label>
               </div>
+              <label className="block space-y-2 text-sm font-semibold">Placa do veículo
+                <input required minLength={7} maxLength={8} className={field+" uppercase"} value={placa} onChange={e=>setPlaca(e.target.value.toUpperCase())} placeholder="ABC1D23" autoCapitalize="characters"/>
+                <span className="block text-xs font-normal text-muted-foreground">A placa permite relacionar o pedido à agenda, sem criar cadastro antes da aprovação.</span>
+              </label>
               <label className="block space-y-2 text-sm font-semibold">Lavagem ou serviço
                 <select required className={field} value={servicoId} onChange={e=>setServicoId(e.target.value)}>
                   <option value="">Selecione um serviço cadastrado</option>
@@ -124,11 +146,15 @@ export default function EmpresaAgendamento() {
                 <textarea maxLength={400} rows={3} value={observacoes} onChange={e=>setObservacoes(e.target.value)}
                   className="w-full rounded-xl border border-input bg-background p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Detalhes para a equipe"/>
               </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/30 p-3 text-xs leading-5">
+                <input required type="checkbox" checked={aceitePrivacidade} onChange={e=>setAceitePrivacidade(e.target.checked)} className="mt-1 size-4 accent-yellow-400"/>
+                <span>Autorizo o uso de nome, WhatsApp, veículo e preferência de horário para analisar meu pedido de agendamento.</span>
+              </label>
               {error && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-              <button disabled={!dateIsOpen||!enoughTime||!service} type="submit" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50">
-                <MessageCircle size={18}/> Solicitar pelo WhatsApp
+              <button disabled={enviando||!aceitePrivacidade||!dateIsOpen||!enoughTime||!service} type="submit" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50">
+                {enviando ? <Loader2 size={18} className="animate-spin"/> : <CalendarDays size={18}/>} {enviando ? "Enviando pedido..." : "Solicitar agendamento"}
               </button>
-              <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><CheckCircle2 size={15} className="mt-0.5 shrink-0"/> Sua preferência será encaminhada à equipe. Aguarde confirmação de disponibilidade.</p>
+              <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><CheckCircle2 size={15} className="mt-0.5 shrink-0"/> Seu pedido será salvo como pendente na agenda da empresa e só será confirmado após a análise da equipe.</p>
             </form>}
         </section>
       </div>
