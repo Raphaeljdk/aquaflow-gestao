@@ -134,11 +134,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SidebarHeader className="px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 sm:pb-8 sm:pt-8">
             <Link href="/clientes" className="flex items-center gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#071734] shadow-sm">
-                {title.toLowerCase().startsWith("ducha elitte") || data?.configuracao.logo ? (
+                {true ? (
                   <img
-                    src={title.toLowerCase().startsWith("ducha elitte")
-                      ? "/ducha-elitte-emblema.jpg"
-                      : data?.configuracao.logo || "/ducha-elitte-emblema.jpg"}
+                    src={data?.configuracao.logo || "/ducha-elitte-emblema.jpg"}
                     alt={"Símbolo " + title}
                     width={48}
                     height={48}

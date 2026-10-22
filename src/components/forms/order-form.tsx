@@ -549,6 +549,7 @@ export function OrderDetail({
                 </div>
               )}
               <VehicleInspection
+                tipo={v?.tipo ?? "CARRO"}
                 key={o.id}
                 value={o.vistoria}
                 busy={busy}

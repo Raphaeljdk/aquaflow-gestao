@@ -29,11 +29,13 @@ function checklist(value: Vistoria | null): ItemVistoria[] {
 export function VehicleInspection({
   value,
   busy,
+  tipo = "CARRO",
   readOnly = false,
   onSave,
 }: {
   value: Vistoria | null;
   busy: boolean;
+  tipo?: "CARRO" | "MOTO" | "CAMINHONETE";
   readOnly?: boolean;
   onSave: (vistoria: Omit<Vistoria, "atualizadoEm">) => Promise<boolean>;
 }) {
@@ -148,11 +150,23 @@ export function VehicleInspection({
       <div className="grid min-w-0 items-start gap-4 p-3 sm:p-5 md:grid-cols-[224px_minmax(0,1fr)]">
         <div className="min-w-0 rounded-2xl border border-slate-700/70 bg-[#17212b] p-4 md:sticky md:top-3">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">Mapa do veículo</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">Mapa: {tipo === "MOTO" ? "moto" : tipo === "CAMINHONETE" ? "caminhonete" : "carro"}</span>
             <Eye size={15} className="text-yellow-300" aria-hidden="true" />
           </div>
           <div className="relative mx-auto h-[304px] w-[174px] max-w-full select-none">
-            <svg viewBox="0 0 174 304" className="h-full w-full" role="img" aria-label="Vista superior de um carro, com oito pontos de vistoria">
+            <svg viewBox="0 0 174 304" className="h-full w-full" role="img" aria-label={"Vista superior de " + (tipo === "MOTO" ? "uma moto" : "um carro") + " com oito pontos de vistoria"}>
+              {tipo === "MOTO" ? (
+                <g fill="none" strokeLinejoin="round">
+                  <ellipse cx="87" cy="38" rx="20" ry="34" fill="#141e2a" stroke="#facc15" strokeWidth="2.5"/>
+                  <ellipse cx="87" cy="266" rx="20" ry="34" fill="#141e2a" stroke="#facc15" strokeWidth="2.5"/>
+                  <path d="M87 65 L87 236 M45 92 L129 92 M59 86 L49 111 M115 86 L125 111" stroke="#aab9ce" strokeWidth="9" strokeLinecap="round"/>
+                  <path d="M70 104 L104 104 L117 172 L105 223 L69 223 L57 172 Z" fill="#223448" stroke="#facc15" strokeWidth="2"/>
+                  <ellipse cx="87" cy="151" rx="31" ry="50" fill="#172535" stroke="#94a3b8" strokeWidth="2"/>
+                  <path d="M65 165 L109 165 M69 191 L105 191" stroke="#facc15" strokeOpacity=".45" strokeWidth="3"/>
+                  <path d="M62 205 L48 230 M112 205 L126 230" stroke="#94a3b8" strokeWidth="8" strokeLinecap="round"/>
+                  <ellipse cx="87" cy="112" rx="20" ry="13" fill="#34475e" stroke="#94a3b8"/>
+                </g>
+              ) : <>
               <defs>
                 <linearGradient id="vehicle-inspection-body" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#374151" />
@@ -175,6 +189,7 @@ export function VehicleInspection({
               <path d="M58 19 H116 M57 284 H117" stroke="#fde047" strokeWidth="5" strokeLinecap="round" />
               <path d="M49 161 L39 161 M125 161 L135 161" stroke="#a3b3c6" strokeOpacity=".6" />
               <path d="M87 5 V13 M87 291 V299" stroke="#fde047" strokeOpacity=".75" strokeDasharray="2 2" />
+              </>}
             </svg>
             {pontos.map((p, index) => {
               const item = byId.get(p.id);
