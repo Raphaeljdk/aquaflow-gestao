@@ -45,7 +45,7 @@ export default function EmpresaAgendamento() {
     : false;
   function enviar(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
-    if(!business?.disponivel||!service||!dataIsOpen||!enoughTime||data<today||horario<minTime){
+    if(!business?.disponivel||!service||!dateIsOpen||!enoughTime||data<today||horario<minTime){
       setError("Escolha um horário dentro do funcionamento e um serviço disponível.");
       return;
     }
