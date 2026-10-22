@@ -2,17 +2,39 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Building2, CheckCircle2, CreditCard, Landmark, Loader2, ShieldCheck, Wallet } from "lucide-react";
-type Fields = { nomeEmpresa: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
+type Fields = { nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
 export default function CadastroEmpresaPage() {
   const [form, setForm] = useState<Fields>({
-    nomeEmpresa:"", nomeResponsavel:"", email:"", whatsapp:"", cidade:"", mensagem:"",site:"",
+    nomeEmpresa:"", cnpj:"", razaoSocial:"", nomeResponsavel:"", email:"", whatsapp:"", cidade:"", mensagem:"",site:"",
   });
   const [consent, setConsent] = useState(false);
   const [cienteCondicoesComerciais, setCienteCondicoesComerciais] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [consultandoCnpj, setConsultandoCnpj] = useState(false);
+  const [cnpjMensagem, setCnpjMensagem] = useState("");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   function edit(key: keyof Fields, value: string) { setForm(v => ({...v,[key]:value})); }
+  async function consultarCnpj() {
+    setCnpjMensagem(""); setConsultandoCnpj(true);
+    try {
+      const clean = form.cnpj.replace(/\D/g, "");
+      const res = await fetch("/api/public/cnpj/" + encodeURIComponent(clean), { cache: "no-store" });
+      const dados = await res.json() as {
+        error?: string; razaoSocial?: string; nomeFantasia?: string; cidade?: string; situacao?: string;
+      };
+      if (!res.ok) throw new Error(dados.error || "Não foi possível consultar.");
+      setForm((atual) => ({
+        ...atual,
+        razaoSocial: dados.razaoSocial || atual.razaoSocial,
+        nomeEmpresa: dados.nomeFantasia || dados.razaoSocial || atual.nomeEmpresa,
+        cidade: dados.cidade || atual.cidade,
+      }));
+      setCnpjMensagem("Dados encontrados. Confira e ajuste antes de enviar.");
+    } catch (e) {
+      setCnpjMensagem(e instanceof Error ? e.message : "Não foi possível consultar. Preencha manualmente.");
+    } finally { setConsultandoCnpj(false); }
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if(busy) return;
     setBusy(true); setError("");
@@ -59,6 +81,21 @@ export default function CadastroEmpresaPage() {
             <h2 className="text-2xl font-bold">Solicitar cadastro</h2>
             <p className="mb-7 mt-2 text-sm text-muted-foreground">Preencha os dados do responsável e do estabelecimento.</p>
             <form onSubmit={submit} className="space-y-5">
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <label htmlFor="cnpj-consulta" className="block text-sm font-semibold">CNPJ do estabelecimento (opcional)</label>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <input id="cnpj-consulta" value={form.cnpj} maxLength={18}
+                    onChange={(e) => edit("cnpj", e.target.value)} placeholder="00.000.000/0001-00" inputMode="numeric"
+                    className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-background px-4 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                  <button type="button" onClick={() => void consultarCnpj()} disabled={consultandoCnpj || !form.cnpj.trim()}
+                    className="h-12 rounded-xl border border-primary/40 px-4 text-sm font-semibold disabled:opacity-50">
+                    {consultandoCnpj ? "Consultando..." : "Buscar dados do CNPJ"}
+                  </button>
+                </div>
+                {cnpjMensagem && <p role="status" className="mt-2 text-xs leading-5 text-muted-foreground">{cnpjMensagem}</p>}
+                <p className="mt-2 text-xs text-muted-foreground">A consulta traz somente dados públicos. Confira o cadastro; o preenchimento manual continua disponível.</p>
+              </div>
+              {form.razaoSocial && <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Razão social consultada: {form.razaoSocial}</p>}
               {input("Nome do lava-rápido","nomeEmpresa","Ex.: Lava Rápido Central")}
               {input("Nome do proprietário","nomeResponsavel","Nome completo")}
               <div className="grid gap-5 sm:grid-cols-2">

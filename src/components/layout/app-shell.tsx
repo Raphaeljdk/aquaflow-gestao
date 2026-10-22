@@ -12,6 +12,7 @@ import {
   UserRoundCog,
   ChartNoAxesCombined,
   Settings2,
+  BookOpen,
   Search,
   Sun,
   Moon,
@@ -63,6 +64,7 @@ const links = [
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
   { path: "configuracoes", label: "Configurações", icon: Settings2 },
+  { path: "como-usar", label: "Como usar", icon: BookOpen },
 ];
 const Actions = createContext<{
   newOrder: (clientId?: string) => void;
@@ -82,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos"];
+    const visibleForEmployee = ["clientes", "comandas", "agendamentos", "como-usar"];
     if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
       router.replace("/clientes");
   }, [user, path, router]);
