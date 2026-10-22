@@ -30,7 +30,7 @@ test("pedido online é pendente; somente acesso autenticado pode confirmar e ger
   const admin=readFileSync("src/app/api/pedidos-agendamento/[id]/route.ts","utf8");
   const inbox=readFileSync("src/components/public-booking-requests.tsx","utf8");
   assert.match(src,/pedidoAgendamentoPublico\.create/);
-  assert.match(src,/aceitePrivacidade/);
+  assert.match(readFileSync("src/lib/pedido-agendamento.ts","utf8"),/aceitePrivacidade: z\.literal\(true\)/);
   assert.match(src,/limite|count>=3/i);
   assert.match(admin,/currentUser/);
   assert.match(admin,/checkOrigin/);
