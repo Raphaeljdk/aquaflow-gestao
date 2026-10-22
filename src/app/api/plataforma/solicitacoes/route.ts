@@ -9,7 +9,7 @@ export async function GET() {
     const solicitacoes = await prisma.solicitacaoEmpresa.findMany({
       orderBy: { createdAt: "desc" }, take: 150,
       select: {
-        id: true, nomeEmpresa: true, nomeResponsavel: true,
+        id: true, nomeEmpresa: true, cnpj: true, razaoSocial: true, nomeResponsavel: true,
         email: true, whatsapp: true, cidade: true, mensagem: true,
         formaPagamentoPrevista: true, cienciaCondicoesComerciaisEm: true,
         status: true, createdAt: true, revisadoEm: true, revisadoPor: true,

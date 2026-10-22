@@ -82,6 +82,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       telefone: "",
       pixChave: "",
       logo: "",
+      manualVideoUrl: "",
+      manualPdfUrl: "",
       abertura: "08:00",
       fechamento: "18:00",
       intervaloMin: 30,
