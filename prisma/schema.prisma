@@ -240,3 +240,29 @@ model ParceiroLavaRapido {
   updatedAt DateTime @updatedAt
   @@index([ativo, nome])
 }
+
+enum StatusPedidoAgendamento {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+}
+
+/** Pedidos públicos desta instância, pendentes até validação pela equipe. */
+model PedidoAgendamentoPublico {
+  id String @id @default(cuid())
+  nome String
+  telefone String
+  tipo TipoVeiculo
+  placa String
+  descricaoVeiculo String
+  servicoId String
+  dataHora DateTime @db.Timestamptz(3)
+  observacoes String @default("")
+  status StatusPedidoAgendamento @default(PENDENTE)
+  origemHash String
+  agendamentoId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, createdAt])
+  @@index([origemHash, createdAt])
+}
