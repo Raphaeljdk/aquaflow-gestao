@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { PartnersManager } from "@/components/partners-manager";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
@@ -16,6 +17,7 @@ export function PlatformDashboard() {
   const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
+  const [tab,setTab] = useState<"solicitacoes" | "parceiros" | "acessos">("solicitacoes");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -71,6 +73,22 @@ export function PlatformDashboard() {
           <button type="button" onClick={() => void signOut({ callbackUrl: "/login" })} className="inline-flex h-10 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold">Sair com segurança</button>
         </div>
       </header>
+      <nav aria-label="Seções da administração" className="my-7 flex flex-wrap gap-2 border-b border-border pb-4">
+        {([
+          ["solicitacoes","Solicitações"],
+          ["parceiros","Parceiros"],
+          ["acessos","Acessos"],
+        ] as const).map(([key,label])=>(
+          <button key={key} type="button" aria-current={tab===key?"page":undefined}
+            onClick={()=>setTab(key)}
+            className={"min-h-11 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors " +
+              (tab===key?"bg-primary text-primary-foreground":"border border-border bg-card text-muted-foreground hover:text-foreground")}>
+            {label}
+          </button>
+        ))}
+      </nav>
+      {tab==="parceiros" && <PartnersManager />}
+      {tab==="solicitacoes" && <>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
         {[["Pendentes",requests.filter(x=>x.status==="PENDENTE").length],
           ["Em análise",requests.filter(x=>x.status==="EM_ANALISE").length],
@@ -112,6 +130,8 @@ export function PlatformDashboard() {
           </div>
         </article>)}
       </div>
+      </>}
+      {tab==="acessos" && (
       <section className="mt-12 border-t border-border pt-8">
         <h2 className="text-2xl font-bold">Logins existentes nesta instância</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -138,6 +158,7 @@ export function PlatformDashboard() {
           </table>
         </div>
       </section>
+      )}
     </div>
   </main>;
 }

@@ -11,6 +11,7 @@ const expectedMigrations = [
   "202609280003_funcionario_defaults",
   "202610130001_solicitacoes_empresa",
   "202610190001_forma_pagamento_prevista",
+  "202610210001_parceiros_agendamento",
 ];
 
 export async function GET() {
