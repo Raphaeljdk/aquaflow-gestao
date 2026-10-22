@@ -146,6 +146,8 @@ export const configuracaoSchema = z
         (v) => !v || /^data:image\/(png|jpeg|webp);base64,/.test(v),
         "Envie PNG, JPG ou WebP.",
       ),
+    manualVideoUrl: z.string().trim().max(500).refine((v) => !v || /^https:\/\/[^\s]+$/i.test(v), "Use um link HTTPS para o vídeo."),
+    manualPdfUrl: z.string().trim().max(500).refine((v) => !v || /^https:\/\/[^\s]+$/i.test(v), "Use um link HTTPS para o PDF."),
     abertura: hour,
     fechamento: hour,
     intervaloMin: z.coerce.number().int().min(15).max(120),

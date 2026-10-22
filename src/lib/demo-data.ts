@@ -152,6 +152,8 @@ export function makeDemoData(now = new Date()): AppData {
       telefone: "(11) 3091-2020",
       pixChave: "11999999999",
       logo: "",
+      manualVideoUrl: "",
+      manualPdfUrl: "",
       abertura: "08:00",
       fechamento: "18:00",
       intervaloMin: 30,

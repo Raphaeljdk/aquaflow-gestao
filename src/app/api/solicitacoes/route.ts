@@ -19,10 +19,10 @@ export async function POST(request: NextRequest) {
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     });
     if (limite >= 3) return NextResponse.json({ error: "Limite diário de solicitações atingido. Tente novamente amanhã." }, { status: 429 });
-    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem } = body.data;
+    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial } = body.data;
     await prisma.solicitacaoEmpresa.create({
       data: {
-        nomeEmpresa, nomeResponsavel, email, cidade, mensagem,
+        nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial,
         formaPagamentoPrevista: "PIX_INTER",
         cienciaCondicoesComerciaisEm: new Date(),
         whatsapp: body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55" + body.data.whatsapp,

@@ -62,10 +62,12 @@ type OrderValues = {
 export function OrderForm({
   open,
   initialClientId,
+  onCreated,
   onClose,
 }: {
   open: boolean;
   initialClientId?: string;
+  onCreated?: (id: string) => void;
   onClose: () => void;
 }) {
   const { data, user, busy, mutate, refresh } = useStore();
@@ -154,14 +156,15 @@ export function OrderForm({
           observacoes: values.observacoes,
         }),
       });
-      const body = await response.json() as { error?: string };
+      const body = await response.json() as { error?: string; comanda?: { id: string } };
       if (!response.ok) {
         setQuickError(body.error ?? "Não foi possível iniciar o atendimento.");
         return;
       }
       await refresh();
-      toast.success("Comanda criada. O veículo foi adicionado à fila.");
+      toast.success("Comanda criada. Faça a vistoria antes de iniciar a lavagem.");
       onClose();
+      if (body.comanda?.id) onCreated?.(body.comanda.id);
     } catch {
       setQuickError("Falha de conexão. Confira se a comanda foi criada antes de tentar novamente.");
     } finally {
@@ -550,6 +553,7 @@ export function OrderDetail({
               )}
               <VehicleInspection
                 key={o.id}
+                tipo={v?.tipo ?? "CARRO"}
                 value={o.vistoria}
                 busy={busy}
                 readOnly={!["AGUARDANDO", "EM_LAVAGEM"].includes(o.status)}

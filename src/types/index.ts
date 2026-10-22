@@ -108,6 +108,8 @@ export interface Configuracao {
   telefone: string;
   pixChave: string;
   logo: string;
+  manualVideoUrl: string;
+  manualPdfUrl: string;
   abertura: string;
   fechamento: string;
   intervaloMin: number;

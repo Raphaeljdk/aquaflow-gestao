@@ -22,7 +22,6 @@ export function Login() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [branding, setBranding] = useState<{ empresa: string; logo: string | null } | null>(null);
   const [hasBookingPartners, setHasBookingPartners] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -34,24 +33,15 @@ export function Login() {
   }, []);
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/public/contato", { cache: "no-store", signal: controller.signal })
-      .then((r) => r.ok ? r.json() as Promise<{ empresa: string; logo: string | null }> : null)
-      .then((brand) => { if (brand) setBranding(brand); })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
     fetch("/api/public/parceiros", { cache: "no-store", signal: controller.signal })
       .then((response) => response.ok ? response.json() as Promise<{ parceiros: Array<{ id: string }> }> : null)
       .then((body) => setHasBookingPartners(Boolean(body?.parceiros?.length)))
       .catch(() => {});
     return () => controller.abort();
   }, []);
-  const companyName = branding?.empresa || "Ducha Elitte";
-  const companyLogo = companyName.toLowerCase().startsWith("ducha elitte")
-    ? "/ducha-elitte-emblema.jpg"
-    : branding?.logo || null;
+  // Identidade institucional do login independente da logo interna do lava-rápido.
+  const companyName = "Ducha Elitte";
+  const companyLogo = "/ducha-elitte-emblema.jpg";
 
   const form = useForm<{ email: string; password: string }>({
     resolver: zodResolver(loginSchema),

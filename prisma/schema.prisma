@@ -164,6 +164,8 @@ model Configuracao {
   telefone String @default("")
   pixChave String @default("")
   logo String @default("")
+  manualVideoUrl String @default("")
+  manualPdfUrl String @default("")
   abertura String @default("08:00")
   fechamento String @default("18:00")
   intervaloMin Int @default(30)
@@ -206,6 +208,8 @@ enum StatusSolicitacaoEmpresa {
 model SolicitacaoEmpresa {
   id String @id @default(cuid())
   nomeEmpresa String
+  cnpj String @default("")
+  razaoSocial String @default("")
   nomeResponsavel String
   email String @unique
   whatsapp String
@@ -235,4 +239,30 @@ model ParceiroLavaRapido {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([ativo, nome])
+}
+
+enum StatusPedidoAgendamento {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+}
+
+/** Pedidos públicos desta instância, pendentes até validação pela equipe. */
+model PedidoAgendamentoPublico {
+  id String @id @default(cuid())
+  nome String
+  telefone String
+  tipo TipoVeiculo
+  placa String
+  descricaoVeiculo String
+  servicoId String
+  dataHora DateTime @db.Timestamptz(3)
+  observacoes String @default("")
+  status StatusPedidoAgendamento @default(PENDENTE)
+  origemHash String
+  agendamentoId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, createdAt])
+  @@index([origemHash, createdAt])
 }

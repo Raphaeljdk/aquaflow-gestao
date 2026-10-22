@@ -1,5 +1,6 @@
 "use client";
 import { useForm, Controller } from "react-hook-form";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Save,
@@ -37,6 +38,7 @@ export function Settings() {
   return <SettingsForm initial={data.configuracao} />;
 }
 function SettingsForm({ initial }: { initial: Configuracao }) {
+  const [consultandoCnpj, setConsultandoCnpj] = useState(false);
   const { mutate, busy } = useStore(),
     f = useForm<Configuracao>({
       resolver: zodResolver(configuracaoSchema),
@@ -68,7 +70,22 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
     reader.readAsDataURL(file);
   }
   const whatsappReady = Boolean(normalizeWhatsappPhone(values.telefone));
-  const bookingUrl = "/agendar";
+  const bookingUrl = "/agendar/empresa";
+  const bookingReady = Boolean(normalizeWhatsappPhone(initial.telefone)) && !f.formState.isDirty;
+  async function buscarCnpj() {
+    setConsultandoCnpj(true);
+    try {
+      const numero = f.getValues("cnpj").replace(/\D/g, "");
+      const res = await fetch("/api/public/cnpj/" + encodeURIComponent(numero), { cache: "no-store" });
+      const data = await res.json() as { error?: string; razaoSocial?: string; nomeFantasia?: string; endereco?: string; situacao?: string };
+      if (!res.ok) throw new Error(data.error || "Consulta indisponível.");
+      if (data.nomeFantasia || data.razaoSocial) f.setValue("nome", (data.nomeFantasia || data.razaoSocial)!, { shouldDirty: true });
+      if (data.endereco) f.setValue("endereco", data.endereco, { shouldDirty: true });
+      toast.success("Dados públicos carregados. Confira e salve as alterações.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao consultar. Preencha manualmente.");
+    } finally { setConsultandoCnpj(false); }
+  }
   return (
     <form
       onSubmit={f.handleSubmit(async (v) => {
@@ -112,7 +129,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           <span className="flex items-center gap-2"><CheckCircle2 className="shrink-0 text-primary" size={17}/> Configuração PIX (opcional)</span>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" size="sm" disabled={!whatsappReady}
+          <Button type="button" variant="outline" size="sm" disabled={!bookingReady}
             onClick={() => {
               void navigator.clipboard.writeText(window.location.origin + bookingUrl)
                 .then(() => toast.success("Link de agendamento copiado."))
@@ -125,7 +142,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               <ExternalLink size={15}/> Ver página de agendamento
             </a>
           </Button>
-          {!whatsappReady && <p className="w-full text-xs text-muted-foreground">Preencha e salve o WhatsApp abaixo para ativar o link de agendamento.</p>}
+          {!bookingReady && <p className="w-full text-xs text-muted-foreground">Cadastre um WhatsApp válido e salve as alterações antes de compartilhar o link.</p>}
         </div>
       </section>
       <Tabs defaultValue="empresa">
@@ -137,6 +154,10 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           <TabsTrigger value="horarios" className="gap-2">
             <Clock3 size={15} />
             Funcionamento
+          </TabsTrigger>
+          <TabsTrigger value="ajuda" className="gap-2">
+            <Building2 size={15} />
+            Como usar
           </TabsTrigger>
         </TabsList>
         <TabsContent value="empresa">
@@ -194,6 +215,14 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               {input("nome", "Nome da empresa")}
               <div className="grid gap-5 sm:grid-cols-2">
                 {input("cnpj", "CNPJ")}
+                <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="outline" disabled={consultandoCnpj || !values.cnpj?.trim()}
+                    onClick={() => void buscarCnpj()}>
+                    {consultandoCnpj ? <Loader2 size={15} className="animate-spin" /> : <Building2 size={15} />}
+                    Consultar CNPJ e preencher dados
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Preenche o nome e endereço com dados públicos. Revise antes de salvar.</p>
+                </div>
                 {input("telefone", "WhatsApp de agendamentos (com DDD)", "tel")}
               </div>
               <p className="-mt-3 text-xs text-muted-foreground">Ex.: +55 11 99200-3650. O número será usado na página pública de agendamentos por WhatsApp.</p>
@@ -317,6 +346,18 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               Cada reserva ocupa o tempo total dos serviços. Horários
               sobrepostos são bloqueados automaticamente.
             </p>
+          </section>
+        </TabsContent>
+        <TabsContent value="ajuda">
+          <section className="panel max-w-3xl space-y-5 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold">Vídeo e manual de uso</h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Cole os links HTTPS do vídeo de treinamento e do PDF já publicados em um serviço de sua confiança.
+              Os links aparecerão na aba “Como usar” do painel para os funcionários.
+            </p>
+            {input("manualVideoUrl", "Link do vídeo (YouTube ou outro HTTPS)", "url")}
+            {input("manualPdfUrl", "Link público do manual PDF (HTTPS)", "url")}
+            <p className="text-xs text-muted-foreground">Se ainda não tiver os materiais, deixe vazio. Nenhum vídeo ou PDF fictício será mostrado.</p>
           </section>
         </TabsContent>
       </Tabs>

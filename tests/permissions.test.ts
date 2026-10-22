@@ -18,11 +18,12 @@ test("administrador mantém acesso total de gestão", () => {
   }
 });
 
-test("funcionário enxerga somente clientes, comandas e agendamentos", () => {
+test("funcionário enxerga atendimento e a ajuda, sem gestão", () => {
   assert.deepEqual(allowedPages.FUNCIONARIO, [
     "clientes",
     "comandas",
     "agendamentos",
+    "como-usar",
   ]);
   assert.equal(canManage("FUNCIONARIO"), false);
   assert.equal(allowedPages.FUNCIONARIO.includes("veiculos"), false);

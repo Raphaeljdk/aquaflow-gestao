@@ -6,7 +6,7 @@ import { PartnersManager } from "@/components/partners-manager";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
-  id: string; nomeEmpresa: string; nomeResponsavel: string; email: string;
+  id: string; nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string;
   whatsapp: string; cidade: string; mensagem: string; status: Status;
   formaPagamentoPrevista: string; cienciaCondicoesComerciaisEm: string | null;
   createdAt: string; revisadoEm: string | null; observacoesInternas: string;
@@ -104,6 +104,7 @@ export function PlatformDashboard() {
             <span className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold">{labels[item.status]}</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{item.nomeResponsavel} · {item.cidade}</p>
+          {item.cnpj && <p className="mt-1 break-words text-xs text-muted-foreground">CNPJ: {item.cnpj}{item.razaoSocial && " · " + item.razaoSocial}</p>}
           <p className="mt-1 text-xs text-muted-foreground"><Clock3 size={13} className="mr-1 inline"/> {new Date(item.createdAt).toLocaleDateString("pt-BR")}</p>
           <div className="mt-5 space-y-2 text-sm">
             <a href={"mailto:"+item.email} className="block break-all font-medium underline underline-offset-4">{item.email}</a>
