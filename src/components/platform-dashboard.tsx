@@ -4,12 +4,15 @@ import { signOut } from "next-auth/react";
 import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
 import { PlatformTickets } from "@/components/platform-tickets";
+import { formatPlatformPrice } from "@/lib/platform-billing";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
   id: string; nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string;
   whatsapp: string; cidade: string; mensagem: string; status: Status;
-  formaPagamentoPrevista: string; mensalidadeCentavos: number | null; cienciaCondicoesComerciaisEm: string | null;
+  formaPagamentoPrevista: string; mensalidadeCentavos: number | null;
+  planoPagamento: string | null; totalContratoCentavos: number | null; quantidadeParcelas: number | null;
+  cienciaCondicoesComerciaisEm: string | null;
   createdAt: string; revisadoEm: string | null; observacoesInternas: string;
 };
 const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em análise",APROVADO:"Aprovada",REJEITADO:"Rejeitada"};
@@ -115,8 +118,13 @@ export function PlatformDashboard() {
             {item.mensagem&&<p className="rounded-xl bg-muted p-3 text-sm leading-6">{item.mensagem}</p>}
             <div className="space-y-1 rounded-xl border border-border bg-muted/50 p-3 text-xs leading-5">
               <p className="font-semibold">Condições comerciais previstas</p>
-              <p>Implantação: valor a definir · Mensalidade: {item.mensalidadeCentavos === null ? "não informada na solicitação antiga" : (item.mensalidadeCentavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) + "/mês"}</p>
-              <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : "Condição antiga registrada: " + item.formaPagamentoPrevista}</p>
+              <p>Implantação: valor a definir</p>
+              {item.totalContratoCentavos !== null && item.planoPagamento ? (
+                <p>Plano anual: {item.planoPagamento === "ANUAL_AVISTA" ? "à vista" : "12 mensalidades"} · Total {formatPlatformPrice(item.totalContratoCentavos)} · {item.quantidadeParcelas} pagamento(s)</p>
+              ) : (
+                <p>Condição anterior: {item.mensalidadeCentavos === null ? "mensalidade não registrada" : formatPlatformPrice(item.mensalidadeCentavos) + "/mês"}</p>
+              )}
+              <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : item.formaPagamentoPrevista === "PIX_INTER" ? "Pix Inter" : item.formaPagamentoPrevista === "CARTAO_CREDITO_1X" ? "Cartão de crédito — 1x, sem parcelamento" : item.formaPagamentoPrevista}</p>
               <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente das condições apresentadas no momento do cadastro." : "Solicitação anterior à confirmação das condições comerciais."}</p>
               <p className="text-muted-foreground">A solicitação não efetua cobranças. Recebimentos das lavagens permanecem separados da assinatura.</p>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { PLATFORM_MONTHLY_PRICE_LABEL } from "@/lib/platform-billing";
+import { PLATFORM_ANNUAL_STANDARD_CENTS, PLATFORM_ANNUAL_UPFRONT_CENTS, PLATFORM_ANNUAL_SAVINGS_CENTS, formatPlatformPrice, type PlatformPlan, type PlatformPaymentMethod } from "@/lib/platform-billing";
 import { ArrowLeft, Building2, CheckCircle2, CreditCard, Loader2, ShieldCheck, Wallet } from "lucide-react";
 type Fields = { nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
 export default function CadastroEmpresaPage() {
@@ -11,6 +11,12 @@ export default function CadastroEmpresaPage() {
   const [consent, setConsent] = useState(false);
   const [cienteCondicoesComerciais, setCienteCondicoesComerciais] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [planoPagamento, setPlanoPagamento] = useState<PlatformPlan>("ANUAL_AVISTA");
+  const [metodoPagamento, setMetodoPagamento] = useState<PlatformPaymentMethod>("PIX_INTER");
+  function escolherPlano(plano: PlatformPlan) {
+    setPlanoPagamento(plano);
+    setMetodoPagamento(plano === "ANUAL_AVISTA" ? "PIX_INTER" : "CARTAO_DEBITO");
+  }
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
   const [cnpjMensagem, setCnpjMensagem] = useState("");
   const [success, setSuccess] = useState(false);
@@ -42,7 +48,7 @@ export default function CadastroEmpresaPage() {
     try {
       const response = await fetch("/api/solicitacoes", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...form, aceitePrivacidade: consent, cienteCondicoesComerciais}),
+        body:JSON.stringify({...form, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais}),
       });
       const data = await response.json() as {error?:string};
       if(!response.ok) {setError(data.error || "Não foi possível enviar.");return;}
@@ -114,40 +120,62 @@ export default function CadastroEmpresaPage() {
                 <div className="flex items-start gap-3">
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
-                    <h3 id="condicoes-comerciais" className="text-base font-bold">Investimento e forma de pagamento</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Condições para contratar o sistema após a aprovação do cadastro.</p>
+                    <h3 id="condicoes-comerciais" className="text-base font-bold">Escolha seu plano anual</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As duas opções incluem 12 meses de uso do sistema. A contratação será concluída somente após aprovação.</p>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs font-semibold text-muted-foreground">Taxa inicial do sistema</p>
-                    <p className="mt-2 text-lg font-bold">Valor a definir</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Pagamento único pela implantação e configuração.</p>
-                  </div>
-                  <div className="rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs font-semibold text-muted-foreground">Plano mensal fixo</p>
-                    <p className="mt-2 text-lg font-bold">{PLATFORM_MONTHLY_PRICE_LABEL}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Assinatura para uso e manutenção da plataforma, independentemente das receitas das lavagens.</p>
-                  </div>
+                <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Condição de pagamento do plano anual">
+                  <label className={`cursor-pointer rounded-xl border p-4 transition-colors ${planoPagamento === "ANUAL_MENSAL" ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <input type="radio" name="planoPagamento" value="ANUAL_MENSAL" checked={planoPagamento === "ANUAL_MENSAL"} onChange={()=>escolherPlano("ANUAL_MENSAL")} className="accent-yellow-400"/>
+                      Anual em mensalidades
+                    </span>
+                    <span className="mt-3 block text-xl font-bold">{formatPlatformPrice(PLATFORM_ANNUAL_STANDARD_CENTS)}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">12 mensalidades de R$ 80,00. Compromisso anual.</span>
+                  </label>
+                  <label className={`cursor-pointer rounded-xl border p-4 transition-colors ${planoPagamento === "ANUAL_AVISTA" ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <input type="radio" name="planoPagamento" value="ANUAL_AVISTA" checked={planoPagamento === "ANUAL_AVISTA"} onChange={()=>escolherPlano("ANUAL_AVISTA")} className="accent-yellow-400"/>
+                      Anual à vista
+                    </span>
+                    <span className="mt-3 block text-xl font-bold">{formatPlatformPrice(PLATFORM_ANNUAL_UPFRONT_CENTS)}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">Economize {formatPlatformPrice(PLATFORM_ANNUAL_SAVINGS_CENTS)} pagando uma única vez.</span>
+                  </label>
                 </div>
                 <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-                  <p className="text-xs font-semibold text-muted-foreground">Forma de pagamento da assinatura</p>
-                  <div className="flex min-h-12 items-center gap-3 rounded-lg border border-primary/30 bg-background px-4 py-3">
-                    <CreditCard size={21} className="shrink-0 text-primary" aria-hidden="true"/>
-                    <div>
-                      <p className="text-sm font-bold">Cartão de débito</p>
-                      <p className="text-xs text-muted-foreground">Única opção prevista para a mensalidade do sistema.</p>
-                    </div>
-                  </div>
-                  <p className="text-xs leading-5 text-muted-foreground">O processamento por cartão será disponibilizado somente após a integração com um provedor habilitado. Não informe dados do cartão nesta página.</p>
+                  <p className="text-sm font-semibold">Forma de pagamento</p>
+                  {planoPagamento === "ANUAL_AVISTA" ? (
+                    <fieldset className="grid gap-2 sm:grid-cols-2">
+                      <legend className="sr-only">Escolha como pagar os R$ 790,00 à vista</legend>
+                      <label className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-semibold">
+                        <input type="radio" name="metodoPagamento" value="PIX_INTER" checked={metodoPagamento === "PIX_INTER"} onChange={()=>setMetodoPagamento("PIX_INTER")} className="accent-yellow-400"/>
+                        Pix — R$ 790,00
+                      </label>
+                      <label className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-semibold">
+                        <input type="radio" name="metodoPagamento" value="CARTAO_CREDITO_1X" checked={metodoPagamento === "CARTAO_CREDITO_1X"} onChange={()=>setMetodoPagamento("CARTAO_CREDITO_1X")} className="accent-yellow-400"/>
+                        <CreditCard size={17} aria-hidden="true"/> Crédito — 1x de R$ 790,00
+                      </label>
+                    </fieldset>
+                  ) : (
+                    <div className="rounded-lg border border-border bg-background px-3 py-3 text-sm font-semibold">Cartão de débito — 12 mensalidades de R$ 80,00</div>
+                  )}
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {planoPagamento === "ANUAL_AVISTA"
+                      ? "O cartão de crédito é exclusivamente à vista, em 1 parcela. Sem parcelamento."
+                      : "As 12 mensalidades formam um contrato anual de R$ 960,00. O processamento recorrente depende de um provedor habilitado."}
+                  </p>
                 </div>
-                <p className="text-xs leading-5 text-muted-foreground">Os pagamentos que cada lava-rápido recebe pelas lavagens são independentes da mensalidade da plataforma e seguem as configurações do próprio estabelecimento.</p>
-                <p className="text-xs leading-5 text-muted-foreground">Nenhuma cobrança é realizada nesta página. A taxa de implantação (se aplicável), o vencimento e as condições serão apresentados antes da contratação.</p>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-xs font-semibold text-muted-foreground">Taxa de implantação</p>
+                  <p className="mt-1 text-sm font-bold">Se aplicável, valor informado antes da contratação</p>
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">A assinatura da plataforma é independente dos pagamentos recebidos por cada lava-rápido por suas lavagens e serviços.</p>
+                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. Os meios de pagamento serão habilitados após a integração bancária.</p>
               </section>
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={cienteCondicoesComerciais} onChange={e=>setCienteCondicoesComerciais(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
-                <span>Estou ciente da mensalidade fixa de R$ 80,00, da forma prevista de pagamento por cartão de débito e de que eventual taxa inicial será informada antes da contratação ou cobrança.</span>
+                <span>Estou ciente das condições do plano anual selecionado, da forma de pagamento escolhida e de que eventual taxa de implantação será informada antes da contratação ou cobrança.</span>
               </label>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />

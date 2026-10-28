@@ -217,6 +217,9 @@ model SolicitacaoEmpresa {
   mensagem String @default("")
   formaPagamentoPrevista String @default("CARTAO_DEBITO")
   mensalidadeCentavos Int?
+  planoPagamento String?
+  totalContratoCentavos Int?
+  quantidadeParcelas Int?
   cienciaCondicoesComerciaisEm DateTime?
   status StatusSolicitacaoEmpresa @default(PENDENTE)
   origemHash String

@@ -11,7 +11,14 @@ export const solicitacaoEmpresaSchema = z.object({
   mensagem: z.string().trim().max(500).default(""),
   aceitePrivacidade: z.literal(true),
   cienteCondicoesComerciais: z.literal(true),
+  planoPagamento: z.enum(["ANUAL_MENSAL", "ANUAL_AVISTA"]).default("ANUAL_MENSAL"),
+  metodoPagamento: z.enum(["CARTAO_DEBITO", "PIX_INTER", "CARTAO_CREDITO_1X"]).default("CARTAO_DEBITO"),
   site: z.string().max(100).default(""),
+}).superRefine((data, context) => {
+  const valido = data.planoPagamento === "ANUAL_MENSAL"
+    ? data.metodoPagamento === "CARTAO_DEBITO"
+    : data.metodoPagamento === "PIX_INTER" || data.metodoPagamento === "CARTAO_CREDITO_1X";
+  if (!valido) context.addIssue({ code: z.ZodIssueCode.custom, path: ["metodoPagamento"], message: "Forma de pagamento indisponível para este plano." });
 });
 export const decisaoSolicitacaoSchema = z.object({
   status: z.enum(["EM_ANALISE", "APROVADO", "REJEITADO"]),
