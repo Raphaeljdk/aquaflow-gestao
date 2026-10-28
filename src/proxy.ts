@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar"]);
+const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte"]);
 
 export async function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO === "true") return NextResponse.next();
@@ -46,5 +46,6 @@ export const config = {
     "/relatorios/:path*",
     "/configuracoes/:path*",
     "/como-usar/:path*",
+    "/suporte/:path*",
   ],
 };

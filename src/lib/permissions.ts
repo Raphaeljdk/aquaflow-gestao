@@ -4,7 +4,7 @@ export const canManage = (role: Role) => role === "ADMIN";
 
 // O funcionário enxerga somente estas três áreas.
 // Veículos continuam graváveis porque são administrados dentro do cadastro do cliente.
-const employeePages = ["clientes", "comandas", "agendamentos", "como-usar"];
+const employeePages = ["clientes", "comandas", "agendamentos", "como-usar", "suporte"];
 
 export const allowedPages: Record<Role, string[]> = {
   ADMIN: [
@@ -18,6 +18,7 @@ export const allowedPages: Record<Role, string[]> = {
     "relatorios",
     "configuracoes",
     "como-usar",
+    "suporte",
     "materiais",
     "movimentosEstoque",
     "estoque",
