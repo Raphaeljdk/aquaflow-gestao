@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { solicitacaoEmpresaSchema } from "@/lib/platform-onboarding";
-import { PLATFORM_MONTHLY_PRICE_CENTS, PLATFORM_PAYMENT_METHOD } from "@/lib/platform-billing";
+import { resolvePlatformOffer } from "@/lib/platform-billing";
 
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
@@ -20,12 +20,16 @@ export async function POST(request: NextRequest) {
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     });
     if (limite >= 3) return NextResponse.json({ error: "Limite diário de solicitações atingido. Tente novamente amanhã." }, { status: 429 });
-    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial } = body.data;
+    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial, planoPagamento, metodoPagamento } = body.data;
+    const offer = resolvePlatformOffer(planoPagamento, metodoPagamento);
     await prisma.solicitacaoEmpresa.create({
       data: {
         nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial,
-        formaPagamentoPrevista: PLATFORM_PAYMENT_METHOD,
-        mensalidadeCentavos: PLATFORM_MONTHLY_PRICE_CENTS,
+        formaPagamentoPrevista: offer.method,
+        mensalidadeCentavos: offer.installments === 12 ? offer.installmentCents : null,
+        planoPagamento: offer.plan,
+        totalContratoCentavos: offer.totalCents,
+        quantidadeParcelas: offer.installments,
         cienciaCondicoesComerciaisEm: new Date(),
         whatsapp: body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55" + body.data.whatsapp,
         origemHash,
