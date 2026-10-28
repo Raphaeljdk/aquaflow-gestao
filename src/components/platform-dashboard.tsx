@@ -9,7 +9,7 @@ type Account = { id: string; name:string; email:string; role:string; ativo:boole
 type Request = {
   id: string; nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string;
   whatsapp: string; cidade: string; mensagem: string; status: Status;
-  formaPagamentoPrevista: string; cienciaCondicoesComerciaisEm: string | null;
+  formaPagamentoPrevista: string; mensalidadeCentavos: number | null; cienciaCondicoesComerciaisEm: string | null;
   createdAt: string; revisadoEm: string | null; observacoesInternas: string;
 };
 const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em análise",APROVADO:"Aprovada",REJEITADO:"Rejeitada"};
@@ -115,10 +115,10 @@ export function PlatformDashboard() {
             {item.mensagem&&<p className="rounded-xl bg-muted p-3 text-sm leading-6">{item.mensagem}</p>}
             <div className="space-y-1 rounded-xl border border-border bg-muted/50 p-3 text-xs leading-5">
               <p className="font-semibold">Condições comerciais previstas</p>
-              <p>Implantação: valor a definir · Mensalidade: valor a definir</p>
-              <p>Formas previstas: {item.formaPagamentoPrevista === "PIX_INTER" ? "Pix pelo Banco Inter (principal), cartão de crédito e cartão de débito" : "Método principal a confirmar, cartão de crédito e cartão de débito previstos"}</p>
-              <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente de que os valores serão informados antes da contratação." : "Solicitação anterior à confirmação das condições comerciais."}</p>
-              <p className="text-muted-foreground">Cobranças não são emitidas pelo cadastro.</p>
+              <p>Implantação: valor a definir · Mensalidade: {item.mensalidadeCentavos === null ? "não informada na solicitação antiga" : (item.mensalidadeCentavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) + "/mês"}</p>
+              <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : "Condição antiga registrada: " + item.formaPagamentoPrevista}</p>
+              <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente das condições apresentadas no momento do cadastro." : "Solicitação anterior à confirmação das condições comerciais."}</p>
+              <p className="text-muted-foreground">A solicitação não efetua cobranças. Recebimentos das lavagens permanecem separados da assinatura.</p>
             </div>
           </div>
           <label className="mt-5 block space-y-2 text-xs font-semibold text-muted-foreground">
