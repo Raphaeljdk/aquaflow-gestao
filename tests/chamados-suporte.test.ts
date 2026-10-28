@@ -41,7 +41,7 @@ test("menu e proxy permitem chamados a funcionário sem liberar gestão central"
   const platform=read("src/components/platform-dashboard.tsx");
   assert.match(layout,/path: "suporte", label: "Suporte \/ Chamados"/);
   assert.match(proxy,/"suporte"/);
-  assert.match(proxy,/"/suporte\/:path\*"/);
+  assert.ok(proxy.includes('"/suporte/:path*"'));
   assert.match(platform,/tab==="chamados"/);
   assert.match(platform,/<PlatformTickets/);
   assert.doesNotMatch(read("src/app/api/chamados/route.ts"),/password: true/);
