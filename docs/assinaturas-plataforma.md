@@ -29,3 +29,15 @@ Antes de aceitar pagamentos reais:
 ## Implantação
 
 Aplicar a nova migration em ambiente de homologação antes do deploy. Depois de validar, aplicar em produção de forma controlada com backup e as variáveis do projeto existentes; não adicionar credenciais de banco/gateway ao GitHub. Conferir a nova solicitação no painel central e preservar as solicitações antigas.
+
+## Dados do recebedor (configuração privada)
+
+Os metadados bancários fornecidos foram cadastrados como variáveis **encrypted**, somente no ambiente **Production** do projeto `ducha-elitte` na Vercel:
+
+- `PLATFORM_BILLING_BANK_CODE`
+- `PLATFORM_BILLING_BENEFICIARY`
+- `PLATFORM_BILLING_BENEFICIARY_CNPJ`
+- `PLATFORM_BILLING_BRANCH`
+- `PLATFORM_BILLING_ACCOUNT`
+
+Essas variáveis apenas identificam a conta de destino e ainda **não são consumidas por um gateway**. O provedor contratado precisará validar a titularidade e habilitar o repasse para essa conta. Não acrescentar dados bancários aos arquivos públicos.
