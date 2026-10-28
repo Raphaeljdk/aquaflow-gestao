@@ -13,21 +13,31 @@ try {
     throw new Error("[qa-migrations] Banco incorreto: telefone de segurança não corresponde ao QA.");
   }
   console.log("[qa-migrations] Banco isolado confirmado.");
-  let tableExists = true;
-  try {
-    await prisma.solicitacaoEmpresa.count();
-  } catch (error) {
-    if (error?.code === "P2021") tableExists = false;
-    else throw error;
+  // Aplica somente migrations pendentes, depois de confirmar o banco isolado de QA.
+  const { readdirSync } = await import("node:fs");
+  const folders = readdirSync(new URL("../prisma/migrations/", import.meta.url), {
+    withFileTypes: true,
+  }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+  const migrationTable = await prisma.$queryRawUnsafe(
+    `SELECT to_regclass('public."_prisma_migrations"')::text AS name`,
+  );
+  let applied = new Set();
+  if (migrationTable[0]?.name) {
+    const rows = await prisma.$queryRawUnsafe(
+      'SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"',
+    );
+    applied = new Set(rows
+      .filter((row) => row.finished_at && !row.rolled_back_at)
+      .map((row) => row.migration_name));
   }
-  if (!tableExists) {
-    console.log("[qa-migrations] Preparando tabela para análise de cadastros.");
+  if (folders.some((name) => !applied.has(name))) {
+    console.log("[qa-migrations] Aplicando migrations pendentes no QA isolado.");
     await prisma.$disconnect();
     execFileSync(process.execPath, ["node_modules/prisma/build/index.js", "migrate", "deploy"], {
       stdio: "inherit", env: process.env,
     });
   } else {
-    console.log("[qa-migrations] Cadastro já preparado, sem novo bloqueio do banco.");
+    console.log("[qa-migrations] Nenhuma migration pendente.");
   }
 } finally {
   await prisma.$disconnect();
