@@ -352,12 +352,13 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           <section className="panel max-w-3xl space-y-5 p-4 sm:p-6">
             <h2 className="text-lg font-semibold">Vídeo e manual de uso</h2>
             <p className="text-sm leading-6 text-muted-foreground">
-              Cole os links HTTPS do vídeo de treinamento e do PDF já publicados em um serviço de sua confiança.
+              Cole o link HTTPS de um vídeo de treinamento. O Ducha Elitte já possui um manual em PDF integrado. Você pode informar o endereço de outro PDF, caso queira substituir o manual padrão.
               Os links aparecerão na aba “Como usar” do painel para os funcionários.
             </p>
             {input("manualVideoUrl", "Link do vídeo (YouTube ou outro HTTPS)", "url")}
-            {input("manualPdfUrl", "Link público do manual PDF (HTTPS)", "url")}
-            <p className="text-xs text-muted-foreground">Se ainda não tiver os materiais, deixe vazio. Nenhum vídeo ou PDF fictício será mostrado.</p>
+            {input("manualPdfUrl", "Link de um PDF personalizado (opcional)", "url")}
+            <a href="/api/manual" target="_blank" rel="noopener noreferrer" className="inline-flex text-sm font-semibold text-primary underline underline-offset-4">Abrir o manual PDF padrão</a>
+            <p className="text-xs text-muted-foreground">Deixe o vídeo vazio enquanto não houver treinamento publicado. O manual PDF padrão permanece disponível para toda a equipe.</p>
           </section>
         </TabsContent>
       </Tabs>
