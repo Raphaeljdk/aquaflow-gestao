@@ -14,6 +14,7 @@ const expectedMigrations = [
   "202610210001_parceiros_agendamento",
   "202610210002_autonomia_erp",
   "202610210003_pedidos_publicos",
+  "202610280001_chamados_suporte",
 ];
 
 export async function GET() {

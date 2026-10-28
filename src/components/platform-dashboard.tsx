@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
+import { PlatformTickets } from "@/components/platform-tickets";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
@@ -17,7 +18,7 @@ export function PlatformDashboard() {
   const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
-  const [tab,setTab] = useState<"solicitacoes" | "parceiros" | "acessos">("solicitacoes");
+  const [tab,setTab] = useState<"solicitacoes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -65,8 +66,8 @@ export function PlatformDashboard() {
       <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7">
         <div>
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground"><ShieldCheck size={16}/> Administração da plataforma</p>
-          <h1 className="mt-3 text-3xl font-bold">Solicitações de lava-rápidos</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Analise interessados antes de habilitar acesso. Uma aprovação ainda não cria automaticamente um ambiente ou login de cliente.</p>
+          <h1 className="mt-3 text-3xl font-bold">Gestão da plataforma</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Acompanhe novos interessados, parceiros, chamados de suporte e acessos desta instância.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={()=>void load()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold"><RefreshCw size={16}/> Atualizar</button>
@@ -77,6 +78,7 @@ export function PlatformDashboard() {
         {([
           ["solicitacoes","Solicitações"],
           ["parceiros","Parceiros"],
+          ["chamados","Chamados de suporte"],
           ["acessos","Acessos"],
         ] as const).map(([key,label])=>(
           <button key={key} type="button" aria-current={tab===key?"page":undefined}
@@ -88,6 +90,7 @@ export function PlatformDashboard() {
         ))}
       </nav>
       {tab==="parceiros" && <PartnersManager />}
+      {tab==="chamados" && <PlatformTickets />}
       {tab==="solicitacoes" && <>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
         {[["Pendentes",requests.filter(x=>x.status==="PENDENTE").length],

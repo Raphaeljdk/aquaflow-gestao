@@ -13,6 +13,7 @@ test("administrador mantém acesso total de gestão", () => {
     "relatorios",
     "configuracoes",
     "estoque",
+    "suporte",
   ]) {
     assert.equal(allowedPages.ADMIN.includes(page), true, page);
   }
@@ -24,6 +25,7 @@ test("funcionário enxerga atendimento e a ajuda, sem gestão", () => {
     "comandas",
     "agendamentos",
     "como-usar",
+    "suporte",
   ]);
   assert.equal(canManage("FUNCIONARIO"), false);
   assert.equal(allowedPages.FUNCIONARIO.includes("veiculos"), false);

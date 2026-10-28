@@ -13,6 +13,7 @@ import {
   ChartNoAxesCombined,
   Settings2,
   BookOpen,
+  LifeBuoy,
   Search,
   Sun,
   Moon,
@@ -65,6 +66,7 @@ const links = [
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
   { path: "configuracoes", label: "Configurações", icon: Settings2 },
   { path: "como-usar", label: "Como usar", icon: BookOpen },
+  { path: "suporte", label: "Suporte / Chamados", icon: LifeBuoy },
 ];
 const Actions = createContext<{
   newOrder: (clientId?: string) => void;
@@ -84,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos", "como-usar"];
+    const visibleForEmployee = ["clientes", "comandas", "agendamentos", "como-usar", "suporte"];
     if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
       router.replace("/clientes");
   }, [user, path, router]);

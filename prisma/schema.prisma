@@ -266,3 +266,61 @@ model PedidoAgendamentoPublico {
   @@index([status, createdAt])
   @@index([origemHash, createdAt])
 }
+
+enum StatusChamado {
+  ABERTO
+  EM_ATENDIMENTO
+  AGUARDANDO_CLIENTE
+  RESOLVIDO
+  FECHADO
+}
+
+enum CategoriaChamado {
+  ERRO
+  DUVIDA
+  MELHORIA
+  FINANCEIRO
+  OUTRO
+}
+
+enum PrioridadeChamado {
+  NORMAL
+  ALTA
+}
+
+enum AutorMensagemChamado {
+  SOLICITANTE
+  SUPORTE
+}
+
+/** Atendimento entre a unidade desta instância e a administração da plataforma. */
+model ChamadoSuporte {
+  id String @id @default(cuid())
+  empresaNome String
+  empresaCnpj String @default("")
+  criadoPorId String
+  criadoPorNome String
+  criadoPorEmail String
+  titulo String
+  categoria CategoriaChamado
+  prioridade PrioridadeChamado @default(NORMAL)
+  status StatusChamado @default(ABERTO)
+  mensagens MensagemChamado[]
+  ultimaRespostaEm DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, createdAt])
+  @@index([criadoPorId, createdAt])
+}
+
+model MensagemChamado {
+  id String @id @default(cuid())
+  chamadoId String
+  chamado ChamadoSuporte @relation(fields:[chamadoId], references:[id], onDelete:Cascade)
+  autorTipo AutorMensagemChamado
+  autorId String
+  autorNome String
+  texto String
+  createdAt DateTime @default(now())
+  @@index([chamadoId, createdAt])
+}
