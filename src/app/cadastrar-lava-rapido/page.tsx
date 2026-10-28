@@ -1,7 +1,8 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Building2, CheckCircle2, CreditCard, Landmark, Loader2, ShieldCheck, Wallet } from "lucide-react";
+import { PLATFORM_MONTHLY_PRICE_LABEL } from "@/lib/platform-billing";
+import { ArrowLeft, Building2, CheckCircle2, CreditCard, Loader2, ShieldCheck, Wallet } from "lucide-react";
 type Fields = { nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
 export default function CadastroEmpresaPage() {
   const [form, setForm] = useState<Fields>({
@@ -114,7 +115,7 @@ export default function CadastroEmpresaPage() {
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
                     <h3 id="condicoes-comerciais" className="text-base font-bold">Investimento e forma de pagamento</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Condições previstas para contratar o sistema após a aprovação.</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Condições para contratar o sistema após a aprovação do cadastro.</p>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -124,38 +125,29 @@ export default function CadastroEmpresaPage() {
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">Pagamento único pela implantação e configuração.</p>
                   </div>
                   <div className="rounded-xl border border-border bg-card p-4">
-                    <p className="text-xs font-semibold text-muted-foreground">Mensalidade</p>
-                    <p className="mt-2 text-lg font-bold">Valor a definir</p>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Cobrança recorrente para uso e manutenção do sistema.</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Plano mensal fixo</p>
+                    <p className="mt-2 text-lg font-bold">{PLATFORM_MONTHLY_PRICE_LABEL}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Assinatura para uso e manutenção da plataforma, independentemente das receitas das lavagens.</p>
                   </div>
                 </div>
                 <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-                  <p className="text-xs font-semibold text-muted-foreground">Formas de pagamento previstas</p>
-                  <div className="flex items-start gap-3">
-                    <Landmark size={21} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
+                  <p className="text-xs font-semibold text-muted-foreground">Forma de pagamento da assinatura</p>
+                  <div className="flex min-h-12 items-center gap-3 rounded-lg border border-primary/30 bg-background px-4 py-3">
+                    <CreditCard size={21} className="shrink-0 text-primary" aria-hidden="true"/>
                     <div>
-                      <p className="text-sm font-bold">Pix pelo Banco Inter</p>
-                      <p className="text-xs text-muted-foreground">Forma principal de pagamento</p>
+                      <p className="text-sm font-bold">Cartão de débito</p>
+                      <p className="text-xs text-muted-foreground">Única opção prevista para a mensalidade do sistema.</p>
                     </div>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <div className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
-                      <CreditCard size={18} className="shrink-0 text-primary" aria-hidden="true"/>
-                      <span className="text-sm font-semibold">Cartão de crédito</span>
-                    </div>
-                    <div className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5">
-                      <CreditCard size={18} className="shrink-0 text-primary" aria-hidden="true"/>
-                      <span className="text-sm font-semibold">Cartão de débito</span>
-                    </div>
-                  </div>
-                  <p className="text-xs leading-5 text-muted-foreground">A disponibilidade dos meios de pagamento, eventuais taxas e as instruções serão confirmadas após a aprovação e antes da contratação.</p>
+                  <p className="text-xs leading-5 text-muted-foreground">O processamento por cartão será disponibilizado somente após a integração com um provedor habilitado. Não informe dados do cartão nesta página.</p>
                 </div>
-                <p className="text-xs leading-5 text-muted-foreground">Nenhuma cobrança é realizada nesta página. Os valores, o vencimento e as condições serão apresentados antes da contratação.</p>
+                <p className="text-xs leading-5 text-muted-foreground">Os pagamentos que cada lava-rápido recebe pelas lavagens são independentes da mensalidade da plataforma e seguem as configurações do próprio estabelecimento.</p>
+                <p className="text-xs leading-5 text-muted-foreground">Nenhuma cobrança é realizada nesta página. A taxa de implantação (se aplicável), o vencimento e as condições serão apresentados antes da contratação.</p>
               </section>
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={cienteCondicoesComerciais} onChange={e=>setCienteCondicoesComerciais(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
-                <span>Estou ciente de que haverá taxa inicial e mensalidade, mas os valores serão informados antes de qualquer contratação ou cobrança.</span>
+                <span>Estou ciente da mensalidade fixa de R$ 80,00, da forma prevista de pagamento por cartão de débito e de que eventual taxa inicial será informada antes da contratação ou cobrança.</span>
               </label>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
