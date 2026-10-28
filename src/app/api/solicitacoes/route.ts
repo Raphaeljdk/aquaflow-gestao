@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { solicitacaoEmpresaSchema } from "@/lib/platform-onboarding";
+import { PLATFORM_MONTHLY_PRICE_CENTS, PLATFORM_PAYMENT_METHOD } from "@/lib/platform-billing";
 
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
     await prisma.solicitacaoEmpresa.create({
       data: {
         nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial,
-        formaPagamentoPrevista: "PIX_INTER",
+        formaPagamentoPrevista: PLATFORM_PAYMENT_METHOD,
+        mensalidadeCentavos: PLATFORM_MONTHLY_PRICE_CENTS,
         cienciaCondicoesComerciaisEm: new Date(),
         whatsapp: body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55" + body.data.whatsapp,
         origemHash,
