@@ -11,7 +11,7 @@ export async function GET() {
       select: {
         id: true, nomeEmpresa: true, cnpj: true, razaoSocial: true, nomeResponsavel: true,
         email: true, whatsapp: true, cidade: true, mensagem: true,
-        formaPagamentoPrevista: true, cienciaCondicoesComerciaisEm: true,
+        formaPagamentoPrevista: true, mensalidadeCentavos: true, cienciaCondicoesComerciaisEm: true,
         status: true, createdAt: true, revisadoEm: true, revisadoPor: true,
         observacoesInternas: true,
       },
