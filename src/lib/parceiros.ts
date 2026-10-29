@@ -5,7 +5,15 @@ const phone = z.string().trim().max(35).transform(normalizeWhatsappPhone)
   .pipe(z.string({ required_error: "Informe o WhatsApp com DDD." }));
 export const parceiroSchema = z.object({
   nome: z.string().trim().min(3, "Informe o nome do lava-rápido.").max(120),
+  responsavel: z.string().trim().max(120).default(""),
   cidade: z.string().trim().max(120).default(""),
+  endereco: z.string().trim().max(240).default(""),
+  cnpj: z.string().trim().max(18)
+    .refine((value) => !value || /^\d{14}$/.test(value.replace(/\D/g, "")), "CNPJ deve ter 14 dígitos.")
+    .transform((value) => value.replace(/\D/g, "")).default(""),
+  email: z.string().trim().max(150)
+    .refine((value) => !value || z.string().email().safeParse(value).success, "Informe um e-mail válido.")
+    .transform((value) => value.toLowerCase()).default(""),
   whatsapp: phone,
 });
 export const parceiroUpdateSchema = parceiroSchema.partial().extend({
