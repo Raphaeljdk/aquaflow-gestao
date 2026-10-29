@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import type { TenantAccess } from "./boundary";
-import { TenantBoundaryError } from "./boundary";
+import { TenantBoundaryError, isVerifiedTenantAccess } from "./boundary";
 
 /**
  * Primeira versão isolada do resolvedor de conexões (ainda não ligado às rotas).
@@ -47,7 +47,7 @@ export async function withTenantDatabase<Client extends TenantDbClient, Result>(
   provider: TenantDbProvider<Client>,
   operation: (client: Client) => Promise<Result>,
 ): Promise<Result> {
-  if (!authorized.tenantId || !authorized.databaseSecretRef || !authorized.neonProjectId) {
+  if (!isVerifiedTenantAccess(authorized) || !authorized.tenantId || !authorized.databaseSecretRef || !authorized.neonProjectId) {
     throw new TenantBoundaryError("Banco do estabelecimento não provisionado.", 503);
   }
   const url = inspectDatabaseUrl(await provider.readConnectionSecret(authorized.databaseSecretRef));
