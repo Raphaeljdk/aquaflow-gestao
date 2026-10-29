@@ -38,3 +38,18 @@ test("somente parceiros ativados aparecem publicamente e cadastro é inativo por
   assert.match(sendApi, /where: \{ id: pedido.parceiroId, ativo: true \}/);
   assert.match(createApi, /requirePlatformAdmin/);
 });
+
+test("cadastro completo de parceiros valida CNPJ, e-mail e endereço", () => {
+  const parceiro = parceiroSchema.parse({
+    nome: "Lava Rápido Central", responsavel: "João Silva",
+    cidade: "Cotia", endereco: "Rua das Flores, 120, Centro",
+    cnpj: "12.345.678/0001-90", email: "Contato@Central.com.br", whatsapp: "(11) 99999-9999",
+  });
+  assert.equal(parceiro.cnpj, "12345678000190");
+  assert.equal(parceiro.email, "contato@central.com.br");
+  assert.equal(parceiro.responsavel, "João Silva");
+  assert.equal(parceiro.endereco, "Rua das Flores, 120, Centro");
+  assert.equal(parceiroSchema.safeParse({ nome: "Lava Teste", whatsapp: "(11) 99999-9999", cnpj: "123" }).success, false);
+  assert.equal(parceiroSchema.safeParse({ nome: "Lava Teste", whatsapp: "(11) 99999-9999", email: "inválido" }).success, false);
+  assert.equal(parceiroUpdateSchema.safeParse({ email: "novo@exemplo.com" }).success, true);
+});

@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Loader2,
   MessageCircle,
+  Copy,
+  Share2,
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { PageTitle, Picker, Choice, Empty } from "./common";
@@ -44,6 +46,8 @@ import { dayKey, fromLocal, dateLabel, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useActions } from "./layout/app-shell";
 import { ErrorText } from "./forms/order-form";
+import { toast } from "sonner";
+import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 export function Appointments() {
   const { data, mutate, busy } = useStore(),
     actions = useActions(),
@@ -82,6 +86,30 @@ export function Appointments() {
     },
   );
   const isOpen = data.configuracao.diasSemana.includes(anchor.getDay());
+  const canShareBooking = Boolean(normalizeWhatsappPhone(data.configuracao.telefone));
+  const businessName = data.configuracao.nome;
+  const bookingLink = () => window.location.origin + "/agendar/empresa";
+  async function copiarAgendamento() {
+    try {
+      await navigator.clipboard.writeText(bookingLink());
+      toast.success("Link copiado. Cole no WhatsApp ou no Instagram do lava-rápido.");
+    } catch { toast.error("Não foi possível copiar o link."); }
+  }
+  async function compartilharAgendamento() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Agende sua lavagem - " + businessName,
+          text: "Solicite seu horário pelo link:",
+          url: bookingLink(),
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await copiarAgendamento();
+  }
   return (
     <>
       <PageTitle
@@ -102,9 +130,18 @@ export function Appointments() {
             <p className="mt-1 text-xs leading-5 text-muted-foreground">Compartilhe o link do seu lava-rápido. Os pedidos ficam pendentes acima até a equipe confirmar o horário.</p>
           </div>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <a href="/agendar/empresa" target="_blank" rel="noopener noreferrer">Página de agendamento <ArrowRight size={15}/></a>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" disabled={!canShareBooking} onClick={() => void copiarAgendamento()}>
+            <Copy size={15}/> Copiar link
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={!canShareBooking} onClick={() => void compartilharAgendamento()}>
+            <Share2 size={15}/> Compartilhar
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href="/agendar/empresa" target="_blank" rel="noopener noreferrer">Abrir página <ArrowRight size={15}/></a>
+          </Button>
+          {!canShareBooking && <p className="w-full text-xs text-muted-foreground">Cadastre o WhatsApp de agendamentos em Configurações para liberar o compartilhamento.</p>}
+        </div>
       </div>
       <div className="panel mb-5 p-5">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

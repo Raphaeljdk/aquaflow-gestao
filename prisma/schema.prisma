@@ -237,12 +237,17 @@ model SolicitacaoEmpresa {
 model ParceiroLavaRapido {
   id String @id @default(cuid())
   nome String
+  responsavel String @default("")
   cidade String @default("")
+  endereco String @default("")
+  cnpj String @default("")
+  email String @default("")
   whatsapp String
   ativo Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([ativo, nome])
+  @@index([cnpj])
 }
 
 enum StatusPedidoAgendamento {
