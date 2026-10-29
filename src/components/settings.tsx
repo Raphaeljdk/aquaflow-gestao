@@ -1,6 +1,6 @@
 "use client";
 import { useForm, Controller } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Save,
@@ -25,6 +25,7 @@ import { ErrorText } from "./forms/order-form";
 import type { Configuracao } from "@/types";
 import { canManage } from "@/lib/permissions";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
+import { cnpjValido } from "@/lib/cnpj-publico";
 export function Settings() {
   const { data, user } = useStore();
   if (!data || !user) return null;
@@ -39,16 +40,38 @@ export function Settings() {
 }
 function SettingsForm({ initial }: { initial: Configuracao }) {
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
+  const [activeTab, setActiveTab] = useState("empresa");
+  const [errorNotice, setErrorNotice] = useState("");
+  const [savedAt, setSavedAt] = useState("");
   const { mutate, busy } = useStore(),
     f = useForm<Configuracao>({
       resolver: zodResolver(configuracaoSchema),
       defaultValues: initial,
+      mode: "onBlur",
     }),
     values = f.watch();
+  const { reset } = f;
+  // Atualizações de outros dispositivos: sincronizar apenas sem alterações locais,
+  // para o refresh periódico não apagar um formulário ainda não salvo.
+  useEffect(() => {
+    if (!f.formState.isDirty && !f.formState.isSubmitting) reset(initial);
+  }, [initial, reset, f.formState.isDirty, f.formState.isSubmitting]);
+  const misplacedPhone = Boolean(
+    values.cnpj && !cnpjValido(values.cnpj) &&
+    normalizeWhatsappPhone(values.cnpj) &&
+    !normalizeWhatsappPhone(values.telefone),
+  );
   const input = (name: keyof Configuracao, label: string, type = "text") => (
     <div className="space-y-2">
       <Label htmlFor={"setting-" + name}>{label}</Label>
-      <Input id={"setting-" + name} type={type} {...f.register(name)} />
+      <Input
+        id={"setting-" + name}
+        type={type}
+        inputMode={name === "cnpj" ? "numeric" : undefined}
+        autoComplete={name === "telefone" ? "tel" : "off"}
+        aria-invalid={Boolean(f.formState.errors[name])}
+        {...f.register(name)}
+      />
       <ErrorText message={f.formState.errors[name]?.message} />
     </div>
   );
@@ -66,7 +89,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
     }
     const reader = new FileReader();
     reader.onload = () =>
-      f.setValue(field, String(reader.result), { shouldDirty: true });
+      f.setValue(field, String(reader.result), { shouldDirty: true, shouldValidate: true });
     reader.readAsDataURL(file);
   }
   const whatsappReady = Boolean(normalizeWhatsappPhone(values.telefone));
@@ -86,16 +109,43 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
       toast.error(error instanceof Error ? error.message : "Falha ao consultar. Preencha manualmente.");
     } finally { setConsultandoCnpj(false); }
   }
+  async function submitSettings(v: Configuracao) {
+    setErrorNotice("");
+    const success = await mutate({
+      entity: "configuracoes",
+      method: "PATCH",
+      data: { ...v },
+    });
+    if (success) {
+      f.reset(v);
+      setSavedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      toast.success("Configurações confirmadas no banco. Os novos dados já estão disponíveis.");
+    } else {
+      setErrorNotice("Não foi possível salvar as configurações. Confira o aviso e tente novamente.");
+    }
+  }
+  function invalidSettings(errors: typeof f.formState.errors) {
+    const keys = Object.keys(errors);
+    const first = keys[0] as keyof Configuracao | undefined;
+    const hours = ["abertura", "fechamento", "intervaloMin", "diasSemana", "timezone"];
+    const help = ["manualVideoUrl", "manualPdfUrl"];
+    const tab = first && hours.includes(first) ? "horarios" : first && help.includes(first) ? "ajuda" : "empresa";
+    setActiveTab(tab);
+    const firstError = first && errors[first]?.message;
+    const message = typeof firstError === "string" ? firstError : "Confira os campos em destaque.";
+    setErrorNotice("Alterações não salvas: " + message);
+    toast.error("Não foi possível salvar: " + message);
+    if (first) window.setTimeout(() => document.getElementById("setting-" + first)?.focus(), 100);
+  }
+  function moverTelefone() {
+    if (!misplacedPhone) return;
+    f.setValue("telefone", values.cnpj, { shouldDirty: true, shouldValidate: true });
+    f.setValue("cnpj", "", { shouldDirty: true, shouldValidate: true });
+    setErrorNotice("");
+    toast.info("Número movido para WhatsApp. Clique em Salvar alterações para confirmar.");
+  }
   return (
-    <form
-      onSubmit={f.handleSubmit(async (v) => {
-        await mutate({
-          entity: "configuracoes",
-          method: "PATCH",
-          data: { ...v },
-        });
-      })}
-    >
+    <form onSubmit={f.handleSubmit(submitSettings, invalidSettings)}>
       <PageTitle
         title="Configurações"
         description="Deixe o sistema com o jeito do seu lava rápido."
@@ -109,6 +159,16 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           Salvar alterações
         </Button>
       </PageTitle>
+      {errorNotice && (
+        <div role="alert" className="mb-4 max-w-3xl rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {errorNotice}
+        </div>
+      )}
+      {f.formState.isDirty && (
+        <div role="status" className="mb-4 max-w-3xl rounded-xl border border-amber-500/30 px-4 py-3 text-sm">
+          Você tem alterações não salvas. Use o botão <strong>Salvar alterações</strong> no topo ou no final desta página.
+        </div>
+      )}
       <section className="panel mb-6 max-w-3xl space-y-4 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -145,7 +205,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
           {!bookingReady && <p className="w-full text-xs text-muted-foreground">Cadastre um WhatsApp válido e salve as alterações antes de compartilhar o link.</p>}
         </div>
       </section>
-      <Tabs defaultValue="empresa">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="empresa" className="gap-2">
             <Building2 size={15} />
@@ -214,9 +274,17 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
             <div className="space-y-5">
               {input("nome", "Nome da empresa")}
               <div className="grid gap-5 sm:grid-cols-2">
-                {input("cnpj", "CNPJ")}
+                {input("cnpj", "CNPJ (opcional)")}
+                {misplacedPhone && (
+                  <div role="alert" className="sm:col-span-2 rounded-lg border border-amber-500/40 p-3 text-sm">
+                    <p>Este valor parece ser um telefone, não um CNPJ. O WhatsApp está vazio.</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={moverTelefone}>
+                      Mover número para WhatsApp
+                    </Button>
+                  </div>
+                )}
                 <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-                  <Button type="button" variant="outline" disabled={consultandoCnpj || !values.cnpj?.trim()}
+                  <Button type="button" variant="outline" disabled={consultandoCnpj || !cnpjValido(values.cnpj ?? "")}
                     onClick={() => void buscarCnpj()}>
                     {consultandoCnpj ? <Loader2 size={15} className="animate-spin" /> : <Building2 size={15} />}
                     Consultar CNPJ e preencher dados
@@ -364,6 +432,23 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
       </Tabs>
       <div className="mt-5 max-w-3xl rounded-xl border border-border p-4 text-sm text-muted-foreground">
         Os serviços e preços são gerenciados em Gestão → Serviços pelo administrador. O funcionário trabalha somente em Clientes, Comandas e Agendamentos.
+      </div>
+      <div className="sticky bottom-2 z-20 mt-5 max-w-3xl rounded-xl border border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div role="status" className="text-xs text-muted-foreground">
+            {busy || f.formState.isSubmitting
+              ? "Gravando configurações..."
+              : f.formState.isDirty
+                ? "Alterações pendentes de salvamento"
+                : savedAt
+                  ? "Tudo salvo às " + savedAt
+                  : "Edite os dados e salve para aplicar"}
+          </div>
+          <Button type="submit" disabled={busy || f.formState.isSubmitting}>
+            {busy || f.formState.isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            Salvar alterações
+          </Button>
+        </div>
       </div>
     </form>
   );

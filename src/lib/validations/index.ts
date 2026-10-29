@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { cnpjValido } from "../cnpj-publico";
+import { normalizeWhatsappPhone } from "../whatsapp";
 const text = z.string().trim();
 const id = text.min(1, "Selecione uma opção.");
 const email = text.email("E-mail inválido.").or(z.literal("")).default("");
@@ -127,9 +129,15 @@ const hour = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 export const configuracaoSchema = z
   .object({
     nome: text.min(2).max(120),
-    cnpj: text.max(18),
+    cnpj: text.max(18).refine(
+      (value) => !value || cnpjValido(value),
+      "CNPJ inválido. Confira os 14 dígitos. Se for um telefone, preencha o WhatsApp de agendamentos.",
+    ),
     endereco: text.max(300),
-    telefone: text.max(30),
+    telefone: text.max(30).refine(
+      (value) => !value || Boolean(normalizeWhatsappPhone(value)),
+      "Informe um WhatsApp válido com DDD ou deixe em branco.",
+    ),
     pixChave: text
       .max(500000)
       .refine(

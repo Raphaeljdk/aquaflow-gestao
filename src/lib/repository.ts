@@ -3,7 +3,8 @@ import { hash } from "bcryptjs";
 import { prisma } from "./prisma";
 import type { AppData, Mutation, User, Vistoria } from "@/types";
 import { applyMutation, BusinessError } from "./domain";
-import { funcionarioSchema } from "./validations";
+import { funcionarioSchema, configuracaoSchema } from "./validations";
+import { canWrite } from "./permissions";
 type DB = Prisma.TransactionClient;
 export async function snapshot(db: DB = prisma): Promise<AppData> {
   const [
@@ -102,6 +103,22 @@ export function scopeData(d: AppData, u: User): AppData {
   };
 }
 export async function mutate(m: Mutation, actor: User) {
+  // Configuração é um registro único por banco operacional: gravação direta,
+  // sem percorrer comandas, clientes, estoque e toda a base em snapshot().
+  // No futuro, este prisma deve ser injetado a partir do tenant autorizado.
+  if (m.entity === "configuracoes") {
+    if (!canWrite(actor.role, "configuracoes"))
+      throw new BusinessError("Sem permissão para editar configurações.", 403);
+    if (m.method !== "PATCH")
+      throw new BusinessError("Método inválido para configurações.", 405);
+    const values = configuracaoSchema.parse(m.data);
+    const saved = await prisma.configuracao.upsert({
+      where: { id: "empresa" },
+      create: { id: "empresa", ...values },
+      update: values,
+    });
+    return { ok: true, configuracao: saved };
+  }
   const password =
     m.entity === "funcionarios" && m.method !== "DELETE"
       ? funcionarioSchema.parse(m.data).password
