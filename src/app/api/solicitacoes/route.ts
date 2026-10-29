@@ -20,23 +20,34 @@ export async function POST(request: NextRequest) {
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     });
     if (limite >= 3) return NextResponse.json({ error: "Limite diário de solicitações atingido. Tente novamente amanhã." }, { status: 429 });
-    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial, planoPagamento, metodoPagamento } = body.data;
-    const offer = resolvePlatformOffer(planoPagamento, metodoPagamento);
+    const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial, planoPagamento, metodoPagamento, modalidadeCadastro } = body.data;
+    const trial = modalidadeCadastro === "TESTE_7_DIAS";
+    const offer = trial ? null : resolvePlatformOffer(planoPagamento, metodoPagamento);
     await prisma.solicitacaoEmpresa.create({
       data: {
         nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial,
-        formaPagamentoPrevista: offer.method,
-        mensalidadeCentavos: offer.installments === 12 ? offer.installmentCents : null,
-        planoPagamento: offer.plan,
-        totalContratoCentavos: offer.totalCents,
-        quantidadeParcelas: offer.installments,
-        cienciaCondicoesComerciaisEm: new Date(),
+        modalidadeCadastro,
+        // Solicitação gratuita não inicia relógio, não provisiona banco e não cobra cartão.
+        testeIniciadoEm: null,
+        testeExpiraEm: null,
+        formaPagamentoPrevista: offer?.method ?? "NAO_APLICAVEL",
+        mensalidadeCentavos: offer?.installments === 12 ? offer.installmentCents : null,
+        planoPagamento: offer?.plan ?? null,
+        totalContratoCentavos: offer?.totalCents ?? null,
+        quantidadeParcelas: offer?.installments ?? null,
+        cienciaCondicoesComerciaisEm: trial ? null : new Date(),
         whatsapp: body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55" + body.data.whatsapp,
         origemHash,
         consentimentoEm: new Date(),
       },
     });
-    return NextResponse.json({ ok: true, message: "Solicitação enviada para análise. Entraremos em contato pelo WhatsApp ou e-mail." }, { status: 201 });
+    return NextResponse.json({
+      ok: true,
+      modalidadeCadastro,
+      message: trial
+        ? "Pedido de teste de 7 dias registrado. A contagem começa após liberação de ambiente isolado, mediante confirmação da equipe."
+        : "Solicitação comercial enviada para análise. Entraremos em contato pelo WhatsApp ou e-mail.",
+    }, { status: 201 });
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === "P2002")
       return NextResponse.json({ error: "Já existe uma solicitação com este e-mail." }, { status: 409 });
