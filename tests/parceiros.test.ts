@@ -38,3 +38,56 @@ test("somente parceiros ativados aparecem publicamente e cadastro é inativo por
   assert.match(sendApi, /where: \{ id: pedido.parceiroId, ativo: true \}/);
   assert.match(createApi, /requirePlatformAdmin/);
 });
+
+test("cadastro de parceiro armazena os campos editáveis do cartão CNPJ", () => {
+  const x = parceiroSchema.parse({
+    nome: "Lavagem Central", cnpj: "11.222.333/0001-81",
+    razaoSocial: "Lavagem Central LTDA", cidade: "Cotia, SP",
+    uf: "sp", cep: "06700-000", bairro: "Centro",
+    endereco: "Avenida Principal, 100", email: "CONTATO@EXEMPLO.COM",
+    telefoneComercial: "1133334444", whatsapp: "(11) 99999-9999",
+    atividadePrincipal: "4520-0/05", naturezaJuridica: "Sociedade Empresária Limitada",
+    situacaoCadastral: "ATIVA", porte: "ME", dataAbertura: "2025-01-01",
+    responsavel: "Joana da Silva",
+  });
+  assert.equal(x.cnpj, "11222333000181");
+  assert.equal(x.uf, "SP");
+  assert.equal(x.email, "contato@exemplo.com");
+  assert.equal(x.responsavel, "Joana da Silva");
+});
+test("CNPJ é opcional para preenchimento manual, mas inválido é rejeitado", () => {
+  assert.equal(parceiroSchema.safeParse({ nome: "Lavagem Manual", whatsapp: "(11) 99999-9999" }).success, true);
+  assert.equal(parceiroSchema.safeParse({ nome: "Lavagem Teste", whatsapp: "(11) 99999-9999", cnpj: "123" }).success, false);
+  assert.equal(parceiroSchema.safeParse({ nome: "Lavagem Teste", whatsapp: "(11) 99999-9999", cep: "12" }).success, false);
+  assert.equal(parceiroSchema.safeParse({ nome: "Lavagem Teste", whatsapp: "(11) 99999-9999", email: "errado" }).success, false);
+});
+test("campos individuais podem ser alterados sem exigir sobrescrever os demais", () => {
+  const parsed = parceiroUpdateSchema.safeParse({ razaoSocial: "Novo nome empresarial", email: "novo@teste.com" });
+  assert.equal(parsed.success, true);
+  assert.equal(parceiroUpdateSchema.safeParse({ ativo: false }).success, true);
+});
+test("cartão CNPJ fornece dados públicos, sem expor QSA e CPF em resposta", () => {
+  const source = readFileSync("src/lib/cnpj-publico.ts", "utf8");
+  assert.match(source, /ddd_telefone_1/);
+  assert.match(source, /natureza_juridica/);
+  assert.match(source, /data_inicio_atividade/);
+  assert.doesNotMatch(source, /nome_socio|cnpj_cpf_do_socio/);
+});
+test("autopreenchimento preserva WhatsApp e responsável e exige revisão humana", () => {
+  const ui = readFileSync("src/components/partners-manager.tsx", "utf8");
+  assert.match(ui, /preencherParceiroComCnpj/);
+  assert.match(ui, /whatsapp: form.whatsapp/);
+  assert.match(ui, /responsavel: form.responsavel/);
+  assert.match(ui, /lastAuto.current/);
+  assert.match(ui, /setTimeout/);
+  assert.match(ui, /onChangeRef.current/);
+  assert.match(ui, /"POST"/);
+  assert.match(ui, /ativo: !p.ativo/);
+});
+test("API do gestor não divulga dados comerciais na rota pública", () => {
+  const admin = readFileSync("src/app/api/plataforma/parceiros/route.ts", "utf8");
+  const publicRoute = readFileSync("src/app/api/public/parceiros/route.ts", "utf8");
+  assert.match(admin, /razaoSocial: true/);
+  assert.match(admin, /requirePlatformAdmin/);
+  assert.doesNotMatch(publicRoute, /razaoSocial: true|telefoneComercial: true|email: true/);
+});

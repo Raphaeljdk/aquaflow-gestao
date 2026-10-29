@@ -1,12 +1,32 @@
 import { z } from "zod";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
+import { cnpjValido } from "@/lib/cnpj-publico";
 
 const phone = z.string().trim().max(35).transform(normalizeWhatsappPhone)
   .pipe(z.string({ required_error: "Informe o WhatsApp com DDD." }));
+const short = (max = 200) => z.string().trim().max(max).default("");
+const cnpj = z.string().trim().max(18)
+  .refine(v => !v || cnpjValido(v), "CNPJ inválido. Confira os 14 dígitos.")
+  .transform(v => v.replace(/\D/g, "")).default("");
 export const parceiroSchema = z.object({
   nome: z.string().trim().min(3, "Informe o nome do lava-rápido.").max(120),
-  cidade: z.string().trim().max(120).default(""),
+  cidade: short(120),
   whatsapp: phone,
+  cnpj,
+  razaoSocial: short(200),
+  responsavel: short(120),
+  endereco: short(300),
+  cep: short(9).refine(v => !v || /^\d{8}$/.test(v.replace(/\D/g, "")), "CEP deve ter 8 dígitos."),
+  bairro: short(120),
+  uf: short(2).refine(v => !v || /^[A-Za-z]{2}$/.test(v), "UF inválida.").transform(v => v.toUpperCase()),
+  email: short(150).refine(v => !v || z.string().email().safeParse(v).success, "E-mail inválido.")
+    .transform(v => v.toLowerCase()),
+  telefoneComercial: short(35),
+  situacaoCadastral: short(50),
+  atividadePrincipal: short(250),
+  naturezaJuridica: short(150),
+  porte: short(80),
+  dataAbertura: short(10).refine(v => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Data de abertura inválida."),
 });
 export const parceiroUpdateSchema = parceiroSchema.partial().extend({
   ativo: z.boolean().optional(),
