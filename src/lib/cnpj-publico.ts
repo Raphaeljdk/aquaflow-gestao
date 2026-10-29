@@ -1,6 +1,8 @@
 export type DadosPublicosCnpj = {
   cnpj: string; razaoSocial: string; nomeFantasia: string;
   cidade: string; endereco: string; situacao: string;
+  uf: string; cep: string; bairro: string; telefoneComercial: string; email: string;
+  porte: string; naturezaJuridica: string; atividadePrincipal: string; dataAbertura: string;
 };
 // Validação DV tradicional: evita consultas acidentais a identificadores inválidos.
 export function cnpjValido(entrada: string): boolean {
@@ -24,5 +26,10 @@ export function resumirDadosCnpj(data: Record<string, unknown>, cnpj: string): D
     cnpj, razaoSocial: str("razao_social"), nomeFantasia: str("nome_fantasia"),
     cidade: [str("municipio"), str("uf")].filter(Boolean).join(", "),
     endereco: endereco.slice(0, 300), situacao: str("descricao_situacao_cadastral"),
+    uf: str("uf"), cep: str("cep"), bairro: str("bairro"),
+    email: str("email"), telefoneComercial: str("ddd_telefone_1"),
+    porte: str("porte") || str("descricao_porte"), naturezaJuridica: str("natureza_juridica"),
+    atividadePrincipal: [data.cnae_fiscal ? String(data.cnae_fiscal) : "", str("cnae_fiscal_descricao")].filter(Boolean).join(" - ").slice(0, 250),
+    dataAbertura: str("data_inicio_atividade").slice(0, 10),
   };
 }
