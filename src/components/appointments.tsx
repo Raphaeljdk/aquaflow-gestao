@@ -87,6 +87,7 @@ export function Appointments() {
   );
   const isOpen = data.configuracao.diasSemana.includes(anchor.getDay());
   const canShareBooking = Boolean(normalizeWhatsappPhone(data.configuracao.telefone));
+  const businessName = data.configuracao.nome;
   const bookingLink = () => window.location.origin + "/agendar/empresa";
   async function copiarAgendamento() {
     try {
@@ -98,7 +99,7 @@ export function Appointments() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Agende sua lavagem - " + data.configuracao.nome,
+          title: "Agende sua lavagem - " + businessName,
           text: "Solicite seu horário pelo link:",
           url: bookingLink(),
         });
