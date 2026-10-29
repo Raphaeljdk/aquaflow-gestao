@@ -5,6 +5,7 @@ import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from 
 import { PartnersManager } from "@/components/partners-manager";
 import { PlatformTickets } from "@/components/platform-tickets";
 import { formatPlatformPrice } from "@/lib/platform-billing";
+import { getTrialState } from "@/lib/platform-trial";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
 type Account = { id: string; name:string; email:string; role:string; ativo:boolean; createdAt:string };
 type Request = {
@@ -13,6 +14,9 @@ type Request = {
   formaPagamentoPrevista: string; mensalidadeCentavos: number | null;
   planoPagamento: string | null; totalContratoCentavos: number | null; quantidadeParcelas: number | null;
   cienciaCondicoesComerciaisEm: string | null;
+  modalidadeCadastro: "TESTE_7_DIAS" | "CONTRATACAO";
+  testeIniciadoEm: string | null;
+  testeExpiraEm: string | null;
   createdAt: string; revisadoEm: string | null; observacoesInternas: string;
 };
 const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em análise",APROVADO:"Aprovada",REJEITADO:"Rejeitada"};
@@ -21,7 +25,7 @@ export function PlatformDashboard() {
   const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
-  const [tab,setTab] = useState<"solicitacoes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
+  const [tab,setTab] = useState<"solicitacoes" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -80,6 +84,7 @@ export function PlatformDashboard() {
       <nav aria-label="Seções da administração" className="my-7 flex flex-wrap gap-2 border-b border-border pb-4">
         {([
           ["solicitacoes","Solicitações"],
+          ["testes","Testes de 7 dias"],
           ["parceiros","Parceiros"],
           ["chamados","Chamados de suporte"],
           ["acessos","Acessos"],
@@ -94,19 +99,26 @@ export function PlatformDashboard() {
       </nav>
       {tab==="parceiros" && <PartnersManager />}
       {tab==="chamados" && <PlatformTickets />}
-      {tab==="solicitacoes" && <>
+      {(tab==="solicitacoes" || tab==="testes") && <>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
-        {[["Pendentes",requests.filter(x=>x.status==="PENDENTE").length],
-          ["Em análise",requests.filter(x=>x.status==="EM_ANALISE").length],
-          ["Total de solicitações",requests.length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
+        {[["Pendentes",requests.filter(x=>x.status==="PENDENTE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
+          ["Em análise",requests.filter(x=>x.status==="EM_ANALISE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
+          [tab==="testes" ? "Pedidos de teste" : "Total de solicitações", tab==="testes" ? requests.filter(x=>x.modalidadeCadastro==="TESTE_7_DIAS").length : requests.length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
       </div>
       {error&&<p role="alert" className="mb-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{error}</p>}
       {loading&&<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={17} className="animate-spin"/> Carregando solicitações...</p>}
       {!loading&&requests.length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
+      {tab==="testes" && <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
+      </p>}
       <div className="grid gap-4 lg:grid-cols-2">
-        {requests.map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        {requests.filter(item=>tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS").map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold">{item.nomeEmpresa}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold">{item.nomeEmpresa}</h2>
+              {item.modalidadeCadastro==="TESTE_7_DIAS" &&
+                <p className="mt-1 text-xs font-bold text-primary">Pedido de teste grátis • 7 dias após ativação</p>}
+            </div>
             <span className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold">{labels[item.status]}</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{item.nomeResponsavel} · {item.cidade}</p>
@@ -117,6 +129,17 @@ export function PlatformDashboard() {
             <a href={"https://wa.me/"+item.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium underline underline-offset-4"><ExternalLink size={14}/> {item.whatsapp}</a>
             {item.mensagem&&<p className="rounded-xl bg-muted p-3 text-sm leading-6">{item.mensagem}</p>}
             <div className="space-y-1 rounded-xl border border-border bg-muted/50 p-3 text-xs leading-5">
+              {item.modalidadeCadastro==="TESTE_7_DIAS" ? (
+                <>
+                  <p className="font-semibold">Teste grátis de 7 dias — sem cobrança</p>
+                  <p>Estado: {getTrialState(item)==="SOLICITADO" ? "Solicitado" :
+                    getTrialState(item)==="AGUARDANDO_ATIVACAO" ? "Aguardando ambiente individual" :
+                    getTrialState(item)==="ATIVO" ? "Em teste" : "Prazo encerrado"}</p>
+                  <p>Início: {item.testeIniciadoEm ? new Date(item.testeIniciadoEm).toLocaleString("pt-BR") : "Ainda não iniciado"}</p>
+                  <p>Término: {item.testeExpiraEm ? new Date(item.testeExpiraEm).toLocaleString("pt-BR") : "Após 7 dias da ativação"}</p>
+                  <p className="text-muted-foreground">Aprovação administrativa não cria banco de dados nem libera acesso. Não existe cobrança automática após o teste.</p>
+                </>
+              ) : <>
               <p className="font-semibold">Condições comerciais previstas</p>
               <p>Implantação: valor a definir</p>
               {item.totalContratoCentavos !== null && item.planoPagamento ? (
@@ -127,6 +150,7 @@ export function PlatformDashboard() {
               <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : item.formaPagamentoPrevista === "PIX_INTER" ? "Pix Inter" : item.formaPagamentoPrevista === "CARTAO_CREDITO_1X" ? "Cartão de crédito — 1x, sem parcelamento" : item.formaPagamentoPrevista}</p>
               <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente das condições apresentadas no momento do cadastro." : "Solicitação anterior à confirmação das condições comerciais."}</p>
               <p className="text-muted-foreground">A solicitação não efetua cobranças. Recebimentos das lavagens permanecem separados da assinatura.</p>
+              </>}
             </div>
           </div>
           <label className="mt-5 block space-y-2 text-xs font-semibold text-muted-foreground">
