@@ -239,10 +239,26 @@ model ParceiroLavaRapido {
   nome String
   cidade String @default("")
   whatsapp String
+  // Cartão CNPJ: dados públicos sugeridos, editáveis pelo gestor.
+  cnpj String @default("")
+  razaoSocial String @default("")
+  responsavel String @default("")
+  endereco String @default("")
+  cep String @default("")
+  bairro String @default("")
+  uf String @default("")
+  email String @default("")
+  telefoneComercial String @default("")
+  situacaoCadastral String @default("")
+  atividadePrincipal String @default("")
+  naturezaJuridica String @default("")
+  porte String @default("")
+  dataAbertura String @default("")
   ativo Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([ativo, nome])
+  @@index([cnpj])
 }
 
 enum StatusPedidoAgendamento {
