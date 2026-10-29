@@ -64,3 +64,13 @@ test("desconecta a conexão quando ocorre erro na operação", async () => {
   }, async () => { throw new Error("Falha simulada"); }), /Falha simulada/);
   assert.equal(disconnected, true);
 });
+
+test("objeto forjado de JSON não permite conexão, mesmo com tenantId e secretRef válidos", async () => {
+  const fake = JSON.parse(JSON.stringify(access));
+  let consulted = false;
+  await assert.rejects(() => withTenantDatabase(fake, {
+    readConnectionSecret: async () => { consulted = true; return "postgresql://a:b@tenant.neon.tech/db"; },
+    createClient: () => ({ $disconnect: async () => {} }),
+  }, async () => true), /não provisionado/);
+  assert.equal(consulted, false);
+});
