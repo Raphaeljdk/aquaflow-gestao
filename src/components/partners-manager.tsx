@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Building2, Check, ExternalLink, Loader2, Plus, RefreshCw } from "lucide-react";
-type Parceiro = { id: string; nome: string; cidade: string; whatsapp: string; ativo: boolean; createdAt: string };
-type FormValues = { nome: string; cidade: string; whatsapp: string };
-const empty: FormValues = { nome: "", cidade: "", whatsapp: "" };
+type Parceiro = { id: string; nome: string; responsavel: string; cidade: string; endereco: string; cnpj: string; email: string; whatsapp: string; ativo: boolean; createdAt: string };
+type FormValues = { nome: string; responsavel: string; cidade: string; endereco: string; cnpj: string; email: string; whatsapp: string };
+const empty: FormValues = { nome: "", responsavel: "", cidade: "", endereco: "", cnpj: "", email: "", whatsapp: "" };
 
 export function PartnersManager() {
   const [parceiros, setParceiros] = useState<Parceiro[]>([]);
@@ -92,6 +92,28 @@ export function PartnersManager() {
               placeholder="(11) 99999-9999" className={inputClass} />
           </label>
         </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 text-sm font-semibold">
+            <span>Responsável / proprietário</span>
+            <input maxLength={120} value={form.responsavel} onChange={e=>update("responsavel",e.target.value)}
+              placeholder="Nome do proprietário" className={inputClass} />
+          </label>
+          <label className="space-y-2 text-sm font-semibold">
+            <span>CNPJ (opcional)</span>
+            <input inputMode="numeric" maxLength={18} value={form.cnpj} onChange={e=>update("cnpj",e.target.value)}
+              placeholder="00.000.000/0001-00" className={inputClass} />
+          </label>
+          <label className="space-y-2 text-sm font-semibold">
+            <span>E-mail do responsável</span>
+            <input type="email" maxLength={150} value={form.email} onChange={e=>update("email",e.target.value)}
+              placeholder="contato@empresa.com.br" className={inputClass} />
+          </label>
+          <label className="space-y-2 text-sm font-semibold">
+            <span>Endereço completo</span>
+            <input maxLength={240} value={form.endereco} onChange={e=>update("endereco",e.target.value)}
+              placeholder="Rua, número, bairro e cidade" className={inputClass} />
+          </label>
+        </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">O novo parceiro não aparecerá para os clientes até você ativá-lo.</p>
           <button type="submit" disabled={!!busy} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
@@ -122,7 +144,13 @@ export function PartnersManager() {
                 {p.ativo ? "Visível ao público" : "Oculto"}
               </span>
             </div>
-            <p className="text-sm">WhatsApp: <span className="font-semibold">{p.whatsapp}</span></p>
+            <div className="space-y-1 text-sm">
+              <p>WhatsApp: <span className="font-semibold">{p.whatsapp}</span></p>
+              {p.responsavel && <p>Proprietário: <span className="font-semibold">{p.responsavel}</span></p>}
+              {p.cnpj && <p>CNPJ: {p.cnpj}</p>}
+              {p.endereco && <p className="break-words">Endereço: {p.endereco}</p>}
+              {p.email && <p className="break-all">E-mail: <a className="underline" href={"mailto:"+p.email}>{p.email}</a></p>}
+            </div>
             {editingId === p.id && (
               <form onSubmit={event => { event.preventDefault(); void atualizar(p.id, editForm); }} className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
                 <label className="block space-y-1 text-xs font-semibold">Nome
@@ -137,6 +165,22 @@ export function PartnersManager() {
                   <input required type="tel" maxLength={35} className={inputClass} value={editForm.whatsapp}
                     onChange={e=>setEditForm(v=>({...v,whatsapp:e.target.value}))} />
                 </label>
+                <label className="block space-y-1 text-xs font-semibold">Proprietário
+                  <input maxLength={120} className={inputClass} value={editForm.responsavel}
+                    onChange={e=>setEditForm(v=>({...v,responsavel:e.target.value}))} />
+                </label>
+                <label className="block space-y-1 text-xs font-semibold">CNPJ
+                  <input inputMode="numeric" maxLength={18} className={inputClass} value={editForm.cnpj}
+                    onChange={e=>setEditForm(v=>({...v,cnpj:e.target.value}))} />
+                </label>
+                <label className="block space-y-1 text-xs font-semibold">E-mail
+                  <input type="email" maxLength={150} className={inputClass} value={editForm.email}
+                    onChange={e=>setEditForm(v=>({...v,email:e.target.value}))} />
+                </label>
+                <label className="block space-y-1 text-xs font-semibold">Endereço
+                  <input maxLength={240} className={inputClass} value={editForm.endereco}
+                    onChange={e=>setEditForm(v=>({...v,endereco:e.target.value}))} />
+                </label>
                 <div className="flex gap-2">
                   <button disabled={busy===p.id} className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">Salvar</button>
                   <button type="button" onClick={()=>setEditingId(null)} className="rounded-lg border border-border px-4 py-2 text-xs font-semibold">Cancelar</button>
@@ -144,7 +188,7 @@ export function PartnersManager() {
               </form>
             )}
             <div className="flex flex-wrap gap-2 border-t border-border pt-3">
-              <button type="button" disabled={!!busy} onClick={() => { setEditingId(p.id); setEditForm({nome:p.nome,cidade:p.cidade,whatsapp:p.whatsapp}); }}
+              <button type="button" disabled={!!busy} onClick={() => { setEditingId(p.id); setEditForm({nome:p.nome,responsavel:p.responsavel,cidade:p.cidade,endereco:p.endereco,cnpj:p.cnpj,email:p.email,whatsapp:p.whatsapp}); }}
                 className="min-h-10 rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Editar dados</button>
               <button type="button" disabled={!!busy}
                 onClick={() => {
