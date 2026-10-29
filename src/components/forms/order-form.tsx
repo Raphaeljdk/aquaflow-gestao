@@ -12,6 +12,8 @@ import {
   QrCode,
   CreditCard,
   ChevronDown,
+  FileDown,
+  Share2,
 } from "lucide-react";
 import {
   Dialog,
@@ -50,6 +52,8 @@ import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
 import { pixPayload } from "@/lib/pix";
+import { whatsappLink } from "@/lib/whatsapp";
+import { gerarPdfVistoria, baixarPdfVistoria } from "@/lib/inspection-report";
 import { toast } from "sonner";
 type OrderValues = {
   clienteId: string;
@@ -487,6 +491,51 @@ export function OrderDetail({
       if (status === "CANCELADO") setCancel(false);
     }
   };
+  async function documentoVistoria() {
+    if (!o || !o.vistoria || !o.vistoria.itens.length || o.vistoria.itens.some(i => !i.revisado)) {
+      toast.error("Conclua e salve todos os itens da vistoria antes de compartilhar.");
+      return null;
+    }
+    return gerarPdfVistoria({
+      numero: o.numero,
+      estabelecimento: data?.configuracao.nome ?? "Ducha Elitte",
+      cliente: c?.nome ?? "Não informado",
+      telefone: c?.telefone ?? "Não informado",
+      veiculo: [v?.marca, v?.modelo, v?.cor].filter(Boolean).join(" "),
+      placa: v?.placa ?? "Não informada",
+      criadoEm: o.createdAt,
+      vistoria: o.vistoria,
+    });
+  }
+  async function baixarVistoria() {
+    try {
+      const arquivo = await documentoVistoria();
+      if (arquivo) { baixarPdfVistoria(arquivo); toast.success("PDF da vistoria baixado."); }
+    } catch { toast.error("Não foi possível gerar a vistoria em PDF."); }
+  }
+  async function compartilharVistoria() {
+    try {
+      const arquivo = await documentoVistoria();
+      if (!arquivo) return;
+      const texto = "Olá, " + (c?.nome ?? "cliente") + "! Segue a vistoria de entrada do veículo " +
+        (v?.placa ?? "") + " (comanda #" + o?.numero + "). Confira os registros de avarias.";
+      if (navigator.canShare?.({ files: [arquivo] }) && navigator.share) {
+        try {
+          await navigator.share({ files: [arquivo], title: "Vistoria de entrada", text: texto });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+        }
+      }
+      // WhatsApp Web não permite anexos via link: baixar PDF para o atendente anexar.
+      baixarPdfVistoria(arquivo);
+      const link = whatsappLink(c?.telefone, texto);
+      if (link) window.open(link, "_blank", "noopener,noreferrer");
+      toast.info(link
+        ? "PDF baixado. Anexe-o na conversa do WhatsApp antes de enviar."
+        : "PDF baixado. Informe um WhatsApp válido para abrir a conversa do cliente.");
+    } catch { toast.error("Não foi possível preparar o compartilhamento da vistoria."); }
+  }
   return (
     <>
       <Sheet open={!!id} onOpenChange={(v) => !v && onClose()}>
@@ -669,7 +718,19 @@ export function OrderDetail({
                     <Check size={15} />
                   </Button>
                 )}
-                {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
+                <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/30 p-3">
+                 <div className="min-w-full">
+                   <p className="text-sm font-semibold">Entregar vistoria ao cliente</p>
+                   <p className="mt-1 text-xs text-muted-foreground">Conclua e salve o checklist antes de gerar o PDF. No celular, escolha o WhatsApp para enviar o arquivo; no computador, anexe o PDF baixado.</p>
+                 </div>
+                 <Button type="button" variant="outline" size="sm" onClick={() => void baixarVistoria()}>
+                   <FileDown size={16}/> Baixar PDF
+                 </Button>
+                 <Button type="button" variant="outline" size="sm" onClick={() => void compartilharVistoria()}>
+                   <Share2 size={16}/> Compartilhar pelo WhatsApp
+                 </Button>
+               </div>
+               {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
                     <Button
                       variant="ghost"
                       className="text-destructive"
