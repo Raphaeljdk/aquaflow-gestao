@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const existing = await prisma.parceiroLavaRapido.findUnique({ where: { id } });
     if (!existing) throw new BusinessError("Parceiro não encontrado.", 404);
     const parceiro = await prisma.parceiroLavaRapido.update({
-      where: { id }, data, select: { id: true, nome: true, cidade: true, whatsapp: true, ativo: true, createdAt: true },
+      where: { id }, data, select: { id: true, nome: true, responsavel: true, cidade: true, endereco: true, cnpj: true, email: true, whatsapp: true, ativo: true, createdAt: true },
     });
     return NextResponse.json({ parceiro });
   } catch (error) {
