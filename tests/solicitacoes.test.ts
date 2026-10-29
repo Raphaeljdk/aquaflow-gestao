@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { calculateTrialWindow, getTrialState, TRIAL_MILLISECONDS } from "../src/lib/platform-trial";
 import assert from "node:assert/strict";
 import { solicitacaoEmpresaSchema, decisaoSolicitacaoSchema } from "../src/lib/platform-onboarding";
 import { PLATFORM_MONTHLY_PRICE_CENTS, PLATFORM_ANNUAL_STANDARD_CENTS, PLATFORM_ANNUAL_UPFRONT_CENTS, PLATFORM_ANNUAL_SAVINGS_CENTS, resolvePlatformOffer } from "../src/lib/platform-billing";
@@ -64,4 +66,53 @@ test("preços enviados pelo cliente são ignorados (servidor calcula valor)", ()
   assert.equal("mensalidadeCentavos" in parsed, false);
   assert.equal("quantidadeParcelas" in parsed, false);
   assert.equal(resolvePlatformOffer(parsed.planoPagamento, parsed.metodoPagamento).totalCents, 79000);
+});
+
+test("teste de 7 dias pode ser solicitado sem aceitar cobrança de plano anual", () => {
+  const request = solicitacaoEmpresaSchema.parse({
+    ...base,
+    modalidadeCadastro: "TESTE_7_DIAS",
+    cienteCondicoesComerciais: false,
+    planoPagamento: "ANUAL_AVISTA",
+    metodoPagamento: "CARTAO_DEBITO",
+  });
+  assert.equal(request.modalidadeCadastro, "TESTE_7_DIAS");
+  assert.equal(request.cienteCondicoesComerciais, false);
+  assert.equal(solicitacaoEmpresaSchema.safeParse({
+    ...base,
+    modalidadeCadastro: "CONTRATACAO",
+    cienteCondicoesComerciais: false,
+  }).success, false);
+});
+test("7 dias começam exclusivamente na ativação e vencem depois de 168 horas", () => {
+  const activated = new Date("2026-11-02T12:00:00Z");
+  const window = calculateTrialWindow(activated);
+  assert.equal(window.expiresAt.getTime()-window.startedAt.getTime(), TRIAL_MILLISECONDS);
+  const registered = { modalidadeCadastro: "TESTE_7_DIAS", status: "PENDENTE", testeIniciadoEm: null, testeExpiraEm: null };
+  assert.equal(getTrialState(registered), "SOLICITADO");
+  assert.equal(getTrialState({...registered,status:"APROVADO"}), "AGUARDANDO_ATIVACAO");
+  assert.equal(getTrialState({...registered,status:"APROVADO",testeIniciadoEm:window.startedAt,testeExpiraEm:window.expiresAt},new Date("2026-11-09T11:59:59Z")), "ATIVO");
+  assert.equal(getTrialState({...registered,status:"APROVADO",testeIniciadoEm:window.startedAt,testeExpiraEm:window.expiresAt},new Date("2026-11-09T12:00:00Z")), "EXPIRADO");
+  assert.equal(getTrialState({...registered,modalidadeCadastro:"CONTRATACAO"}), "NAO_APLICAVEL");
+});
+test("requisição gratuita não cobra nem provisiona usuário no banco legado", () => {
+  const src = readFileSync("src/app/api/solicitacoes/route.ts", "utf8");
+  assert.match(src, /trial \? null : resolvePlatformOffer/);
+  assert.match(src, /testeIniciadoEm: null/);
+  assert.match(src, /testeExpiraEm: null/);
+  assert.match(src, /modalidadeCadastro,/);
+  assert.doesNotMatch(src, /prisma\.user\.create|prisma\.user\.upsert/);
+});
+test("login mostra CTA explícito e registro permite selecionar teste ou contratação", () => {
+  const login = readFileSync("src/components/login.tsx", "utf8");
+  const form = readFileSync("src/app/cadastrar-lava-rapido/page.tsx", "utf8");
+  const admin = readFileSync("src/components/platform-dashboard.tsx", "utf8");
+  assert.match(login, /Solicitar teste grátis de 7 dias/);
+  assert.match(login, /modalidade=teste/);
+  assert.match(form, /Teste grátis de 7 dias/);
+  assert.match(form, /modalidadeCadastro/);
+  assert.match(form, /!trial && <section/);
+  assert.match(admin, /Testes de 7 dias/);
+  assert.match(admin, /Aprovar análise/);
+  assert.match(admin, /Aprovação administrativa não cria banco/);
 });

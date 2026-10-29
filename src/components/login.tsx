@@ -196,11 +196,17 @@ export function Login() {
               <MessageCircle size={17}/> Agendar em um lava-rápido parceiro <ArrowRight size={15}/>
             </Link>
             )}
-            <div className="mt-3">
-              <Link href="/cadastrar-lava-rapido" className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
-                Tenho um lava-rápido · Solicitar cadastro <ArrowRight size={15}/>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <Link href="/cadastrar-lava-rapido?modalidade=teste"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition hover:opacity-90">
+                <Clock3 size={17}/> Solicitar teste grátis de 7 dias <ArrowRight size={15}/>
+              </Link>
+              <Link href="/cadastrar-lava-rapido?modalidade=contratacao"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted">
+                Cadastrar meu lava-rápido <ArrowRight size={15}/>
               </Link>
             </div>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">Sem cartão para solicitar o teste. O prazo começa após a liberação de acesso individual.</p>
           </div>
           <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">{companyName} · Tecnologia para uma operação melhor.</p>
         </div>
