@@ -12,6 +12,7 @@ export async function GET() {
         id: true, nomeEmpresa: true, cnpj: true, razaoSocial: true, nomeResponsavel: true,
         email: true, whatsapp: true, cidade: true, mensagem: true,
         formaPagamentoPrevista: true, mensalidadeCentavos: true, planoPagamento: true, totalContratoCentavos: true, quantidadeParcelas: true, cienciaCondicoesComerciaisEm: true,
+        modalidadeCadastro: true, testeIniciadoEm: true, testeExpiraEm: true,
         status: true, createdAt: true, revisadoEm: true, revisadoPor: true,
         observacoesInternas: true,
       },
