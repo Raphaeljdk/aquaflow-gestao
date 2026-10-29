@@ -218,6 +218,9 @@ model SolicitacaoEmpresa {
   formaPagamentoPrevista String @default("CARTAO_DEBITO")
   mensalidadeCentavos Int?
   planoPagamento String?
+  modalidadeCadastro String @default("CONTRATACAO")
+  testeIniciadoEm DateTime?
+  testeExpiraEm DateTime?
   totalContratoCentavos Int?
   quantidadeParcelas Int?
   cienciaCondicoesComerciaisEm DateTime?
