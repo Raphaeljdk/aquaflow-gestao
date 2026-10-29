@@ -11,7 +11,7 @@ export async function GET() {
     await requirePlatformAdmin();
     const parceiros = await prisma.parceiroLavaRapido.findMany({
       orderBy: { createdAt: "desc" }, take: 250,
-      select: { id: true, nome: true, cidade: true, whatsapp: true, ativo: true, createdAt: true },
+      select: { id: true, nome: true, responsavel: true, cidade: true, endereco: true, cnpj: true, email: true, whatsapp: true, ativo: true, createdAt: true },
     });
     return NextResponse.json({ parceiros }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return apiError(error); }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const data = parceiroSchema.parse(await request.json());
     const parceiro = await prisma.parceiroLavaRapido.create({
       data: { ...data, ativo: false }, // nunca publica automaticamente
-      select: { id: true, nome: true, cidade: true, whatsapp: true, ativo: true, createdAt: true },
+      select: { id: true, nome: true, responsavel: true, cidade: true, endereco: true, cnpj: true, email: true, whatsapp: true, ativo: true, createdAt: true },
     });
     return NextResponse.json({ parceiro }, { status: 201 });
   } catch (error) {
