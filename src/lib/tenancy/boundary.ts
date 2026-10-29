@@ -28,7 +28,10 @@ export type VerifiedMember = Readonly<{
   active: boolean;
 }>;
 
+const verifiedAccessSeal: unique symbol = Symbol("VerifiedTenantAccess");
+
 export type TenantAccess = Readonly<{
+  readonly [verifiedAccessSeal]: true;
   tenantId: string;
   slug: string;
   userId: string;
@@ -82,6 +85,7 @@ export function authorizeTenantAccess(
     throw new TenantBoundaryError("Banco do estabelecimento ainda não está disponível.", 503);
   }
   return Object.freeze({
+    [verifiedAccessSeal]: true as const,
     tenantId: tenant.id,
     slug: tenant.slug,
     userId: authenticatedUserId,
@@ -89,6 +93,12 @@ export function authorizeTenantAccess(
     neonProjectId: tenant.neonProjectId,
     databaseSecretRef: tenant.databaseSecretRef,
   });
+}
+
+/** Validação também em runtime; um objeto criado de JSON não é TenantAccess. */
+export function isVerifiedTenantAccess(value: unknown): value is TenantAccess {
+  return typeof value === "object" && value !== null &&
+    Reflect.get(value, verifiedAccessSeal) === true;
 }
 
 export type TenantControlPlane = {
