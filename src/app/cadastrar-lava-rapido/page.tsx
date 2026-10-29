@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { PLATFORM_ANNUAL_STANDARD_CENTS, PLATFORM_ANNUAL_UPFRONT_CENTS, PLATFORM_ANNUAL_SAVINGS_CENTS, formatPlatformPrice, type PlatformPlan, type PlatformPaymentMethod } from "@/lib/platform-billing";
 import { ArrowLeft, Building2, CheckCircle2, CreditCard, Loader2, ShieldCheck, Wallet } from "lucide-react";
@@ -11,6 +11,12 @@ export default function CadastroEmpresaPage() {
   const [consent, setConsent] = useState(false);
   const [cienteCondicoesComerciais, setCienteCondicoesComerciais] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [modalidadeCadastro, setModalidadeCadastro] = useState<"TESTE_7_DIAS" | "CONTRATACAO">("CONTRATACAO");
+  useEffect(() => {
+    const tipo = new URLSearchParams(window.location.search).get("modalidade");
+    if (tipo === "teste") setModalidadeCadastro("TESTE_7_DIAS");
+  }, []);
+  const trial = modalidadeCadastro === "TESTE_7_DIAS";
   const [planoPagamento, setPlanoPagamento] = useState<PlatformPlan>("ANUAL_AVISTA");
   const [metodoPagamento, setMetodoPagamento] = useState<PlatformPaymentMethod>("PIX_INTER");
   function escolherPlano(plano: PlatformPlan) {
@@ -48,7 +54,7 @@ export default function CadastroEmpresaPage() {
     try {
       const response = await fetch("/api/solicitacoes", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...form, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais}),
+        body:JSON.stringify({...form, modalidadeCadastro, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais: trial ? false : cienteCondicoesComerciais}),
       });
       const data = await response.json() as {error?:string};
       if(!response.ok) {setError(data.error || "Não foi possível enviar.");return;}
@@ -72,21 +78,48 @@ export default function CadastroEmpresaPage() {
         <section className="space-y-6 lg:pt-12">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider"><Building2 size={15}/> Para proprietários</div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Seu lava-rápido com gestão profissional.</h1>
-          <p className="text-base leading-8 text-muted-foreground">Solicite acesso à plataforma. Nossa equipe analisa o cadastro e entra em contato antes de ativar sua empresa.</p>
+          <p className="text-base leading-8 text-muted-foreground">
+            {trial ? "Peça 7 dias gratuitos para conhecer o ERP. Seu período começa somente após ativarmos um ambiente exclusivo para seu lava-rápido." :
+              "Solicite acesso à plataforma. Nossa equipe analisa o cadastro e entra em contato antes de ativar sua empresa."}
+          </p>
           <div className="space-y-3 text-sm">
-            {["Cadastre seu estabelecimento sem compromisso","Aguarde a análise do administrador","Receba orientações para ativar seu painel"].map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
+            {(trial ? ["Cadastre-se sem cartão e sem pagamento","Nossa equipe confirma a disponibilidade de um ambiente exclusivo","7 dias completos a partir da ativação, sem cobrança automática"] :
+              ["Cadastre seu estabelecimento sem compromisso","Aguarde a análise do administrador","Receba orientações para ativar seu painel"]).map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
           </div>
           <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> Uma solicitação não cria uma conta, não gera cobrança e não permite acesso aos dados de outros estabelecimentos.</p>
         </section>
         <section className="rounded-3xl border border-border bg-card p-5 shadow-lg sm:p-8">
           {success ? <div role="status" className="space-y-5 py-12 text-center">
             <CheckCircle2 size={52} className="mx-auto text-primary"/>
-            <h2 className="text-2xl font-bold">Solicitação recebida!</h2>
-            <p className="text-sm leading-7 text-muted-foreground">Seus dados foram enviados para avaliação. Você receberá o próximo contato por e-mail ou WhatsApp.</p>
+            <h2 className="text-2xl font-bold">{trial ? "Pedido de teste recebido!" : "Solicitação recebida!"}</h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              {trial ? "Seu pedido de teste gratuito de 7 dias foi registrado. Ainda não há conta liberada; entraremos em contato quando o ambiente isolado estiver pronto. Os 7 dias só contam após a ativação." :
+                "Seus dados foram enviados para avaliação. Você receberá o próximo contato por e-mail ou WhatsApp."}
+            </p>
             <Link href="/login" className="inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Voltar ao início</Link>
           </div> : <>
-            <h2 className="text-2xl font-bold">Solicitar cadastro</h2>
-            <p className="mb-7 mt-2 text-sm text-muted-foreground">Preencha os dados do responsável e do estabelecimento.</p>
+            <h2 className="text-2xl font-bold">{trial ? "Solicitar teste de 7 dias" : "Solicitar cadastro"}</h2>
+            <p className="mb-5 mt-2 text-sm text-muted-foreground">
+              {trial ? "Sem cartão, sem cobrança e sem compromisso de contratação. Preencha os dados para solicitar seu ambiente exclusivo." :
+                "Preencha os dados do responsável e do estabelecimento."}
+            </p>
+            <div className="mb-6 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Tipo de cadastro">
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 text-sm font-semibold ${trial ? "border-primary bg-primary/10" : "border-border"}`}>
+                <input type="radio" name="modalidade" checked={trial} onChange={() => setModalidadeCadastro("TESTE_7_DIAS")}/>
+                Teste grátis de 7 dias
+              </label>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 text-sm font-semibold ${!trial ? "border-primary bg-primary/10" : "border-border"}`}>
+                <input type="radio" name="modalidade" checked={!trial} onChange={() => setModalidadeCadastro("CONTRATACAO")}/>
+                Conhecer planos anuais
+              </label>
+            </div>
+            {trial && <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
+              <p className="font-bold">7 dias gratuitos, contados a partir da ativação</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                O envio deste formulário não cria acesso imediato. Para proteger os dados, cada lava-rápido receberá seu banco próprio somente após a implantação individual.
+                Ao terminar o teste, o acesso dependerá de contratação; nenhuma cobrança será feita automaticamente.
+              </p>
+            </div>}
             <form onSubmit={submit} className="space-y-5">
               <div className="rounded-xl border border-border bg-muted/30 p-4">
                 <label htmlFor="cnpj-consulta" className="block text-sm font-semibold">CNPJ do estabelecimento (opcional)</label>
@@ -116,7 +149,7 @@ export default function CadastroEmpresaPage() {
                   className="w-full rounded-xl border border-input bg-background p-3 text-base font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   placeholder="Quantos funcionários? O que precisa organizar?" />
               </label>
-              <section aria-labelledby="condicoes-comerciais" className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
+              {!trial && <section aria-labelledby="condicoes-comerciais" className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
@@ -171,19 +204,19 @@ export default function CadastroEmpresaPage() {
                 </div>
                 <p className="text-xs leading-5 text-muted-foreground">A assinatura da plataforma é independente dos pagamentos recebidos por cada lava-rápido por suas lavagens e serviços.</p>
                 <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. Os meios de pagamento serão habilitados após a integração bancária.</p>
-              </section>
+              </section>}
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
-              <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
+              {!trial && <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={cienteCondicoesComerciais} onChange={e=>setCienteCondicoesComerciais(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
                 <span>Estou ciente das condições do plano anual selecionado, da forma de pagamento escolhida e de que eventual taxa de implantação será informada antes da contratação ou cobrança.</span>
-              </label>
+              </label>}
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
                 <span>Autorizo o uso destes dados para avaliar meu cadastro e entrar em contato sobre a plataforma, conforme a LGPD.</span>
               </label>
               {error && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
               <button type="submit" disabled={busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-bold text-primary-foreground disabled:opacity-60">
-                {busy && <Loader2 size={17} className="animate-spin"/>} Enviar solicitação
+                {busy && <Loader2 size={17} className="animate-spin"/>} {trial ? "Solicitar 7 dias grátis" : "Enviar solicitação"}
               </button>
             </form>
           </>}
