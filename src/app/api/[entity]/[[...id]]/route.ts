@@ -39,11 +39,14 @@ async function handler(request: Request, context: Context) {
       });
     }
     checkOrigin(request);
-    if (Number(request.headers.get("content-length") ?? 0) > 600000)
-      throw new BusinessError("Requisição muito grande.", 413);
+    // Dois uploads de imagem com 300 KB cada geram ~800 KB em base64.
+    // O limite ampliado é EXCLUSIVO de Configurações; demais rotas permanecem restritas.
+    const maxBodySize = entity === "configuracoes" ? 1100000 : 600000;
+    if (Number(request.headers.get("content-length") ?? 0) > maxBodySize)
+      throw new BusinessError("Requisição muito grande. Reduza o tamanho das imagens.", 413);
     const text = await request.text();
-    if (text.length > 600000)
-      throw new BusinessError("Requisição muito grande.", 413);
+    if (text.length > maxBodySize)
+      throw new BusinessError("Requisição muito grande. Reduza o tamanho das imagens.", 413);
     const data = text ? JSON.parse(text) : {};
     if (
       ["PATCH", "DELETE"].includes(request.method) &&
