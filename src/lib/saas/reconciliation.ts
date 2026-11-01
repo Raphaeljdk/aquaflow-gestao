@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { assertSettlementMatchesCharge,type VerifiedSettlement } from "./entitlement";
 
 /**
@@ -24,9 +25,10 @@ export async function recordVerifiedSettlement(db:PrismaClient,chargeId:string,p
   const months=charge.plan_code==="ANNUAL_UPFRONT"?12:charge.plan_code==="MONTHLY"?1:0;
   if(!months)throw new Error("Plano não suportado.");
   const eventId=payment.paymentId;
+  const eventHash=createHash("sha256").update(payment.paymentId+":"+payment.externalReference).digest("hex");
   const processed=await tx.$queryRaw<Array<{external_event_id:string}>>`
     INSERT INTO platform_billing_events(provider,external_event_id,event_hash,processed_at)
-    VALUES(${charge.provider},${eventId},${payment.externalReference},now())
+    VALUES(${charge.provider},${eventId},${eventHash},now())
     ON CONFLICT(provider,external_event_id) DO NOTHING
     RETURNING external_event_id
   `;
