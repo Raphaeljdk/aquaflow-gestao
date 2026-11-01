@@ -32,6 +32,25 @@ export default function ComoUsarPage() {
       <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Como usar o sistema</h1>
       <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Treinamento rápido para trabalhar com comandas, vistorias e agendamentos sem complicação.</p>
     </header>
+    <section className="space-y-4 rounded-2xl border border-primary/30 bg-card p-4 sm:p-6" aria-label="Treinamento oficial ilustrado">
+      <div className="space-y-2">
+        <h2 className="flex items-center gap-2 text-xl font-bold"><PlayCircle size={22} className="text-primary"/> Treinamento operacional Ducha Elitte</h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Guia narrado e ilustrado de 6 minutos e 23 segundos: acesso, atendimento, comandas, vistoria,
+          agenda, estoque, equipe, relatórios, configurações e suporte. O vídeo mostra orientações
+          gerais, não uma demonstração atualizada de cada clique.
+        </p>
+      </div>
+      <iframe title="Vídeo de treinamento operacional da Ducha Elitte"
+        src="https://share.descript.com/embed/v3pWHD1uqeQ"
+        loading="lazy" allowFullScreen
+        className="aspect-video w-full rounded-xl border border-border bg-black"
+        referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen"/>
+      <a href="https://share.descript.com/view/v3pWHD1uqeQ" target="_blank" rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4">
+        <ExternalLink size={16}/> Abrir treinamento em nova aba
+      </a>
+    </section>
     <div className="grid gap-4 md:grid-cols-2">
       <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><PlayCircle size={20} className="text-primary"/> Vídeo explicativo</h2>
