@@ -26,6 +26,7 @@ export default function ComoUsarPage() {
   const pdf = data?.configuracao.manualPdfUrl || "/api/manual";
   const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const descriptId = video.match(/^https:\/\/share\.descript\.com\/view\/([a-zA-Z0-9]+)(?:[/?#]|$)/)?.[1];
+  const directVideo = /^https:\/\/[^?#]+\.(?:mp4|webm)(?:\?[^#]*)?$/i.test(video);
   return <main className="mx-auto max-w-5xl space-y-8 p-4 sm:p-8">
     <header className="space-y-3">
       <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary"><BookOpen size={16}/> Central de ajuda</p>
@@ -41,6 +42,10 @@ export default function ComoUsarPage() {
             ? <iframe title="Treinamento Ducha Elitte no Descript" src={"https://share.descript.com/embed/" + descriptId}
                 loading="lazy" allowFullScreen className="aspect-video w-full rounded-xl border border-border"
                 referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen" />
+            : directVideo ? <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black" aria-label="Treinamento do Ducha Elitte">
+                <source src={video} type={video.toLowerCase().includes(".webm") ? "video/webm" : "video/mp4"} />
+                Seu navegador não suporta reprodução de vídeo.
+              </video>
             : null}
           <a href={video} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4">
             <ExternalLink size={16}/> Abrir vídeo completo
