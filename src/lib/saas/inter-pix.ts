@@ -37,12 +37,15 @@ async function call(cfg:Config,method:"GET"|"PUT"|"POST",path:string,body?:strin
    req.end();
  });
 }
+let cachedToken:{accessToken:string;expiresAt:number}|null=null;
 async function token(cfg:Config) {
+ if(cachedToken && cachedToken.expiresAt>Date.now()+60000)return cachedToken.accessToken;
  const body=new URLSearchParams({client_id:cfg.clientId,client_secret:cfg.clientSecret,
   scope:"cob.read cob.write pix.read",grant_type:"client_credentials"}).toString();
  const result=await call(cfg,"POST","/oauth/v2/token",body);
- const response=result.data as {access_token?:string};
+ const response=result.data as {access_token?:string;expires_in?:number};
  if(result.status!==200 || !response?.access_token)throw new Error("Inter não autorizou esta integração.");
+ cachedToken={accessToken:response.access_token,expiresAt:Date.now()+Math.min(response.expires_in??3600,3600)*1000};
  return response.access_token;
 }
 export function reaisEmCentavos(value:string) {
