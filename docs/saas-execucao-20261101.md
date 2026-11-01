@@ -5,7 +5,8 @@ Atualizado em 2026-11-01. Esta branch é de **homologação** e NÃO substitui o
 ## Estado realmente comprovado
 
 - Projeto Neon CENTRAL QA: `cool-hall-38102617` (São Paulo). Foram criadas tabelas centrais de tenants, identidades, memberships, licenças, cobranças, eventos, provisionamento, notificações e auditoria.
-- Dois projetos Neon **operacionais QA**: `sweet-salad-90812272` (piloto A) e `damp-tooth-05353566` (piloto B). Ambos têm o mesmo ID de prova e valores distintos: `PILOTO_A` e `PILOTO_B`. Isso comprova separação física das bases, mas ainda **não comprova** isolamento das rotas do ERP.
+- Dois projetos Neon **operacionais QA**: `sweet-salad-90812272` (piloto A) e `damp-tooth-05353566` (piloto B). Em ambos foram aplicados os 97 comandos SQL das 15 migrações operacionais, criando 19 tabelas cada, sem dados de produção. Ambos têm o mesmo ID de cliente fictício, com nomes distintos. Isso comprova separação física das bases, mas ainda **não comprova** isolamento das rotas do ERP. **ATENÇÃO:** migrações foram aplicadas via SQL de homologação, não pelo histórico `_prisma_migrations`; antes do `prisma migrate deploy` é obrigatório reconciliar o histórico ou reprovisionar as bases com o migrador oficial.
+- O controle central QA recebeu duas empresas fictícias vinculadas aos projetos A/B, ambos em status `PENDING` e licença `PENDING`. Nenhuma conta foi liberada.
 - Código: regras fail-closed de teste de 7 dias, licença vencida, pagamento Pix verificado, segredos de bancos criptografados, cliente da API Neon, cron de vencimentos e conciliação Pix, fila de notificações, email/WhatsApp com templates.
 - Treinamento: MP4 narrado e ilustrado produzido; precisa de hospedagem HTTPS e cadastro do link em Configurações → Como usar para ser reproduzido no ERP.
 
