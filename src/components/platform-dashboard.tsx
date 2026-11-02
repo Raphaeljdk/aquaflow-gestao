@@ -95,6 +95,11 @@ export function PlatformDashboard() {
           <button type="button" onClick={() => void signOut({ callbackUrl: "/login" })} className="inline-flex h-10 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold">Sair com segurança</button>
         </div>
       </header>
+      <section className="mt-5 rounded-xl border border-border bg-card p-4 text-sm" aria-label="Migração para multiempresa">
+        <p className="font-semibold">Migração segura do banco existente</p>
+        <p className="mt-1 text-muted-foreground">Confira os totais do ERP antigo e do banco central antes de preparar a cópia. Este diagnóstico não altera usuários, comandas ou cobranças.</p>
+        <a className="mt-2 inline-block font-semibold underline underline-offset-4" href="/api/plataforma/saas/migracao/diagnostico" target="_blank" rel="noopener noreferrer">Ver diagnóstico de migração</a>
+      </section>
       <nav aria-label="Seções da administração" className="my-7 flex flex-wrap gap-2 border-b border-border pb-4">
         {([
           ["solicitacoes","Solicitações"],
