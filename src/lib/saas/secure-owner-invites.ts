@@ -68,13 +68,6 @@ export async function queueOwnerInvitation(tx:Prisma.TransactionClient,tenantId:
    (tenant_id,channel,recipient,template_key,dedupe_key,payload)
   VALUES(${tenantId}::uuid,'EMAIL',${t.email},'owner_invite',${"invite:"+id+":email"},${payload}::jsonb)
   ON CONFLICT(dedupe_key) DO NOTHING`;
- if(t.phone){
-  await tx.$executeRaw`
-   INSERT INTO platform_notification_outbox
-    (tenant_id,channel,recipient,template_key,dedupe_key,payload)
-   VALUES(${tenantId}::uuid,'WHATSAPP',${t.phone},'owner_invite',${"invite:"+id+":whatsapp"},${payload}::jsonb)
-   ON CONFLICT(dedupe_key) DO NOTHING`;
- }
  await tx.$executeRaw`
   INSERT INTO platform_audit_events(tenant_id,action,metadata)
   VALUES(${tenantId}::uuid,'owner_invitation_queued',${JSON.stringify({inviteId:id,reason})}::jsonb)`;
