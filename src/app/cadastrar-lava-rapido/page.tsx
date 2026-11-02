@@ -116,7 +116,7 @@ export default function CadastroEmpresaPage() {
             <h2 className="text-2xl font-bold">{trial ? "Pedido de teste recebido!" : "Solicitação recebida!"}</h2>
             <p className="text-sm leading-7 text-muted-foreground">
               {trial ? "Seu pedido de teste gratuito de 7 dias foi registrado. Ainda não há conta liberada; entraremos em contato quando o ambiente isolado estiver pronto. Os 7 dias só contam após a ativação." :
-                "Seus dados foram enviados para avaliação. Você receberá o próximo contato por e-mail ou WhatsApp."}
+                "Cadastro recebido. Após a aprovação e preparação do banco exclusivo, enviaremos a cobrança pela Stripe. Com o pagamento confirmado, você receberá um convite seguro para criar sua senha."}
             </p>
             <Link href="/login" className="inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Voltar ao início</Link>
           </div> : <>
@@ -182,7 +182,7 @@ export default function CadastroEmpresaPage() {
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
                     <h3 id="condicoes-comerciais" className="text-base font-bold">Escolha seu plano anual</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As duas opções incluem 12 meses de uso do sistema. A contratação será concluída somente após aprovação.</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As duas opções incluem 12 meses de uso. O pagamento pela Stripe será disponibilizado após a aprovação e a preparação do seu ambiente exclusivo.</p>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Condição de pagamento do plano anual">
@@ -231,7 +231,7 @@ export default function CadastroEmpresaPage() {
                   <p className="mt-1 text-sm font-bold">Se aplicável, valor informado antes da contratação</p>
                 </div>
                 <p className="text-xs leading-5 text-muted-foreground">A assinatura da plataforma é independente dos pagamentos recebidos por cada lava-rápido por suas lavagens e serviços.</p>
-                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. O checkout Stripe será habilitado após testes e validação da conta.</p>
+                <p className="text-xs leading-5 text-muted-foreground">O cadastro não efetua cobrança. Após a preparação do seu ambiente e a validação da contratação, o pagamento é realizado no checkout oficial da Stripe. O acesso é criado somente após a confirmação do pagamento.</p>
               </section>}
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               {!trial && <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">

@@ -147,7 +147,7 @@ export function PlatformDashboard() {
               ) : (
                 <p>Condição anterior: {item.mensalidadeCentavos === null ? "mensalidade não registrada" : formatPlatformPrice(item.mensalidadeCentavos) + "/mês"}</p>
               )}
-              <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : item.formaPagamentoPrevista === "PIX_INTER" ? "Pix Inter" : item.formaPagamentoPrevista === "CARTAO_CREDITO_1X" ? "Cartão de crédito — 1x, sem parcelamento" : item.formaPagamentoPrevista}</p>
+              <p>Pagamento da assinatura: {item.formaPagamentoPrevista === "CARTAO_DEBITO" ? "Cartão de débito" : item.formaPagamentoPrevista === "PIX_INTER" ? "Pix Inter (registro histórico; novas assinaturas pela Stripe)" : item.formaPagamentoPrevista === "CARTAO_CREDITO_1X" ? "Cartão de crédito — 1x, sem parcelamento" : item.formaPagamentoPrevista}</p>
               <p className="text-muted-foreground">{item.cienciaCondicoesComerciaisEm ? "Interessado ciente das condições apresentadas no momento do cadastro." : "Solicitação anterior à confirmação das condições comerciais."}</p>
               <p className="text-muted-foreground">A solicitação não efetua cobranças. Recebimentos das lavagens permanecem separados da assinatura.</p>
               </>}
