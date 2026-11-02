@@ -9,7 +9,7 @@ export const PLATFORM_ANNUAL_SAVINGS_CENTS = PLATFORM_ANNUAL_STANDARD_CENTS - PL
 export const PLATFORM_ANNUAL_MONTHS = 12;
 export const PLATFORM_MONTHLY_PRICE_LABEL = "R$ 80,00/mês";
 
-export type PlatformPlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
+export type PlatformPlan = "MENSAL" | "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type PlatformPaymentMethod = "CARTAO_CREDITO_RECORRENTE" | "PIX_STRIPE" | "CARTAO_CREDITO_1X";
 
 export function resolvePlatformOffer(plan: PlatformPlan, method: PlatformPaymentMethod) {
