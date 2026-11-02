@@ -25,7 +25,7 @@ export function PlatformDashboard() {
   const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
-  const [tab,setTab] = useState<"solicitacoes" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
+  const [tab,setTab] = useState<"solicitacoes" | "aprovadas" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -85,6 +85,7 @@ export function PlatformDashboard() {
         {([
           ["solicitacoes","Solicitações"],
           ["testes","Testes de 7 dias"],
+          ["aprovadas","Aprovadas"],
           ["parceiros","Parceiros"],
           ["chamados","Chamados de suporte"],
           ["acessos","Acessos"],
@@ -99,7 +100,7 @@ export function PlatformDashboard() {
       </nav>
       {tab==="parceiros" && <PartnersManager />}
       {tab==="chamados" && <PlatformTickets />}
-      {(tab==="solicitacoes" || tab==="testes") && <>
+      {(tab==="solicitacoes" || tab==="testes" || tab==="aprovadas") && <>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
         {[["Pendentes",requests.filter(x=>x.status==="PENDENTE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
           ["Em análise",requests.filter(x=>x.status==="EM_ANALISE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
@@ -112,7 +113,7 @@ export function PlatformDashboard() {
         Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
       </p>}
       <div className="grid gap-4 lg:grid-cols-2">
-        {requests.filter(item=>tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS").map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        {requests.filter(item=>tab==="aprovadas" ? item.status==="APROVADO" : item.status!=="APROVADO" && (tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS")).map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="text-lg font-bold">{item.nomeEmpresa}</h2>
