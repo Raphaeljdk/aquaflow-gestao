@@ -44,9 +44,12 @@ test("notificações são agendadas para canais oficiais sem expor token no fron
  assert.match(worker,/CRON_SECRET/);
  assert.doesNotMatch(worker,/NEXT_PUBLIC_/);
 });
-test("vídeo externo HTTPS MP4 é reproduzível na área autenticada de ajuda",()=>{
+test("treinamento oficial e vídeos configurados permanecem disponíveis em Como usar",()=>{
  const help=readFileSync("src/app/(dashboard)/como-usar/page.tsx","utf8");
- assert.match(help,/directVideo/);
- assert.match(help,/<video controls playsInline/);
- assert.match(help,/video\/mp4/);
+ // PR #47 introduziu o vídeo narrado no Descript, preservando o vídeo definido pelo proprietário.
+ assert.match(help,/Treinamento operacional Ducha Elitte/);
+ assert.match(help,/share\\.descript\\.com\\/embed\\/v3pWHD1uqeQ/);
+ assert.match(help,/data\\?\\.configuracao\\.manualVideoUrl/);
+ assert.match(help,/youtube-nocookie\\.com\\/embed/);
+ assert.match(help,/manualPdfUrl/);
 });
