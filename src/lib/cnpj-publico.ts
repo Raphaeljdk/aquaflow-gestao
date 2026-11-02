@@ -33,3 +33,38 @@ export function resumirDadosCnpj(data: Record<string, unknown>, cnpj: string): D
     dataAbertura: str("data_inicio_atividade").slice(0, 10),
   };
 }
+
+
+/** A API pública CNPJ.ws tem um formato aninhado, diferente da BrasilAPI/Minha Receita. */
+export function resumirDadosCnpjWs(data: Record<string, unknown>, cnpj: string): DadosPublicosCnpj {
+  const registro = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const estabelecimento = registro(data.estabelecimento);
+  const cidade = registro(estabelecimento.cidade);
+  const estado = registro(estabelecimento.estado);
+  const atividade = registro(estabelecimento.atividade_principal);
+  const porte = registro(data.porte);
+  const natureza = registro(data.natureza_juridica);
+  const texto = (value: unknown) => typeof value === "string" ? value : "";
+
+  return resumirDadosCnpj({
+    razao_social: data.razao_social,
+    nome_fantasia: estabelecimento.nome_fantasia,
+    municipio: cidade.nome,
+    uf: estado.sigla,
+    descricao_tipo_de_logradouro: estabelecimento.tipo_logradouro,
+    logradouro: estabelecimento.logradouro,
+    numero: estabelecimento.numero,
+    complemento: estabelecimento.complemento,
+    bairro: estabelecimento.bairro,
+    cep: estabelecimento.cep,
+    descricao_situacao_cadastral: estabelecimento.situacao_cadastral,
+    email: estabelecimento.email,
+    ddd_telefone_1: [texto(estabelecimento.ddd1), texto(estabelecimento.telefone1)].filter(Boolean).join(" "),
+    porte: porte.descricao,
+    natureza_juridica: natureza.descricao,
+    cnae_fiscal: atividade.id,
+    cnae_fiscal_descricao: atividade.descricao,
+    data_inicio_atividade: estabelecimento.data_inicio_atividade,
+  }, cnpj);
+}
