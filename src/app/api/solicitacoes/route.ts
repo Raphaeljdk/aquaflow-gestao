@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({error:"Apenas piloto gratuito permitido neste ambiente."},{status:400});
       const contact=body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55"+body.data.whatsapp;
       const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
-        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact}));
+        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,kind:body.data.modalidadeCadastro,plan:body.data.planoPagamento,method:body.data.metodoPagamento}));
       return NextResponse.json({ok:true,modalidadeCadastro:body.data.modalidadeCadastro,protocolo:result.id,
         message:body.data.modalidadeCadastro==="TESTE_7_DIAS"?
          "Solicitação recebida. Seu teste de 7 dias começa apenas quando a conta estiver ativada.":
