@@ -16,7 +16,11 @@ test("central de ajuda reproduz os dois vídeos oficiais da Ducha Elitte", () =>
   assert.match(page, /href="#treinamentos"/);
   assert.match(page, /href="#modulos"/);
   assert.match(page, /Abrir manual em PDF/);
-  assert.match(page, /data\?\.configuracao\.manualVideoUrl/);
+  assert.match(page, /data\?\.configuracao\.manualPdfUrl/);
+  assert.match(page, /Resumo rápido/);
+  assert.match(page, /lg:grid-cols-3/);
+  assert.doesNotMatch(page, /Vídeo adicional do estabelecimento/);
+  assert.doesNotMatch(page, /data\?\.configuracao\.manualVideoUrl/);
   assert.match(page, /href="\/suporte"/);
   assert.doesNotMatch(page, /share\.descript\.com\/embed\/v3pWHD1uqeQ/);
   assert.doesNotMatch(page, /INTER_CLIENT_SECRET/);
