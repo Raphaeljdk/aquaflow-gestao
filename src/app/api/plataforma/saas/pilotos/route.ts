@@ -11,7 +11,7 @@ export async function GET() {
     const tenants = await withControlPlane(listPilotStatus);
     return NextResponse.json({
       tenants: tenants.map(t => ({
-        slug: t.slug, provisionamento: t.state, licenca: t.license_state,
+        id: t.id, slug: t.slug, provisionamento: t.state, licenca: t.license_state,
         usuariosAtivos: t.members, bancoConfigurado: t.has_database,
         testeJaIniciado: Boolean(t.trial_started_at),
         testeExpiraEm: t.trial_ends_at,
