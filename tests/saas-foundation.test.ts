@@ -46,10 +46,10 @@ test("notificações são agendadas para canais oficiais sem expor token no fron
 });
 test("treinamento oficial e vídeos configurados permanecem disponíveis em Como usar",()=>{
  const help=readFileSync("src/app/(dashboard)/como-usar/page.tsx","utf8");
- // PR #47 introduziu o vídeo narrado no Descript, preservando o vídeo definido pelo proprietário.
- assert.match(help,/Treinamento operacional Ducha Elitte/);
- assert.match(help,/share\\.descript\\.com\\/embed\\/v3pWHD1uqeQ/);
- assert.match(help,/data\\?\\.configuracao\\.manualVideoUrl/);
- assert.match(help,/youtube-nocookie\\.com\\/embed/);
- assert.match(help,/manualPdfUrl/);
+ // PR #47 manteve o vídeo configurado e acrescentou o tutorial narrado via Descript.
+ assert.ok(help.includes("Treinamento operacional Ducha Elitte"));
+ assert.ok(help.includes("https://share.descript.com/embed/v3pWHD1uqeQ"));
+ assert.ok(help.includes("data?.configuracao.manualVideoUrl"));
+ assert.ok(help.includes("youtube-nocookie.com/embed"));
+ assert.ok(help.includes("manualPdfUrl"));
 });
