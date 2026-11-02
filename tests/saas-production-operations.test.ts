@@ -12,15 +12,15 @@ test("operações SaaS são restritas a gestor e modo correto",()=>{
   assert.match(route,/checkOrigin/);
  }
  const checkout=readFileSync("src/app/api/plataforma/saas/pilotos/[id]/checkout/route.ts","utf8");
- assert.match(checkout,/Aguardando ativação e proprietário validado/);
+ assert.match(checkout,/Aguardando banco individual verificado/);
  assert.match(checkout,/status='PENDING'/);
 });
-test("tela de produção só emite link quando licença e proprietário estiverem validados",()=>{
+test("tela de produção emite checkout após banco pronto, antes de criar senha",()=>{
  const src=readFileSync("src/components/saas-production-dashboard.tsx","utf8");
  assert.match(src,/Cobrar R\$ 80\/mês/);
  assert.match(src,/Cobrar R\$ 790/);
  assert.match(src,/window.confirm/);
- assert.match(src,/t.usuariosAtivos<1/);
+ assert.doesNotMatch(src,/t.usuariosAtivos<1/);
 });
 
 test("checkout de produção aceita somente domínio verificado sem prefixos permissivos",()=>{

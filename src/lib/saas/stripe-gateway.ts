@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
+import {twelfthCycleEnd} from "./stripe-contract-term";
 
 export type StripePlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
@@ -10,7 +11,7 @@ type Checkout = { id:string; url:string|null; mode:string; payment_status?:strin
 type Invoice = { id:string; status:string; amount_paid:number; currency:string; customer:string;
  subscription?:string|{id:string}|null; parent?:{subscription_details?:{subscription?:string|{id:string}}}|null;
  collection_method?:string; paid_out_of_band?:boolean; status_transitions?:{paid_at?:number|null}; created:number };
-type Subscription = { id:string; customer:string; metadata?:Record<string,string>; status:string };
+type Subscription = { id:string; customer:string; metadata?:Record<string,string>; status:string; start_date?:number;billing_cycle_anchor?:number;cancel_at?:number|null;cancel_at_period_end?:boolean };
 
 export function requireStripe() {
  const mode=resolveStripeMode(process.env);
@@ -81,6 +82,24 @@ export async function loadInvoice(id:string) {
 export async function loadSubscription(id:string) {
  if(!/^sub_[a-zA-Z0-9]+$/.test(id))throw new Error("Assinatura Stripe inválida.");
  return stripeApi<Subscription>("/v1/subscriptions/"+id);
+}
+/** Install the terminal date at subscription activation, not after the twelfth invoice.
+ * A lost webhook must never leave a contract open for a thirteenth charge. */
+export async function ensureTwelveMonthSubscriptionTerm(id:string){
+ const sub=await loadSubscription(id);
+ if(sub.metadata?.plan_code!=="ANNUAL_MONTHLY"||!sub.metadata?.tenant_id)
+  throw new Error("Contrato Stripe não reconhecido.");
+ const anchor=sub.billing_cycle_anchor??sub.start_date;
+ if(!anchor)throw new Error("Stripe não retornou a data base do contrato.");
+ const end=twelfthCycleEnd(anchor);
+ if(end<=Math.floor(Date.now()/1000)+60)throw new Error("Fim de contrato já alcançado; revisar manualmente.");
+ if(sub.cancel_at && sub.cancel_at<=end)return {end:sub.cancel_at,configured:true};
+ const p=new URLSearchParams();
+ p.set("cancel_at",String(end));
+ p.set("proration_behavior","none");
+ const updated=await stripeApi<Subscription>("/v1/subscriptions/"+id,p,"ducha-elitte:term12:"+id);
+ if(updated.cancel_at!==end)throw new Error("Stripe não confirmou cancelamento programado após 12 meses.");
+ return {end,configured:true};
 }
 export async function stopSubscriptionAfter12(id:string) {
  if(!/^sub_[a-zA-Z0-9]+$/.test(id))throw new Error("Assinatura Stripe inválida.");

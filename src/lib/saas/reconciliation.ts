@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { createHash } from "node:crypto";
+import {queueOwnerInvitation} from "./secure-owner-invites";
 import { assertSettlementMatchesCharge,type VerifiedSettlement } from "./entitlement";
 
 /**
@@ -53,6 +54,7 @@ export async function recordVerifiedSettlement(db:PrismaClient,chargeId:string,p
     FROM platform_tenants t WHERE t.id=${charge.tenant_id}::uuid
     ON CONFLICT(dedupe_key) DO NOTHING
   `;
+  await queueOwnerInvitation(tx,charge.tenant_id,"PAID");
   return {status:"PAID" as const};
  });
 }

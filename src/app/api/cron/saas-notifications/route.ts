@@ -2,6 +2,7 @@ import { NextRequest,NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { deliverNotification,notificationsConfigured } from "@/lib/saas/notification-providers";
+import { deliverOwnerInvite,ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -14,16 +15,22 @@ function authorized(req:NextRequest) {
 /** One durable claim per message. Unknown send outcomes require manual review, not duplicate messages. */
 export async function GET(req:NextRequest) {
  if(!authorized(req))return NextResponse.json({error:"Não autorizado."},{status:401});
- if(!notificationsConfigured())return NextResponse.json({error:"Notificações ainda não homologadas."},{status:503});
+ if(!notificationsConfigured() && !ownerInviteChannelReady("EMAIL") && !ownerInviteChannelReady("WHATSAPP"))
+  return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
  try {
   const result=await withControlPlane(async db=>{
-   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string}>>`
-      SELECT id::text,channel,recipient,template_key
+   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string}}>>`
+      SELECT id::text,channel,recipient,template_key,payload
       FROM platform_notification_outbox WHERE state='PENDING'
-      ORDER BY created_at LIMIT 5
+      ORDER BY created_at LIMIT 25
    `;
-   let delivered=0,failed=0;
+   let delivered=0,failed=0,skipped=0;
    for(const row of rows) {
+     if(delivered+failed>=5)break;
+     const isInvite=row.template_key==="owner_invite";
+     if(isInvite ? !ownerInviteChannelReady(row.channel) : !notificationsConfigured()){
+       skipped++;continue;
+     }
      const claim=await db.$queryRaw<Array<{outbox_id:string}>>`
        INSERT INTO platform_notification_claims(outbox_id)
        VALUES(${row.id}::uuid) ON CONFLICT(outbox_id) DO NOTHING
@@ -31,7 +38,7 @@ export async function GET(req:NextRequest) {
      `;
      if(!claim.length)continue;
      try {
-      const providerId=await deliverNotification(row);
+      const providerId=isInvite?await deliverOwnerInvite(row):await deliverNotification(row);
       await db.$transaction([
         db.$executeRaw`UPDATE platform_notification_claims SET provider_message_id=${providerId} WHERE outbox_id=${row.id}::uuid`,
         db.$executeRaw`UPDATE platform_notification_outbox SET state='SENT',delivered_at=now(),attempts=attempts+1 WHERE id=${row.id}::uuid`
@@ -42,7 +49,7 @@ export async function GET(req:NextRequest) {
       failed++;
      }
    }
-   return {queued:rows.length,delivered,failed};
+   return {queued:rows.length,delivered,failed,skipped};
   });
   return NextResponse.json(result,{headers:{"Cache-Control":"no-store"}});
  }catch{

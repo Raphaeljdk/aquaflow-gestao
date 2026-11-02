@@ -49,7 +49,7 @@ export function SaasProductionDashboard(){
     <button className="rounded-xl border px-4 py-2 text-sm" onClick={()=>void signOut({callbackUrl:"/login"})}>Sair</button>
    </div>
   </div>
-  <p className="rounded-xl border p-3 text-sm">Links reais só podem ser gerados pelo gestor autenticado e após o banco individual estar pronto e o proprietário ativado. Nenhuma solicitação de cadastro gera cobrança automática.</p>
+  <p className="rounded-xl border p-3 text-sm">Links reais só podem ser gerados pelo gestor autenticado depois que o banco individual estiver pronto. A senha do proprietário é criada após a confirmação do pagamento. Nenhuma solicitação de cadastro gera cobrança automática.</p>
   {error&&<p role="alert" className="rounded-lg border p-3 text-sm text-destructive">{error}</p>}
   {message&&<p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
   {loading?<p className="text-sm text-muted-foreground">Consultando controle central...</p>:
@@ -62,9 +62,9 @@ export function SaasProductionDashboard(){
      <div className="flex flex-wrap gap-2">
       <button disabled={busy===t.id||t.provisionamento!=="PENDING"} onClick={()=>void action(t,"aprovar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Aprovar banco</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Gerar convite</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos<1||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 80/mês</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos<1||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
-      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos<1||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 80/mês</button>
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
+      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
      </div>
     </article>)}</div>}
  </main>

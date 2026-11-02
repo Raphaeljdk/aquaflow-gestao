@@ -9,7 +9,7 @@ export function ownerSlug(displayName:string) {
  if(base.length<3)throw new BusinessError("Nome do estabelecimento inválido.",400);
  return base+"-"+randomBytes(4).toString("hex");
 }
-type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string};
+type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string};
 export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
  const slug=ownerSlug(info.nomeEmpresa);
  const email=info.email.trim().toLowerCase();
@@ -30,7 +30,7 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
       INSERT INTO platform_entitlements(tenant_id,state) VALUES(${tenantId}::uuid,'PENDING')`;
    await tx.$executeRaw`
       INSERT INTO platform_audit_events(tenant_id,action,metadata)
-      VALUES(${tenantId}::uuid,'qa_trial_requested',${JSON.stringify({source:"website",contactName:info.nomeResponsavel.trim().slice(0,80)})}::jsonb)`;
+      VALUES(${tenantId}::uuid,'saas_signup_requested',${JSON.stringify({source:"website",kind:info.kind??"TESTE_7_DIAS",plan:info.plan??null,method:info.method??null,contactName:info.nomeResponsavel.trim().slice(0,80)})}::jsonb)`;
    return {id:tenantId,slug};
  });
 }
