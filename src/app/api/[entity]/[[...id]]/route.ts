@@ -6,6 +6,7 @@ import { checkOrigin, apiError } from "@/lib/api";
 import { allowedPages } from "@/lib/permissions";
 import { BusinessError } from "@/lib/domain";
 import type { Mutation } from "@/types";
+import { withOperationalDatabase } from "@/lib/saas/operations";
 const entitySchema = z.enum([
   "clientes",
   "veiculos",
@@ -29,7 +30,7 @@ async function handler(request: Request, context: Context) {
     if (!allowedPages[user.role].includes(entity))
       throw new BusinessError("Sem permissão.", 403);
     if (request.method === "GET") {
-      const d = scopeData(await snapshot(), user);
+      const d = scopeData(await withOperationalDatabase(user,db=>snapshot(db)), user);
       const list = entity === "configuracoes" ? d.configuracao : d[entity];
       const result =
         id && Array.isArray(list) ? list.find((x) => x.id === id) : list;
@@ -55,10 +56,10 @@ async function handler(request: Request, context: Context) {
     )
       throw new BusinessError("Informe o registro.");
     return NextResponse.json(
-      await mutate(
+      await withOperationalDatabase(user,db=>mutate(
         { entity, id, method: request.method as Mutation["method"], data },
-        user,
-      ),
+        user, db,
+      )),
       { status: request.method === "POST" ? 201 : 200 },
     );
   } catch (e) {

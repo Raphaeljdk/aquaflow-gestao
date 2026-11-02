@@ -32,14 +32,14 @@ test("dois planos anuais com total coerente e R$ 170 de economia", () => {
   assert.equal(PLATFORM_ANNUAL_UPFRONT_CENTS, 79000);
   assert.equal(PLATFORM_ANNUAL_SAVINGS_CENTS, 17000);
 });
-test("mensalidades: apenas débito, 12 vezes R$ 80", () => {
-  const offer = resolvePlatformOffer("ANUAL_MENSAL", "CARTAO_DEBITO");
+test("mensalidades: somente crédito recorrente, 12 vezes R$ 80", () => {
+  const offer = resolvePlatformOffer("ANUAL_MENSAL", "CARTAO_CREDITO_RECORRENTE");
   assert.equal(offer.totalCents, 96000);
   assert.equal(offer.installments, 12);
   assert.equal(offer.installmentCents, 8000);
 });
 test("à vista: Pix ou crédito 1x, nunca parcelado", () => {
-  for (const payment of ["PIX_INTER", "CARTAO_CREDITO_1X"] as const) {
+  for (const payment of ["PIX_STRIPE", "CARTAO_CREDITO_1X"] as const) {
     const offer = resolvePlatformOffer("ANUAL_AVISTA", payment);
     assert.equal(offer.totalCents, 79000);
     assert.equal(offer.installments, 1);
@@ -47,19 +47,19 @@ test("à vista: Pix ou crédito 1x, nunca parcelado", () => {
     assert.equal(solicitacaoEmpresaSchema.safeParse({ ...base, planoPagamento: "ANUAL_AVISTA", metodoPagamento: payment }).success, true);
   }
 });
-test("não permite Pix no plano mensal, débito à vista nem crédito parcelado", () => {
+test("não permite Pix mensal, crédito recorrente à vista nem crédito parcelado", () => {
   const invalidos = [
-    { planoPagamento: "ANUAL_MENSAL", metodoPagamento: "PIX_INTER" },
+    { planoPagamento: "ANUAL_MENSAL", metodoPagamento: "PIX_STRIPE" },
     { planoPagamento: "ANUAL_MENSAL", metodoPagamento: "CARTAO_CREDITO_1X" },
-    { planoPagamento: "ANUAL_AVISTA", metodoPagamento: "CARTAO_DEBITO" },
+    { planoPagamento: "ANUAL_AVISTA", metodoPagamento: "CARTAO_CREDITO_RECORRENTE" },
     { planoPagamento: "ANUAL_AVISTA", metodoPagamento: "CARTAO_CREDITO_12X" },
   ];
   for (const invalid of invalidos) assert.equal(solicitacaoEmpresaSchema.safeParse({ ...base, ...invalid }).success, false);
-  assert.throws(() => resolvePlatformOffer("ANUAL_MENSAL", "PIX_INTER"));
+  assert.throws(() => resolvePlatformOffer("ANUAL_MENSAL", "PIX_STRIPE"));
 });
 test("preços enviados pelo cliente são ignorados (servidor calcula valor)", () => {
   const parsed = solicitacaoEmpresaSchema.parse({
-    ...base, planoPagamento: "ANUAL_AVISTA", metodoPagamento: "PIX_INTER",
+    ...base, planoPagamento: "ANUAL_AVISTA", metodoPagamento: "PIX_STRIPE",
     totalContratoCentavos: 1, mensalidadeCentavos: 1, quantidadeParcelas: 99,
   });
   assert.equal("totalContratoCentavos" in parsed, false);
@@ -74,7 +74,7 @@ test("teste de 7 dias pode ser solicitado sem aceitar cobrança de plano anual",
     modalidadeCadastro: "TESTE_7_DIAS",
     cienteCondicoesComerciais: false,
     planoPagamento: "ANUAL_AVISTA",
-    metodoPagamento: "CARTAO_DEBITO",
+    metodoPagamento: "CARTAO_CREDITO_RECORRENTE",
   });
   assert.equal(request.modalidadeCadastro, "TESTE_7_DIAS");
   assert.equal(request.cienteCondicoesComerciais, false);

@@ -19,10 +19,10 @@ export default function CadastroEmpresaPage() {
   }, []);
   const trial = modalidadeCadastro === "TESTE_7_DIAS";
   const [planoPagamento, setPlanoPagamento] = useState<PlatformPlan>("ANUAL_AVISTA");
-  const [metodoPagamento, setMetodoPagamento] = useState<PlatformPaymentMethod>("PIX_INTER");
+  const [metodoPagamento, setMetodoPagamento] = useState<PlatformPaymentMethod>("PIX_STRIPE");
   function escolherPlano(plano: PlatformPlan) {
     setPlanoPagamento(plano);
-    setMetodoPagamento(plano === "ANUAL_AVISTA" ? "PIX_INTER" : "CARTAO_DEBITO");
+    setMetodoPagamento(plano === "ANUAL_AVISTA" ? "PIX_STRIPE" : "CARTAO_CREDITO_RECORRENTE");
   }
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
   const [cnpjMensagem, setCnpjMensagem] = useState("");
@@ -209,8 +209,8 @@ export default function CadastroEmpresaPage() {
                     <fieldset className="grid gap-2 sm:grid-cols-2">
                       <legend className="sr-only">Escolha como pagar os R$ 790,00 à vista</legend>
                       <label className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-semibold">
-                        <input type="radio" name="metodoPagamento" value="PIX_INTER" checked={metodoPagamento === "PIX_INTER"} onChange={()=>setMetodoPagamento("PIX_INTER")} className="accent-yellow-400"/>
-                        Pix — R$ 790,00
+                        <input type="radio" name="metodoPagamento" value="PIX_STRIPE" checked={metodoPagamento === "PIX_STRIPE"} onChange={()=>setMetodoPagamento("PIX_STRIPE")} className="accent-yellow-400"/>
+                        Pix Stripe — R$ 790,00 (sujeito à habilitação)
                       </label>
                       <label className="flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-semibold">
                         <input type="radio" name="metodoPagamento" value="CARTAO_CREDITO_1X" checked={metodoPagamento === "CARTAO_CREDITO_1X"} onChange={()=>setMetodoPagamento("CARTAO_CREDITO_1X")} className="accent-yellow-400"/>
@@ -218,12 +218,12 @@ export default function CadastroEmpresaPage() {
                       </label>
                     </fieldset>
                   ) : (
-                    <div className="rounded-lg border border-border bg-background px-3 py-3 text-sm font-semibold">Cartão de débito — 12 mensalidades de R$ 80,00</div>
+                    <div className="rounded-lg border border-border bg-background px-3 py-3 text-sm font-semibold">Cartão de crédito recorrente — 12 mensalidades de R$ 80,00</div>
                   )}
                   <p className="text-xs leading-5 text-muted-foreground">
                     {planoPagamento === "ANUAL_AVISTA"
                       ? "O cartão de crédito é exclusivamente à vista, em 1 parcela. Sem parcelamento."
-                      : "As 12 mensalidades formam um contrato anual de R$ 960,00. O processamento recorrente depende de um provedor habilitado."}
+                      : "As 12 mensalidades formam um contrato anual de R$ 960,00. Cobrança pela Stripe após aceite e liberação do checkout. Não há cobrança pelo simples cadastro."}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
@@ -231,7 +231,7 @@ export default function CadastroEmpresaPage() {
                   <p className="mt-1 text-sm font-bold">Se aplicável, valor informado antes da contratação</p>
                 </div>
                 <p className="text-xs leading-5 text-muted-foreground">A assinatura da plataforma é independente dos pagamentos recebidos por cada lava-rápido por suas lavagens e serviços.</p>
-                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. Os meios de pagamento serão habilitados após a integração bancária.</p>
+                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. O checkout Stripe será habilitado após testes e validação da conta.</p>
               </section>}
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               {!trial && <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { withOperationalDatabase } from "@/lib/saas/operations";
 import { currentUser } from "@/lib/auth";
 import { checkOrigin, apiError } from "@/lib/api";
 import { BusinessError } from "@/lib/domain";
@@ -14,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{id: 
       throw new BusinessError("Mensagem muito grande.", 413);
     const { id } = await params;
     const input = mensagemChamadoSchema.parse(await request.json());
-    await prisma.$transaction(async(tx)=>{
+    await withOperationalDatabase(user,db=>db.$transaction(async(tx)=>{
       const chamado = await tx.chamadoSuporte.findFirst({
         where: { id, ...(user.role === "ADMIN" ? {} : { criadoPorId: user.id }) },
         select: { id: true, status: true },
@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{id: 
           status: chamado.status === "RESOLVIDO" || chamado.status === "AGUARDANDO_CLIENTE" ? "ABERTO" : chamado.status,
         },
       });
-    });
+    }));
     return NextResponse.json({ ok: true });
   } catch(e) {
     if(e instanceof SyntaxError) return NextResponse.json({error:"Dados inválidos."},{status:400});

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { withOperationalDatabase } from "@/lib/saas/operations";
 import { currentUser } from "@/lib/auth";
 import { apiError, checkOrigin } from "@/lib/api";
 import { BusinessError } from "@/lib/domain";
@@ -16,7 +16,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
     checkOrigin(request);
     const {id}=await params;
     const {acao}=z.object({acao:z.enum(["CONFIRMAR","RECUSAR"])}).parse(await request.json());
-    const result=await prisma.$transaction(async(tx)=>{
+    const result=await withOperationalDatabase(user,db=>db.$transaction(async(tx)=>{
       // Shared lock with normal appointment/command writes to prevent double booking.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(642019)`;
       const pedido=await tx.pedidoAgendamentoPublico.findUnique({where:{id}});
@@ -63,7 +63,7 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
         status:"CONFIRMADO",agendamentoId:agendamento.id,
       }});
       return {status:"CONFIRMADO",agendamentoId:agendamento.id};
-    },{timeout:30000});
+    },{timeout:30000}));
     return NextResponse.json(result);
   }catch(error){
     if(error instanceof SyntaxError)return NextResponse.json({error:"Dados inválidos."},{status:400});

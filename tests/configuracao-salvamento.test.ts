@@ -59,7 +59,7 @@ test("configuração faz upsert direto e não dispara snapshot de comandas", () 
   const src = readFileSync("src/lib/repository.ts", "utf8");
   const section = src.slice(src.indexOf("export async function mutate"), src.indexOf("const password ="));
   assert.match(section, /configuracaoSchema\.parse\(m\.data\)/);
-  assert.match(section, /prisma\.configuracao\.upsert\(/);
+  assert.match(section, /database\.configuracao\.upsert\(/);
   assert.match(section, /canWrite\(actor\.role, "configuracoes"\)/);
   assert.doesNotMatch(section, /snapshot\(tx\)/);
 });

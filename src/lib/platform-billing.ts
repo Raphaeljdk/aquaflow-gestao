@@ -10,10 +10,10 @@ export const PLATFORM_ANNUAL_MONTHS = 12;
 export const PLATFORM_MONTHLY_PRICE_LABEL = "R$ 80,00/mês";
 
 export type PlatformPlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
-export type PlatformPaymentMethod = "CARTAO_DEBITO" | "PIX_INTER" | "CARTAO_CREDITO_1X";
+export type PlatformPaymentMethod = "CARTAO_CREDITO_RECORRENTE" | "PIX_STRIPE" | "CARTAO_CREDITO_1X";
 
 export function resolvePlatformOffer(plan: PlatformPlan, method: PlatformPaymentMethod) {
-  if (plan === "ANUAL_MENSAL" && method === "CARTAO_DEBITO") {
+  if (plan === "ANUAL_MENSAL" && method === "CARTAO_CREDITO_RECORRENTE") {
     return {
       plan,
       method,
@@ -22,7 +22,7 @@ export function resolvePlatformOffer(plan: PlatformPlan, method: PlatformPayment
       installmentCents: PLATFORM_MONTHLY_PRICE_CENTS,
     } as const;
   }
-  if (plan === "ANUAL_AVISTA" && (method === "PIX_INTER" || method === "CARTAO_CREDITO_1X")) {
+  if (plan === "ANUAL_AVISTA" && (method === "PIX_STRIPE" || method === "CARTAO_CREDITO_1X")) {
     return {
       plan,
       method,

@@ -47,6 +47,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const res = await fetch("/api/snapshot", { cache: "no-store" });
+      if (res.status === 423) {
+        // Licença vencida ou suspensa: limpar imediatamente o estado carregado.
+        current.current = null;
+        setData(null);
+        setUser(null);
+        window.location.replace("/assinatura?motivo=vencido");
+        return;
+      }
       if (res.status === 401) {
         window.location.href = "/login";
         return;
@@ -90,6 +98,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             },
           );
           const body = await res.json();
+          if (res.status === 423) {
+            current.current = null; setData(null); setUser(null);
+            window.location.replace("/assinatura?motivo=vencido");
+            return false;
+          }
           if (!res.ok) throw Error(body.error);
           await refresh();
         }

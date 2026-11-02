@@ -9,16 +9,25 @@ declare module "next-auth" {
       email: string;
       role: Role;
       funcionarioId?: string | null;
+      tenantId?: string;
+      tenantSlug?: string;
+      platformOperator?: boolean;
     };
   }
   interface User {
     role: Role;
     funcionarioId?: string | null;
+    tenantId?: string;
+    tenantSlug?: string;
+      platformOperator?: boolean;
   }
 }
 declare module "next-auth/jwt" {
   interface JWT {
     role: Role;
     funcionarioId?: string | null;
+    tenantId?: string;
+    tenantSlug?: string;
+      platformOperator?: boolean;
   }
 }

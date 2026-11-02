@@ -6,6 +6,7 @@ import { canManage } from "@/lib/permissions";
 import { BusinessError } from "@/lib/domain";
 import { apiError } from "@/lib/api";
 import { reportRows, csvReport, pdfReport } from "@/lib/reports";
+import { withOperationalDatabase } from "@/lib/saas/operations";
 export async function GET(request: Request) {
   try {
     const user = await currentUser();
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
       })
       .parse(Object.fromEntries(params));
     if (input.inicio > input.fim) throw new BusinessError("Período inválido.");
-    const d = await snapshot(),
+    const d = await withOperationalDatabase(user,db=>snapshot(db)),
       rows = reportRows(d, input.inicio, input.fim),
       body =
         input.formato === "csv"
