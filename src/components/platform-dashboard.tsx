@@ -25,7 +25,7 @@ export function PlatformDashboard() {
   const [accounts,setAccounts] = useState<Account[]>([]);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
-  const [tab,setTab] = useState<"solicitacoes" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
+  const [tab,setTab] = useState<"solicitacoes" | "aprovadas" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -51,8 +51,22 @@ export function PlatformDashboard() {
         body:JSON.stringify({status,observacoesInternas:item.observacoesInternas}),
       });
       if(!res.ok)throw new Error("Não foi possível atualizar a solicitação.");
+      if(status==="APROVADO"){
+        const p=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
+        if(!p.ok)throw new Error("Solicitação aprovada; abra a aba Aprovadas e clique em Preparar banco exclusivo.");
+      }
       await load();
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
+    finally{setBusy(null);}
+  }
+  async function prepare(item:Request){
+    setBusy(item.id);setError("");
+    try{
+      const response=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
+      const body=await response.json() as {error?:string};
+      if(!response.ok)throw new Error(body.error??"Não foi possível preparar o ambiente.");
+      await load();
+    }catch(e){setError(e instanceof Error?e.message:"Erro ao preparar empresa.");}
     finally{setBusy(null);}
   }
   async function toggleAccount(account: Account) {
@@ -85,6 +99,7 @@ export function PlatformDashboard() {
         {([
           ["solicitacoes","Solicitações"],
           ["testes","Testes de 7 dias"],
+          ["aprovadas","Aprovadas"],
           ["parceiros","Parceiros"],
           ["chamados","Chamados de suporte"],
           ["acessos","Acessos"],
@@ -99,20 +114,20 @@ export function PlatformDashboard() {
       </nav>
       {tab==="parceiros" && <PartnersManager />}
       {tab==="chamados" && <PlatformTickets />}
-      {(tab==="solicitacoes" || tab==="testes") && <>
+      {(tab==="solicitacoes" || tab==="testes" || tab==="aprovadas") && <>
       <div className="my-8 grid gap-4 sm:grid-cols-3">
         {[["Pendentes",requests.filter(x=>x.status==="PENDENTE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
           ["Em análise",requests.filter(x=>x.status==="EM_ANALISE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
-          [tab==="testes" ? "Pedidos de teste" : "Total de solicitações", tab==="testes" ? requests.filter(x=>x.modalidadeCadastro==="TESTE_7_DIAS").length : requests.length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
+          [tab==="testes" ? "Pedidos de teste" : tab==="aprovadas" ? "Total aprovadas" : "Em aberto", tab==="testes" ? requests.filter(x=>x.modalidadeCadastro==="TESTE_7_DIAS"&&x.status!=="APROVADO").length : tab==="aprovadas" ? requests.filter(x=>x.status==="APROVADO").length : requests.filter(x=>x.status!=="APROVADO").length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
       </div>
       {error&&<p role="alert" className="mb-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{error}</p>}
       {loading&&<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={17} className="animate-spin"/> Carregando solicitações...</p>}
-      {!loading&&requests.length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
+      {!loading&&requests.filter(x=>tab==="aprovadas"?x.status==="APROVADO":x.status!=="APROVADO").length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
       {tab==="testes" && <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
         Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
       </p>}
       <div className="grid gap-4 lg:grid-cols-2">
-        {requests.filter(item=>tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS").map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        {requests.filter(item=>tab==="aprovadas" ? item.status==="APROVADO" : item.status!=="APROVADO" && (tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS")).map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="text-lg font-bold">{item.nomeEmpresa}</h2>
@@ -143,7 +158,7 @@ export function PlatformDashboard() {
               <p className="font-semibold">Condições comerciais previstas</p>
               <p>Implantação: valor a definir</p>
               {item.totalContratoCentavos !== null && item.planoPagamento ? (
-                <p>Plano anual: {item.planoPagamento === "ANUAL_AVISTA" ? "à vista" : "12 mensalidades"} · Total {formatPlatformPrice(item.totalContratoCentavos)} · {item.quantidadeParcelas} pagamento(s)</p>
+                <p>Plano: {item.planoPagamento === "MENSAL" ? "mensal sem fidelidade" : item.planoPagamento === "ANUAL_AVISTA" ? "anual à vista" : "anual em 12 mensalidades"} · Valor {formatPlatformPrice(item.totalContratoCentavos)} · {item.quantidadeParcelas} pagamento(s)</p>
               ) : (
                 <p>Condição anterior: {item.mensalidadeCentavos === null ? "mensalidade não registrada" : formatPlatformPrice(item.mensalidadeCentavos) + "/mês"}</p>
               )}
@@ -160,6 +175,7 @@ export function PlatformDashboard() {
               className="w-full rounded-xl border border-input bg-background p-3 text-sm text-foreground"/>
           </label>
           <div className="mt-5 flex flex-wrap gap-2">
+            {item.status==="APROVADO" && <button disabled={busy===item.id} onClick={()=>void prepare(item)} className="rounded-xl border border-primary/50 px-3 py-2 text-xs font-semibold disabled:opacity-50">Preparar banco exclusivo</button>}
             <button disabled={busy===item.id} onClick={()=>void change(item,"EM_ANALISE")} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Em análise</button>
             <button disabled={busy===item.id} onClick={()=>void change(item,"APROVADO")} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"><Check size={14}/> Aprovar análise</button>
             <button disabled={busy===item.id} onClick={()=>void change(item,"REJEITADO")} className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><X size={14}/> Rejeitar</button>

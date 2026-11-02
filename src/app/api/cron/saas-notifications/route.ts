@@ -28,7 +28,7 @@ export async function GET(req:NextRequest) {
    for(const row of rows) {
      if(delivered+failed>=5)break;
      const isInvite=row.template_key==="owner_invite";
-     if(isInvite ? !ownerInviteChannelReady(row.channel) : !notificationsConfigured()){
+     if(row.channel==="WHATSAPP" || (isInvite ? !ownerInviteChannelReady(row.channel) : !notificationsConfigured())){
        skipped++;continue;
      }
      const claim=await db.$queryRaw<Array<{outbox_id:string}>>`

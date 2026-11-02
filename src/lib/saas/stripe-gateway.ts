@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
 import {twelfthCycleEnd} from "./stripe-contract-term";
 
-export type StripePlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
+export type StripePlan = "MENSAL" | "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
 type Checkout = { id:string; url:string|null; mode:string; payment_status?:string;
  amount_total?:number|null; currency?:string|null; payment_intent?:string|null;
@@ -37,6 +37,7 @@ export async function createStripeCheckout(info:{
 }) {
  const {mode}=requireStripe();
  const upFront=info.plan==="ANUAL_AVISTA";
+ const flexible=info.plan==="MENSAL";
  if(!upFront && info.method!=="CARD")throw new Error("Assinatura mensal exige cartão.");
  if(upFront && info.method==="PIX" && !stripePixEnabled())
   throw new Error("Pix Stripe ainda não habilitado para esta conta.");
@@ -48,14 +49,14 @@ export async function createStripeCheckout(info:{
  p.set("line_items[0][quantity]","1");
  p.set("line_items[0][price_data][currency]","brl");
  p.set("line_items[0][price_data][unit_amount]",upFront?"79000":"8000");
- p.set("line_items[0][price_data][product_data][name]",upFront?"Ducha Elitte - licença anual à vista":"Ducha Elitte - contrato anual em 12 mensalidades");
+ p.set("line_items[0][price_data][product_data][name]",upFront?"Ducha Elitte - licença anual à vista":flexible?"Ducha Elitte - mensal R$ 80 sem fidelidade":"Ducha Elitte - contrato anual em 12 mensalidades");
  if(!upFront)p.set("line_items[0][price_data][recurring][interval]","month");
  p.set("metadata[tenant_id]",info.tenantId);
  p.set("metadata[charge_id]",info.chargeId);
- p.set("metadata[plan_code]",upFront?"ANNUAL_UPFRONT":"ANNUAL_MONTHLY");
+ p.set("metadata[plan_code]",upFront?"ANNUAL_UPFRONT":flexible?"MONTHLY_FLEX":"ANNUAL_MONTHLY");
  if(!upFront) {
   p.set("subscription_data[metadata][tenant_id]",info.tenantId);
-  p.set("subscription_data[metadata][plan_code]","ANNUAL_MONTHLY");
+  p.set("subscription_data[metadata][plan_code]",flexible?"MONTHLY_FLEX":"ANNUAL_MONTHLY");
   p.set("subscription_data[metadata][setup_charge_id]",info.chargeId);
  }
  p.set("expires_at",String(Math.floor(Date.now()/1000)+1800));

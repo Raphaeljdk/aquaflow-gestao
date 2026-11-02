@@ -23,7 +23,7 @@ export async function processStripeIncident(db:PrismaClient,eventId:string,type:
   const subId=stripeSubscriptionId(invoice);
   if(!subId)throw new Error("Fatura não vinculada à assinatura.");
   const subscription=await loadSubscription(subId);
-  if(!uuid(subscription.metadata?.tenant_id??"")||subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
+  if(!uuid(subscription.metadata?.tenant_id??"")||!["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(subscription.metadata?.plan_code??"")||
      subscription.customer!==invoice.customer) throw new Error("Origem da fatura inválida.");
   tenantId=subscription.metadata!.tenant_id;
   relatedPaymentId=invoice.id;detail=subId;
@@ -34,7 +34,7 @@ export async function processStripeIncident(db:PrismaClient,eventId:string,type:
  }else if(type==="customer.subscription.deleted"){
   const sub=await loadSubscription(resourceId);
   if(sub.status!=="canceled"||!uuid(sub.metadata?.tenant_id??"")||
-     sub.metadata?.plan_code!=="ANNUAL_MONTHLY")return {status:"NOT_APPLICABLE" as const};
+     !["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(sub.metadata?.plan_code??""))return {status:"NOT_APPLICABLE" as const};
   tenantId=sub.metadata!.tenant_id;detail=sub.id;
   const check=await db.$queryRaw<Array<{qty:number}>>`
    SELECT count(*)::integer AS qty FROM platform_billing_charges

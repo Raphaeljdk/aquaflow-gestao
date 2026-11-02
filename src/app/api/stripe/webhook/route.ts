@@ -44,11 +44,11 @@ async function confirmMonthly(invoiceId:string) {
  const tenantId=subscription.metadata?.tenant_id;
  const setupChargeId=subscription.metadata?.setup_charge_id;
  if(!tenantId||!isUuid(tenantId)||!setupChargeId||!isUuid(setupChargeId)||
-    subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
+    !["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(subscription.metadata?.plan_code??"")||
     subscription.customer!==invoice.customer)
   throw new Error("Assinatura não corresponde ao estabelecimento.");
- // Install provider-side cancellation before extending entitlement.
- await ensureTwelveMonthSubscriptionTerm(subId);
+ const annualContract=subscription.metadata?.plan_code==="ANNUAL_MONTHLY";
+ if(annualContract)await ensureTwelveMonthSubscriptionTerm(subId);
  const stamp=invoice.status_transitions?.paid_at ?? invoice.created;
  if(!Number.isFinite(stamp))throw new Error("Liquidação sem data válida.");
  const outcome=await withControlPlane(async db=>{
@@ -58,12 +58,12 @@ async function confirmMonthly(invoiceId:string) {
   const setup=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE id=${setupChargeId}::uuid AND tenant_id=${tenantId}::uuid AND provider='STRIPE'
-      AND plan_code='CHECKOUT_MONTHLY'`;
+      AND plan_code=${annualContract?'CHECKOUT_MONTHLY':'CHECKOUT_FLEX'}`;
   if(setup[0]?.qty!==1)throw new Error("Assinatura não vinculada a checkout da plataforma.");
   const existing=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE stripe_subscription_id=${subId} AND status='PAID' AND plan_code='MONTHLY'`;
-  if((existing[0]?.qty??0)>=12) {
+  if(annualContract && (existing[0]?.qty??0)>=12) {
     const repeated=await db.$queryRaw<Array<{qty:number}>>`
      SELECT count(*)::integer AS qty FROM platform_billing_charges
      WHERE provider='STRIPE' AND external_reference=${invoice.id} AND status='PAID'
@@ -88,20 +88,21 @@ async function confirmMonthly(invoiceId:string) {
   return {...result,count:count[0]?.qty??0};
  });
  // Twelve monthly invoices complete this contract. Prevent a silent 13th charge.
- if(outcome.count>=12) await stopSubscriptionAfter12(subId);
+ if(annualContract && outcome.count>=12) await stopSubscriptionAfter12(subId);
  return outcome;
 }
 async function finishCheckout(sessionId:string){
  const session=await loadCheckout(sessionId);
  if(session.mode==="payment")return confirmUpfront(sessionId);
  if(session.mode==="subscription" && session.subscription && typeof session.subscription==="string")
-  await ensureTwelveMonthSubscriptionTerm(session.subscription);
+  if((await loadSubscription(session.subscription)).metadata?.plan_code==="ANNUAL_MONTHLY")
+   await ensureTwelveMonthSubscriptionTerm(session.subscription);
  if(session.mode==="subscription" && session.payment_status==="paid" && session.metadata?.charge_id){
   const id=session.metadata.charge_id;
   if(isUuid(id)){
     await withControlPlane(db=>db.$executeRaw`
       UPDATE platform_billing_charges SET status='CANCELED'
-      WHERE id=${id}::uuid AND provider='STRIPE' AND plan_code='CHECKOUT_MONTHLY' AND status='PENDING'`);
+      WHERE id=${id}::uuid AND provider='STRIPE' AND plan_code IN ('CHECKOUT_MONTHLY','CHECKOUT_FLEX') AND status='PENDING'`);
   }
  }
  return {status:"SUBSCRIPTION_PENDING_INVOICE"};
