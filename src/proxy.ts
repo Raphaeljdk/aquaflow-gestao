@@ -20,7 +20,8 @@ export async function proxy(request: NextRequest) {
       "/api/movimentosEstoque","/api/chamados","/api/pedidos-agendamento",
       "/api/public/empresa","/api/plataforma/me","/api/plataforma/saas/pilotos",
       "/api/plataforma/saas/overview",
-      "/api/cron/saas-expiry","/api/stripe/webhook","/api/saas/convites/aceitar","/api/solicitacoes",
+      "/api/cron/saas-expiry","/api/cron/saas-provision",
+      "/api/cron/saas-notifications","/api/stripe/webhook","/api/saas/convites/aceitar","/api/solicitacoes",
     ];
     const approved=allowed.some(prefix=>path===prefix||path.startsWith(prefix+"/"));
     if(!approved)return NextResponse.json({error:"Módulo em homologação para ambiente multiempresa."},{status:503});

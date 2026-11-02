@@ -8,4 +8,5 @@ test("proxy preserva o legado desligado e bloqueia APIs sem tenant nos modos Saa
  assert.match(s,/Both QA and production must block/);
  assert.match(s,/Módulo em homologação para ambiente multiempresa/);
  assert.match(s,/\/api\/:path\*/);
+ assert.match(s,/saas-provision/);
 });

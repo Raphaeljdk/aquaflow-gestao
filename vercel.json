@@ -2,5 +2,15 @@
   "framework": "nextjs",
   "buildCommand": "npm run build:app",
   "installCommand": "npm ci",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/saas-provision",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/saas-expiry",
+      "schedule": "5 * * * *"
+    }
+  ]
 }
