@@ -1,5 +1,6 @@
 import "server-only";
 import { compare } from "bcryptjs";
+import { createHash } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { BusinessError } from "@/lib/domain";
 import type { Role, User } from "@/types";
@@ -8,6 +9,7 @@ import { effectiveState, type Entitlement } from "./entitlement";
 
 export const saasPilotMode = () => process.env.SAAS_QA_MODE === "true";
 export type TenantSessionUser = User & { tenantId: string; tenantSlug: string; platformRole: string };
+export type PlatformOperatorUser = User & { platformOperator: true };
 type RecordRow = {
   id: string; email: string; full_name: string; password_hash: string;
   identity_enabled: boolean; tenant_id: string; slug: string; tenant_state: string;
@@ -59,8 +61,47 @@ function userFrom(row: RecordRow): TenantSessionUser {
     tenantId:row.tenant_id,tenantSlug:row.slug,platformRole:row.platform_role,funcionarioId:null};
 }
 /** Tenant selection is verified against central membership; never trust session/user-supplied URLs. */
-export async function loginSaas(email:string,password:string,tenantSlug:string|undefined): Promise<TenantSessionUser|null> {
+async function loginAttempts(db:PrismaClient,email:string) {
+  const key=createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+  return db.$transaction(async tx=>{
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
+    const items=await tx.$queryRaw<Array<{attempts:number}>>`
+      INSERT INTO platform_login_attempts(key,attempts,expires_at)
+      VALUES(${key},1,now()+INTERVAL '15 minutes')
+      ON CONFLICT(key) DO UPDATE SET
+        attempts=CASE WHEN platform_login_attempts.expires_at<=now() THEN 1 ELSE platform_login_attempts.attempts+1 END,
+        expires_at=CASE WHEN platform_login_attempts.expires_at<=now() THEN now()+INTERVAL '15 minutes' ELSE platform_login_attempts.expires_at END
+      RETURNING attempts`;
+    return {key,allowed:(items[0]?.attempts ?? 11)<=10};
+  });
+}
+async function centralOperator(email:string):Promise<{id:string;email:string;full_name:string;password_hash:string}|undefined> {
+  return withControlPlane(async db=>{
+    const rows=await db.$queryRaw<Array<{id:string;email:string;full_name:string;password_hash:string}>>`
+      SELECT i.id::text,i.email,i.full_name,i.password_hash
+      FROM platform_identities i JOIN platform_operators p ON p.identity_id=i.id
+      WHERE lower(i.email)=lower(${email}) AND i.enabled=true AND p.enabled=true LIMIT 1`;
+    return rows[0];
+  });
+}
+export async function validateSaasOperatorSession(id:string):Promise<PlatformOperatorUser> {
+  const rows=await withControlPlane(db=>db.$queryRaw<Array<{id:string;email:string;full_name:string}>>`
+    SELECT i.id::text,i.email,i.full_name
+    FROM platform_identities i JOIN platform_operators p ON p.identity_id=i.id
+    WHERE i.id::text=${id} AND i.enabled=true AND p.enabled=true LIMIT 1`);
+  if(rows.length!==1)throw new BusinessError("Administrador da plataforma não autorizado.",403);
+  const u=rows[0];return {id:u.id,email:u.email,name:u.full_name,role:"ADMIN",platformOperator:true};
+}
+export async function loginSaas(email:string,password:string,tenantSlug:string|undefined): Promise<TenantSessionUser|PlatformOperatorUser|null> {
   if (tenantSlug && (!VALID_SLUG.test(tenantSlug)||tenantSlug.length>60)) return null;
+  const attempt=await withControlPlane(db=>loginAttempts(db,email));
+  if(!attempt.allowed)return null;
+  const operator=await centralOperator(email);
+  if(operator && !tenantSlug) {
+    if(!await compare(password,operator.password_hash))return null;
+    await withControlPlane(db=>db.$executeRaw`DELETE FROM platform_login_attempts WHERE key=${attempt.key}`);
+    return {id:operator.id,email:operator.email,name:operator.full_name,role:"ADMIN",platformOperator:true};
+  }
   const rows=await withControlPlane(db=>records(db,email,false,tenantSlug));
   // Never choose an arbitrary establishment for a multi-tenant identity.
   if(rows.length!==1) return null;
@@ -68,6 +109,7 @@ export async function loginSaas(email:string,password:string,tenantSlug:string|u
   const valid=await compare(password,row.password_hash);
   if(!valid || !row.identity_enabled || !row.member_enabled) return null;
   validateAccess(row);
+  await withControlPlane(db=>db.$executeRaw`DELETE FROM platform_login_attempts WHERE key=${attempt.key}`);
   return userFrom(row);
 }
 /** Revalidate membership and license on EVERY operational request, even with a valid JWT. */

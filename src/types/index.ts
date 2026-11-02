@@ -12,6 +12,7 @@ export interface User {
   tenantId?: string;
   tenantSlug?: string;
   platformRole?: string;
+  platformOperator?: boolean;
 }
 export interface Cliente {
   id: string;

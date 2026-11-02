@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "./prisma";
 import { loginSchema } from "./validations";
 import { BusinessError } from "./domain";
-import { saasPilotMode, loginSaas, validateSaasSession } from "./saas/identity";
+import { saasPilotMode, loginSaas, validateSaasSession, validateSaasOperatorSession } from "./saas/identity";
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
@@ -76,6 +76,7 @@ export const authOptions: NextAuthOptions = {
         token.funcionarioId = user.funcionarioId;
         token.tenantId = user.tenantId;
         token.tenantSlug = user.tenantSlug;
+        token.platformOperator = user.platformOperator;
       }
       return token;
     },
@@ -85,6 +86,7 @@ export const authOptions: NextAuthOptions = {
       session.user.funcionarioId = token.funcionarioId;
       session.user.tenantId = token.tenantId;
       session.user.tenantSlug = token.tenantSlug;
+      session.user.platformOperator = token.platformOperator;
       return session;
     },
   },
@@ -93,6 +95,10 @@ export async function currentUser() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new BusinessError("Entre para continuar.", 401);
   if (saasPilotMode()) {
+    if(session.user.platformOperator){
+      if(session.user.tenantId) throw new BusinessError("Sessão de plataforma inválida.",403);
+      return validateSaasOperatorSession(session.user.id);
+    }
     if (!session.user.tenantId) throw new BusinessError("Sessão sem estabelecimento autorizado.",401);
     return validateSaasSession(session.user.id,session.user.tenantId);
   }
