@@ -43,7 +43,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
   const [activeTab, setActiveTab] = useState("empresa");
   const [errorNotice, setErrorNotice] = useState("");
   const [savedAt, setSavedAt] = useState("");
-  const { mutate, busy } = useStore(),
+  const { mutate, busy, user } = useStore(),
     f = useForm<Configuracao>({
       resolver: zodResolver(configuracaoSchema),
       defaultValues: initial,
