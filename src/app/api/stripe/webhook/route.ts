@@ -4,7 +4,7 @@ import { processStripeIncident } from "@/lib/saas/stripe-incidents";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { recordVerifiedSettlement } from "@/lib/saas/reconciliation";
 import { loadCheckout,loadPaymentIntent,loadInvoice,loadSubscription,stopSubscriptionAfter12,
- stripeSubscriptionId,verifyStripeWebhook, requireStripe } from "@/lib/saas/stripe-gateway";
+ stripeSubscriptionId,verifyStripeWebhook, requireStripe,ensureTwelveMonthSubscriptionTerm } from "@/lib/saas/stripe-gateway";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -47,6 +47,8 @@ async function confirmMonthly(invoiceId:string) {
     subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
     subscription.customer!==invoice.customer)
   throw new Error("Assinatura não corresponde ao estabelecimento.");
+ // Install provider-side cancellation before extending entitlement.
+ await ensureTwelveMonthSubscriptionTerm(subId);
  const stamp=invoice.status_transitions?.paid_at ?? invoice.created;
  if(!Number.isFinite(stamp))throw new Error("Liquidação sem data válida.");
  const outcome=await withControlPlane(async db=>{
@@ -92,6 +94,8 @@ async function confirmMonthly(invoiceId:string) {
 async function finishCheckout(sessionId:string){
  const session=await loadCheckout(sessionId);
  if(session.mode==="payment")return confirmUpfront(sessionId);
+ if(session.mode==="subscription" && session.subscription && typeof session.subscription==="string")
+  await ensureTwelveMonthSubscriptionTerm(session.subscription);
  if(session.mode==="subscription" && session.payment_status==="paid" && session.metadata?.charge_id){
   const id=session.metadata.charge_id;
   if(isUuid(id)){
