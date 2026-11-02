@@ -93,7 +93,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
     reader.readAsDataURL(file);
   }
   const whatsappReady = Boolean(normalizeWhatsappPhone(values.telefone));
-  const bookingUrl = "/agendar/empresa";
+  const bookingUrl = "/agendar/empresa" + (user?.tenantSlug ? "?loja=" + encodeURIComponent(user.tenantSlug) : "");
   const bookingReady = Boolean(normalizeWhatsappPhone(initial.telefone)) && !f.formState.isDirty;
   async function buscarCnpj() {
     setConsultandoCnpj(true);
