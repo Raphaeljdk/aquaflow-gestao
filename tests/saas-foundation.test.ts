@@ -48,9 +48,11 @@ test("notificações são agendadas para canais oficiais sem expor token no fron
 });
 test("treinamento oficial e vídeos configurados permanecem disponíveis em Como usar",()=>{
  const help=readFileSync("src/app/(dashboard)/como-usar/page.tsx","utf8");
- // PR #47 manteve o vídeo configurado e acrescentou o tutorial narrado via Descript.
- assert.ok(help.includes("Treinamento operacional Ducha Elitte"));
- assert.ok(help.includes("https://share.descript.com/embed/v3pWHD1uqeQ"));
+ // Os tutoriais oficiais usam hospedagem permanente; vídeos adicionais continuam configuráveis.
+ assert.ok(help.includes("Treinamento Ducha Elitte"));
+ assert.ok(help.includes("ducha_elitte_guia_rapido_todas_abas.mp4"));
+ assert.ok(help.includes("ducha_elitte_treinamento_abas_suporte_chamados.mp4"));
+ assert.ok(help.includes("public.blob.vercel-storage.com"));
  assert.ok(help.includes("data?.configuracao.manualVideoUrl"));
  assert.ok(help.includes("youtube-nocookie.com/embed"));
  assert.ok(help.includes("manualPdfUrl"));
