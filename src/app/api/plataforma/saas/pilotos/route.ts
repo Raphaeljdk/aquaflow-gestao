@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { withControlPlane } from "@/lib/saas/control-plane";
-import { assertPilotQaEnabled, listPilotStatus } from "@/lib/saas/pilot-control";
+import { assertSaasManagementEnabled, listPilotStatus } from "@/lib/saas/pilot-control";
 
 export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await requirePlatformAdmin();
-    assertPilotQaEnabled();
+    assertSaasManagementEnabled();
     const tenants = await withControlPlane(listPilotStatus);
     return NextResponse.json({
       tenants: tenants.map(t => ({
@@ -17,7 +17,9 @@ export async function GET() {
         testeExpiraEm: t.trial_ends_at,
         aptoParaTeste: t.state === "READY" && t.has_database && t.members > 0,
         stripeHabilitada: process.env.STRIPE_BILLING_ENABLED === "true" &&
-          process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true &&
+          (process.env.SAAS_PRODUCTION_MODE === "true" ?
+              process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") === true :
+              process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true) &&
           process.env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") === true,
         stripePixHabilitado: process.env.STRIPE_PIX_ENABLED === "true",
       })),

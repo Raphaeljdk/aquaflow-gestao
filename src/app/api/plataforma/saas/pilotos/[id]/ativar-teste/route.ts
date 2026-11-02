@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { checkOrigin } from "@/lib/api";
 import { withControlPlane } from "@/lib/saas/control-plane";
-import { assertPilotQaEnabled, activatePilotTrial } from "@/lib/saas/pilot-control";
+import { assertSaasManagementEnabled, activatePilotTrial } from "@/lib/saas/pilot-control";
 
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requirePlatformAdmin();
-    assertPilotQaEnabled();
+    assertSaasManagementEnabled();
     checkOrigin(request);
     const { id } = await params;
     const result = await withControlPlane(db => activatePilotTrial(db, id));

@@ -1,13 +1,19 @@
 import "server-only";
 import type { PrismaClient } from "@prisma/client";
 
-/** QA only. Never publish a license for a non-provisioned tenant. */
+/** Central management never publishes a license for an unprovisioned tenant. */
 export type PilotStatus = {
   id: string; slug: string; state: string; license_state: string | null;
   members: number; has_database: boolean; trial_started_at: Date | null;
   trial_ends_at: Date | null;
 };
 
+export function assertSaasManagementEnabled(){
+ if(process.env.SAAS_QA_MODE==="true" && process.env.VERCEL_ENV!=="production")return;
+ if(process.env.SAAS_PRODUCTION_MODE==="true" &&
+    process.env.SAAS_QA_MODE!=="true" && process.env.VERCEL_ENV==="production")return;
+ throw new Error("Gestão SaaS não habilitada neste ambiente.");
+}
 export function assertPilotQaEnabled() {
   if (process.env.SAAS_QA_MODE !== "true")
     throw new Error("Ambiente de homologação SaaS não habilitado.");

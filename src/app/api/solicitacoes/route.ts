@@ -16,13 +16,15 @@ export async function POST(request: NextRequest) {
     if (!body.success) return NextResponse.json({ error: "Confira os campos e aceite o aviso de privacidade." }, { status: 400 });
     if (body.data.site) return NextResponse.json({ ok: true }, { status: 202 });
     if (saasPilotMode()) {
-      if(body.data.modalidadeCadastro!=="TESTE_7_DIAS")
+      if(process.env.SAAS_QA_MODE==="true" && body.data.modalidadeCadastro!=="TESTE_7_DIAS")
         return NextResponse.json({error:"Apenas piloto gratuito permitido neste ambiente."},{status:400});
       const contact=body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55"+body.data.whatsapp;
       const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
         nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact}));
-      return NextResponse.json({ok:true,modalidadeCadastro:"TESTE_7_DIAS",protocolo:result.id,
-        message:"Solicitação recebida. Seu teste de 7 dias começa apenas quando a conta estiver ativada."},{status:201});
+      return NextResponse.json({ok:true,modalidadeCadastro:body.data.modalidadeCadastro,protocolo:result.id,
+        message:body.data.modalidadeCadastro==="TESTE_7_DIAS"?
+         "Solicitação recebida. Seu teste de 7 dias começa apenas quando a conta estiver ativada.":
+         "Solicitação de contratação recebida. O pagamento será disponibilizado após configurar o acesso exclusivo."},{status:201});
     }
     const salt = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
     if (!salt) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 });

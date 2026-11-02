@@ -2,7 +2,7 @@ import { NextRequest,NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { withControlPlane } from "@/lib/saas/control-plane";
-import { assertPilotQaEnabled } from "@/lib/saas/pilot-control";
+import { assertSaasManagementEnabled } from "@/lib/saas/pilot-control";
 import { checkOrigin,apiError } from "@/lib/api";
 import { createStripeCheckout, type StripePlan,type StripeMethod } from "@/lib/saas/stripe-gateway";
 import { BusinessError } from "@/lib/domain";
@@ -12,9 +12,9 @@ export const dynamic="force-dynamic";
 /** Operator-issued payment links only; neither anonymous visitors nor expired tenant sessions may choose a tenant ID. */
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {
  try {
-  await requirePlatformAdmin();assertPilotQaEnabled();checkOrigin(request);
-  if(process.env.SAAS_QA_MODE!=="true" || process.env.STRIPE_BILLING_ENABLED!=="true")
-   throw new BusinessError("Stripe ainda não habilitada para testes.",503);
+  await requirePlatformAdmin();assertSaasManagementEnabled();checkOrigin(request);
+  if(process.env.STRIPE_BILLING_ENABLED!=="true")
+   throw new BusinessError("Stripe indisponível para este ambiente.",503);
   const {id}=await params;
   if(!/^[0-9a-f-]{36}$/i.test(id))throw new BusinessError("Estabelecimento inválido.",400);
   if(Number(request.headers.get("content-length")||0)>2000)throw new BusinessError("Requisição muito grande.",413);
@@ -23,6 +23,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if((plan!=="ANUAL_MENSAL"&&plan!=="ANUAL_AVISTA") || (method!=="CARD"&&method!=="PIX") ||
     (plan==="ANUAL_MENSAL"&&method!=="CARD"))
     throw new BusinessError("Plano ou pagamento não permitido.",400);
+  if(process.env.SAAS_PRODUCTION_MODE==="true" && !request.headers.get("origin")?.startsWith("https://duchaelitte.com.br"))
+   throw new BusinessError("Origem de produção não autorizada.",403);
   const chargeId=randomUUID(),expected=plan==="ANUAL_AVISTA"?79000:8000;
   const owner=await withControlPlane(db=>db.$transaction(async tx=>{
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"stripe:"+id}))`;
