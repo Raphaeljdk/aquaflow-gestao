@@ -1,0 +1,25 @@
+import { NextResponse } from "next/server";
+import { requirePlatformAdmin } from "@/lib/platform-admin";
+import { withControlPlane } from "@/lib/saas/control-plane";
+import { assertPilotQaEnabled, listPilotStatus } from "@/lib/saas/pilot-control";
+
+export const dynamic = "force-dynamic";
+export async function GET() {
+  try {
+    await requirePlatformAdmin();
+    assertPilotQaEnabled();
+    const tenants = await withControlPlane(listPilotStatus);
+    return NextResponse.json({
+      tenants: tenants.map(t => ({
+        slug: t.slug, provisionamento: t.state, licenca: t.license_state,
+        usuariosAtivos: t.members, bancoConfigurado: t.has_database,
+        testeJaIniciado: Boolean(t.trial_started_at),
+        testeExpiraEm: t.trial_ends_at,
+        aptoParaTeste: t.state === "READY" && t.has_database && t.members > 0,
+      })),
+    }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "Painel de homologação indisponível ou não autorizado." },
+      { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+}
