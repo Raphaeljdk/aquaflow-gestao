@@ -11,6 +11,11 @@ test("central de ajuda reproduz os dois vídeos oficiais da Ducha Elitte", () =>
   assert.match(page, /ducha_elitte_guia_rapido_todas_abas\.mp4/);
   assert.match(page, /ducha_elitte_treinamento_abas_suporte_chamados\.mp4/);
   assert.match(page, /controls playsInline/);
+  assert.match(page, /max-w-\[1480px\]/);
+  assert.match(page, /lg:grid-cols-2/);
+  assert.match(page, /href="#treinamentos"/);
+  assert.match(page, /href="#modulos"/);
+  assert.match(page, /Abrir manual em PDF/);
   assert.match(page, /data\?\.configuracao\.manualVideoUrl/);
   assert.match(page, /href="\/suporte"/);
   assert.doesNotMatch(page, /share\.descript\.com\/embed\/v3pWHD1uqeQ/);
