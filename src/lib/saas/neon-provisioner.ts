@@ -28,8 +28,8 @@ export async function createNeonTenantProject(tenantId:string):Promise<Provision
     connection_uris?:Array<{connection_uri?:string;connection_uri_with_pooler?:string}>
   };
   const projectId=payload.project?.id;
-  const uri=payload.connection_uris?.[0]?.connection_uri_with_pooler ||
-            payload.connection_uris?.[0]?.connection_uri;
+  const uri=payload.connection_uris?.[0]?.connection_uri ||
+            payload.connection_uris?.[0]?.connection_uri_with_pooler;
   if(!projectId || !uri)throw new Error("Projeto criado sem credenciais reconhecidas: verificar painel Neon e não repetir POST.");
   return {projectId,encryptedUrl:encryptTenantDatabaseUrl(uri),projectName:name};
 }
