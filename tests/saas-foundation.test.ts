@@ -28,7 +28,9 @@ test("Stripe usa assinatura HMAC, consulta autenticada e conciliação idempoten
  const webhook=readFileSync("src/app/api/stripe/webhook/route.ts","utf8");
  assert.match(provider,/timingSafeEqual/);
  assert.match(provider,/createHmac/);
- assert.match(provider,/STRIPE_BILLING_ENABLED/);
+ const mode=readFileSync("src/lib/saas/stripe-mode.ts","utf8");
+ assert.match(mode,/STRIPE_BILLING_ENABLED/);
+ assert.match(mode,/SAAS_PRODUCTION_MODE/);
  assert.match(webhook,/loadPaymentIntent/);
  assert.match(webhook,/loadInvoice/);
  assert.match(reconciler,/FOR UPDATE/);
