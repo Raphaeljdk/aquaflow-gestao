@@ -13,7 +13,7 @@ export async function proxy(request: NextRequest) {
       "/api/comandas","/api/agendamentos","/api/configuracoes","/api/materiais",
       "/api/movimentosEstoque","/api/chamados","/api/pedidos-agendamento",
       "/api/public/empresa","/api/plataforma/me","/api/plataforma/saas/pilotos",
-      "/api/cron/saas-expiry",
+      "/api/cron/saas-expiry","/api/saas/convites/aceitar",
     ];
     const approved=allowed.some(prefix=>path===prefix||path.startsWith(prefix+"/"));
     if(!approved)return NextResponse.json({error:"Módulo em homologação para ambiente multiempresa."},{status:503});

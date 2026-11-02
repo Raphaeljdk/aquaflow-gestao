@@ -91,7 +91,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
-export async function currentUser() {
+export async function currentUser(): Promise<import('@/types').User> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new BusinessError("Entre para continuar.", 401);
   if (saasPilotMode()) {
