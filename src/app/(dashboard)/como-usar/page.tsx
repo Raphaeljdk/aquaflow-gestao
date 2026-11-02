@@ -1,6 +1,5 @@
 "use client";
 import { BookOpen, ExternalLink, FileText, LifeBuoy, PlayCircle, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useStore } from "@/hooks/use-store";
 
 const modulos = [
@@ -26,21 +25,6 @@ export default function ComoUsarPage() {
   const { data, user } = useStore();
   const video = data?.configuracao.manualVideoUrl ?? "";
   const pdf = data?.configuracao.manualPdfUrl || "/api/manual";
-  const [videoDisponivel, setVideoDisponivel] = useState<{ rapido: boolean; completo: boolean } | null>(null);
-  useEffect(() => {
-    let ativo = true;
-    const existe = async (url: string) => {
-      try {
-        const resposta = await fetch(url, { method: "HEAD", cache: "no-store" });
-        return resposta.ok && (resposta.headers.get("content-type") ?? "").startsWith("video/");
-      } catch { return false; }
-    };
-    void Promise.all([
-      existe("/videos/ducha_elitte_guia_rapido_todas_abas.mp4"),
-      existe("/videos/ducha_elitte_treinamento_abas_suporte_chamados.mp4")
-    ]).then(([rapido, completo]) => { if (ativo) setVideoDisponivel({ rapido, completo }); });
-    return () => { ativo = false; };
-  }, []);
   const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const descriptId = video.match(/^https:\/\/share\.descript\.com\/view\/([a-zA-Z0-9]+)(?:[/?#]|$)/)?.[1];
   return <main className="mx-auto max-w-5xl space-y-8 p-4 sm:p-8">
@@ -49,56 +33,33 @@ export default function ComoUsarPage() {
       <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Como usar o sistema</h1>
       <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Treinamento rápido para trabalhar com comandas, vistorias e agendamentos sem complicação.</p>
     </header>
-    <section className="space-y-4 rounded-2xl border border-primary/30 bg-card p-4 sm:p-6" aria-label="Vídeos de treinamento Ducha Elitte">
+    <section className="space-y-5 rounded-2xl border border-primary/30 bg-card p-4 sm:p-6" aria-label="Vídeos oficiais de treinamento da Ducha Elitte">
       <div className="space-y-2">
         <h2 className="flex items-center gap-2 text-xl font-bold"><PlayCircle size={22} className="text-primary"/> Treinamento Ducha Elitte</h2>
-        <p className="text-sm leading-6 text-muted-foreground">Aprenda a usar as abas do sistema e a solicitar suporte. Comece pelo guia rápido e, quando precisar, assista à explicação completa.</p>
+        <p className="text-sm leading-6 text-muted-foreground">Assista aos vídeos com narração humanizada para conhecer as abas do sistema, realizar atendimentos e solicitar suporte.</p>
       </div>
-      {videoDisponivel === null ? (
-        <p role="status" className="text-sm text-muted-foreground">Carregando os vídeos de treinamento...</p>
-      ) : (
-        <div className="space-y-6">
-          {videoDisponivel.rapido && (
-            <div className="space-y-3">
-              <div><h3 className="font-semibold">Guia rápido — 40 segundos</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Visão geral, clientes, comandas, agenda, estoque, serviços, equipe, faturamento e suporte.</p></div>
-              <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
-                src="/videos/ducha_elitte_guia_rapido_todas_abas.mp4" aria-label="Guia rápido das abas da Ducha Elitte">
-                Seu navegador não suporta vídeo HTML5.
-              </video>
-            </div>
-          )}
-          {videoDisponivel.completo && (
-            <div className="space-y-3">
-              <div><h3 className="font-semibold">Treinamento completo — 1 minuto e 54 segundos</h3>
-                <p className="mt-1 text-xs text-muted-foreground">Explicação detalhada de cada aba, incluindo como abrir e acompanhar chamados.</p></div>
-              <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
-                src="/videos/ducha_elitte_treinamento_abas_suporte_chamados.mp4" aria-label="Treinamento completo da Ducha Elitte">
-                Seu navegador não suporta vídeo HTML5.
-              </video>
-            </div>
-          )}
-          {!videoDisponivel.rapido && !videoDisponivel.completo && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Treinamento anterior disponível enquanto os dois novos vídeos são publicados.</p>
-              <iframe title="Treinamento operacional anterior da Ducha Elitte"
-                src="https://share.descript.com/embed/v3pWHD1uqeQ"
-                loading="lazy" allowFullScreen
-                className="aspect-video w-full rounded-xl border border-border bg-black"
-                referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen"/>
-              <a href="https://share.descript.com/view/v3pWHD1uqeQ" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4">
-                <ExternalLink size={16}/> Abrir treinamento anterior em nova aba
-              </a>
-            </div>
-          )}
-          {user?.role === "ADMIN" && (!videoDisponivel.rapido || !videoDisponivel.completo) && (
-            <p className="rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground">
-              Para publicar os vídeos novos, adicione os arquivos MP4 oficiais à pasta <code>public/videos</code> do repositório. O sistema exibirá automaticamente cada vídeo quando o arquivo estiver disponível, sem alterar os dados do estabelecimento.
-            </p>
-          )}
+      <article className="space-y-3">
+        <div>
+          <h3 className="font-semibold">Comece aqui — Guia rápido (32 segundos)</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">Uma apresentação prática de visão geral, clientes, comandas, agenda, estoque, serviços, funcionários, faturamento e suporte.</p>
         </div>
-      )}
+        <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
+          src="https://zbpfvd9tctfhm3g8.public.blob.vercel-storage.com/ducha-elitte/treinamento/ducha_elitte_guia_rapido_todas_abas.mp4"
+          aria-label="Guia rápido Ducha Elitte com narração profissional em português brasileiro">
+          Seu navegador não suporta reprodução de vídeos.
+        </video>
+      </article>
+      <article className="space-y-3 border-t border-border pt-5">
+        <div>
+          <h3 className="font-semibold">Treinamento completo (1 minuto e 48 segundos)</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">Explica com mais detalhes cada aba, o fluxo de atendimento e como abrir e acompanhar chamados.</p>
+        </div>
+        <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
+          src="https://zbpfvd9tctfhm3g8.public.blob.vercel-storage.com/ducha-elitte/treinamento/ducha_elitte_treinamento_abas_suporte_chamados.mp4"
+          aria-label="Treinamento completo Ducha Elitte com narração profissional em português brasileiro">
+          Seu navegador não suporta reprodução de vídeos.
+        </video>
+      </article>
     </section>
     <div className="grid gap-4 md:grid-cols-2">
       <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
