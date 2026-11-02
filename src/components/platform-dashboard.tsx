@@ -118,11 +118,11 @@ export function PlatformDashboard() {
       <div className="my-8 grid gap-4 sm:grid-cols-3">
         {[["Pendentes",requests.filter(x=>x.status==="PENDENTE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
           ["Em análise",requests.filter(x=>x.status==="EM_ANALISE" && (tab!=="testes" || x.modalidadeCadastro==="TESTE_7_DIAS")).length],
-          [tab==="testes" ? "Pedidos de teste" : "Total de solicitações", tab==="testes" ? requests.filter(x=>x.modalidadeCadastro==="TESTE_7_DIAS").length : requests.length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
+          [tab==="testes" ? "Pedidos de teste" : tab==="aprovadas" ? "Total aprovadas" : "Em aberto", tab==="testes" ? requests.filter(x=>x.modalidadeCadastro==="TESTE_7_DIAS"&&x.status!=="APROVADO").length : tab==="aprovadas" ? requests.filter(x=>x.status==="APROVADO").length : requests.filter(x=>x.status!=="APROVADO").length]].map(([label,value])=><div key={label} className="rounded-2xl border border-border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-bold">{value}</p></div>)}
       </div>
       {error&&<p role="alert" className="mb-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{error}</p>}
       {loading&&<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={17} className="animate-spin"/> Carregando solicitações...</p>}
-      {!loading&&requests.length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
+      {!loading&&requests.filter(x=>tab==="aprovadas"?x.status==="APROVADO":x.status!=="APROVADO").length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
       {tab==="testes" && <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
         Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
       </p>}
