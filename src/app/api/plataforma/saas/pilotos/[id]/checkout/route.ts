@@ -20,8 +20,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if(Number(request.headers.get("content-length")||0)>2000)throw new BusinessError("Requisição muito grande.",413);
   const body=await request.json() as {plan?:StripePlan;method?:StripeMethod};
   const plan=body?.plan,method=body?.method;
-  if((plan!=="ANUAL_MENSAL"&&plan!=="ANUAL_AVISTA") || (method!=="CARD"&&method!=="PIX") ||
-    (plan==="ANUAL_MENSAL"&&method!=="CARD"))
+  if((plan!=="ANUAL_MENSAL"&&plan!=="ANUAL_AVISTA"&&plan!=="MENSAL") || (method!=="CARD"&&method!=="PIX") ||
+    ((plan==="ANUAL_MENSAL"||plan==="MENSAL")&&method!=="CARD"))
     throw new BusinessError("Plano ou pagamento não permitido.",400);
   if(process.env.SAAS_PRODUCTION_MODE==="true" &&
      !["https://duchaelitte.com.br","https://www.duchaelitte.com.br"].includes(new URL(request.url).origin))
@@ -48,7 +48,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     if(duplicates[0]?.qty)throw new BusinessError("Já existe um link de pagamento recente para esta empresa.",409);
     await tx.$executeRaw`
       INSERT INTO platform_billing_charges(id,tenant_id,provider,external_reference,expected_cents,plan_code)
-      VALUES(${chargeId}::uuid,${id}::uuid,'STRIPE',${chargeId},${expected},${plan==="ANUAL_AVISTA"?"ANNUAL_UPFRONT":"CHECKOUT_MONTHLY"})`;
+      VALUES(${chargeId}::uuid,${id}::uuid,'STRIPE',${chargeId},${expected},${plan==="ANUAL_AVISTA"?"ANNUAL_UPFRONT":plan==="MENSAL"?"CHECKOUT_FLEX":"CHECKOUT_MONTHLY"})`;
     return r.email;
   }));
   let checkout;
