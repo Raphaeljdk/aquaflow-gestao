@@ -11,6 +11,7 @@ type PublicBusiness = {
 };
 export default function EmpresaAgendamento() {
   const [business,setBusiness]=useState<PublicBusiness|null>(null);
+  const [loja,setLoja]=useState("");
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [nome,setNome]=useState("");
@@ -34,7 +35,9 @@ export default function EmpresaAgendamento() {
   }, []);
   useEffect(() => {
     const controller=new AbortController();
-    fetch("/api/public/empresa",{cache:"no-store",signal:controller.signal})
+    const lojaCode=new URLSearchParams(window.location.search).get("loja") ?? "";
+    setLoja(lojaCode);
+    fetch("/api/public/empresa"+(lojaCode?"?loja="+encodeURIComponent(lojaCode):""),{cache:"no-store",signal:controller.signal})
       .then(async r=>{if(!r.ok)throw new Error("Página temporariamente indisponível.");return r.json() as Promise<PublicBusiness>})
       .then(setBusiness)
       .catch(e=>{if(e instanceof Error && e.name==="AbortError")return;setError("Não foi possível consultar os dados do estabelecimento.")})
@@ -55,7 +58,7 @@ export default function EmpresaAgendamento() {
     }
     setEnviando(true);setError("");
     try {
-      const response = await fetch("/api/public/empresa/agendamentos", {
+      const response = await fetch("/api/public/empresa/agendamentos"+(loja?"?loja="+encodeURIComponent(loja):""), {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({nome,telefone,tipo,placa,descricaoVeiculo:veiculo,servicoId,data,
           horario,observacoes,aceitePrivacidade}),

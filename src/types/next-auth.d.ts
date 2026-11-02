@@ -16,11 +16,15 @@ declare module "next-auth" {
   interface User {
     role: Role;
     funcionarioId?: string | null;
+    tenantId?: string;
+    tenantSlug?: string;
   }
 }
 declare module "next-auth/jwt" {
   interface JWT {
     role: Role;
     funcionarioId?: string | null;
+    tenantId?: string;
+    tenantSlug?: string;
   }
 }

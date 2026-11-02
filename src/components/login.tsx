@@ -21,6 +21,7 @@ export function Login() {
   const [visible, setVisible] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState("");
   const [mounted, setMounted] = useState(false);
   const [hasBookingPartners, setHasBookingPartners] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
@@ -51,7 +52,7 @@ export function Login() {
     setError("");
     setPending(true);
     try {
-      const result = await signIn("credentials", { ...values, redirect: false });
+      const result = await signIn("credentials", { ...values, tenantSlug: tenantSlug.trim(), redirect: false });
       if (!result?.ok || result.error) {
         setError("E-mail ou senha inválidos. Confira os dados e tente novamente. Após muitas tentativas, aguarde 15 minutos.");
         return;
@@ -177,6 +178,13 @@ export function Login() {
                     </Button>
                   </div>
                   <ErrorText message={form.formState.errors.password?.message} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tenant-slug" className="text-sm font-semibold">Código do lava-rápido (opcional)</Label>
+                  <Input id="tenant-slug" type="text" autoCapitalize="none" autoComplete="off" maxLength={60}
+                    placeholder="Use se possuir acesso a mais de uma empresa"
+                    value={tenantSlug} onChange={event=>setTenantSlug(event.target.value.toLowerCase())}
+                    className="h-12 rounded-xl bg-background px-4 text-base sm:text-sm" />
                 </div>
                 {error && <p role="alert" className="rounded-xl border border-destructive/20 bg-destructive/10 p-3.5 text-sm text-destructive">{error}</p>}
                 <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-sm font-bold shadow-md shadow-primary/10">
