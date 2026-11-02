@@ -19,8 +19,8 @@ export async function GET(req:NextRequest) {
   return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
  try {
   const result=await withControlPlane(async db=>{
-   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{encryptedUrl?:string}}>>`
-      SELECT id::text,channel,recipient,template_key
+   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string}}>>`
+      SELECT id::text,channel,recipient,template_key,payload
       FROM platform_notification_outbox WHERE state='PENDING'
       ORDER BY created_at LIMIT 25
    `;
