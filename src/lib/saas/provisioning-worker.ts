@@ -3,6 +3,7 @@ import {withControlPlane} from "./control-plane";
 import {createNeonTenantProject} from "./neon-provisioner";
 import {decryptTenantDatabaseUrl} from "./database-secrets";
 import {migrateNewTenantDatabase} from "./tenant-migrations";
+import {queueOwnerInvitation} from "./secure-owner-invites";
 
 /** Claim only a PENDING job; stalled RUNNING is inspected manually to avoid duplicate Neon projects. */
 export async function processOneProvisioningJob(){
@@ -44,6 +45,7 @@ export async function processOneProvisioningJob(){
       WHERE id=${jobId}::uuid AND state='RUNNING'`;
    await tx.$executeRaw`INSERT INTO platform_audit_events(tenant_id,action,metadata)
       VALUES(${tenantId}::uuid,'tenant_database_ready','{"worker":"neon_v1"}'::jsonb)`;
+   await queueOwnerInvitation(tx,tenantId,"TRIAL");
   }));
   return {processed:true,ready:true};
  }catch{
