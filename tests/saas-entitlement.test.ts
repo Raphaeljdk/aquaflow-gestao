@@ -36,8 +36,8 @@ test("licença paga vence, tolerância acaba e suspensão manual não é burlada
   assert.equal(effectiveState({...active,state:"SUSPENDED"},now),"SUSPENDED");
 });
 test("pagamento exige valor exato, referencia, liquidacao real e id nao vazio",()=>{
- const charge={provider:"INTER_PIX",externalReference:"tx-001",expectedCents:79000,status:"PENDING"};
- const valid={provider:"INTER_PIX" as const,externalReference:"tx-001",paymentId:"e2e-real",receivedCents:79000,settledAt:now,verifiedWithProvider:true as const};
+ const charge={provider:"STRIPE",externalReference:"checkout-001",expectedCents:79000,status:"PENDING"};
+ const valid={provider:"STRIPE" as const,externalReference:"checkout-001",paymentId:"pi_paid_real",receivedCents:79000,settledAt:now,verifiedWithProvider:true as const};
  assert.doesNotThrow(()=>assertSettlementMatchesCharge(charge,valid));
  assert.throws(()=>assertSettlementMatchesCharge(charge,{...valid,receivedCents:8000}),/não conciliado/);
  assert.throws(()=>assertSettlementMatchesCharge(charge,{...valid,externalReference:"tx-outra"}),/não conciliado/);

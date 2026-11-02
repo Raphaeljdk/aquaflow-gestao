@@ -6,7 +6,7 @@
 4. Gestor gera convite de uso único ao e-mail proprietário em ambiente protegido, ou o worker realiza envio com Resend validado.
 5. Proprietário define uma senha segura no convite HTTPS. Transação única cria identidade/membership, inicia `TRIAL` com 168h, consome convite, audita. Idempotência e `FOR UPDATE` impedem reutilização.
 6. Cada login valida vínculo, licença e readiness no controle central; APIs operacionais conectam exclusivamente ao banco Neon da unidade. Suspensão/expiração não apaga dados.
-7. Inter só libera/renova licença após conciliação real; sem API, o piloto gratuito pode ser homologado sem cobrança.
+7. Stripe só libera/renova licença após webhook HMAC validado, consulta ao provedor e conciliação do pagamento. O teste gratuito funciona sem cobrança nem credenciais Stripe.
 
 ## Infra pendente para ativação efetiva
 
@@ -14,4 +14,4 @@
 - Bootstrap do primeiro operador SaaS em `platform_operators` por script com senha criada em runner protegido.
 - Resolver as bases QA antigas com migrations executadas manualmente: o worker deve usar novas bases ou reconciliar `_prisma_migrations`; **nunca executar migrate deploy sobre tabelas sem histórico**.
 - Homologar ponta a ponta com dois proprietários fictícios em empresas diferentes e no celular.
-- Não habilitar rotina de cobrança nem templates WhatsApp antes das credenciais bancárias e Meta serem validadas.
+- Não habilitar rotina de cobrança nem templates WhatsApp antes das credenciais da Stripe e Meta serem validadas.

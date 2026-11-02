@@ -203,7 +203,7 @@ export default function CadastroEmpresaPage() {
                   <p className="mt-1 text-sm font-bold">Se aplicável, valor informado antes da contratação</p>
                 </div>
                 <p className="text-xs leading-5 text-muted-foreground">A assinatura da plataforma é independente dos pagamentos recebidos por cada lava-rápido por suas lavagens e serviços.</p>
-                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. Os meios de pagamento serão habilitados após a integração bancária.</p>
+                <p className="text-xs leading-5 text-muted-foreground">Esta página apenas solicita o cadastro: não coleta cartão, não gera Pix e não realiza cobrança. O checkout Stripe será habilitado após testes e validação da conta.</p>
               </section>}
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               {!trial && <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
