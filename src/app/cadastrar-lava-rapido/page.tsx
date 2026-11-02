@@ -219,12 +219,12 @@ export default function CadastroEmpresaPage() {
                       </label>
                     </fieldset>
                   ) : (
-                    <div className="rounded-lg border border-border bg-background px-3 py-3 text-sm font-semibold">Cartão de crédito recorrente — 12 mensalidades de R$ 80,00</div>
+                    <div className="rounded-lg border border-border bg-background px-3 py-3 text-sm font-semibold">Cartão de crédito recorrente — R$ 80,00 por mês</div>
                   )}
                   <p className="text-xs leading-5 text-muted-foreground">
                     {planoPagamento === "ANUAL_AVISTA"
                       ? "O cartão de crédito é exclusivamente à vista, em 1 parcela. Sem parcelamento."
-                      : "As 12 mensalidades formam um contrato anual de R$ 960,00. Cobrança pela Stripe após aceite e liberação do checkout. Não há cobrança pelo simples cadastro."}
+                      : planoPagamento === "MENSAL" ? "Assinatura mensal de R$ 80,00 sem fidelidade anual. Cancelamento para o próximo ciclo." : "12 mensalidades de R$ 80,00 compõem o contrato anual de R$ 960,00."}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
@@ -237,7 +237,7 @@ export default function CadastroEmpresaPage() {
               <label className="sr-only" aria-hidden="true">Site<input tabIndex={-1} autoComplete="off" value={form.site} onChange={e=>edit("site",e.target.value)}/></label>
               {!trial && <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={cienteCondicoesComerciais} onChange={e=>setCienteCondicoesComerciais(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
-                <span>Estou ciente das condições do plano anual selecionado, da forma de pagamento escolhida e de que eventual taxa de implantação será informada antes da contratação ou cobrança.</span>
+                <span>Estou ciente das condições do plano selecionado, da forma de pagamento escolhida e de que eventual taxa de implantação será informada antes da contratação ou cobrança.</span>
               </label>}
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-muted-foreground">
                 <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)} className="mt-1 size-4 accent-yellow-400" />
