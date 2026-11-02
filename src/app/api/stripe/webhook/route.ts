@@ -1,5 +1,6 @@
 import { NextRequest,NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { processStripeIncident } from "@/lib/saas/stripe-incidents";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { recordVerifiedSettlement } from "@/lib/saas/reconciliation";
 import { loadCheckout,loadPaymentIntent,loadInvoice,loadSubscription,stopSubscriptionAfter12,
@@ -97,7 +98,10 @@ export async function POST(request:NextRequest) {
   if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")
     await finishCheckout(event.data.object.id!);
   else if(event.type==="invoice.paid") await confirmMonthly(event.data.object.id!);
-  // Other event types are intentionally ignored: they must never grant access.
+  else if(["invoice.payment_failed","customer.subscription.deleted","charge.refunded",
+    "charge.dispute.created","charge.dispute.closed"].includes(event.type))
+    await withControlPlane(db=>processStripeIncident(db,event.id,event.type as Parameters<typeof processStripeIncident>[2],event.data.object.id!));
+  // Only verified invoice.paid and settled checkout payments ever grant access.
   return NextResponse.json({received:true},{headers:{"Cache-Control":"no-store"}});
  }catch(error){
   console.error("[stripe-webhook] Evento rejeitado ou pendente:",error instanceof Error?error.message:"unknown");

@@ -20,7 +20,7 @@ export function requireStripe() {
 export function stripePixEnabled() { return process.env.STRIPE_PIX_ENABLED==="true"; }
 async function stripeApi<T>(path:string,body?:URLSearchParams,idempotencyKey?:string):Promise<T> {
  const {key:secret}=requireStripe();
- if(!/^\/v1\/(checkout\/sessions|payment_intents|invoices|subscriptions)(?:\/[a-zA-Z0-9_]+)?$/.test(path))
+ if(!/^\/v1\/(checkout\/sessions|payment_intents|invoices|subscriptions|charges|disputes)(?:\/[a-zA-Z0-9_]+)?$/.test(path))
   throw new Error("Endpoint Stripe inválido.");
  const response=await fetch("https://api.stripe.com"+path,{
   method:body?"POST":"GET",headers:{"Authorization":"Bearer "+secret,
@@ -86,6 +86,16 @@ export async function stopSubscriptionAfter12(id:string) {
  if(!/^sub_[a-zA-Z0-9]+$/.test(id))throw new Error("Assinatura Stripe inválida.");
  const p=new URLSearchParams();p.set("cancel_at_period_end","true");
  await stripeApi<Subscription>("/v1/subscriptions/"+id,p);
+}
+/** Only read provider objects; incident events never use the untrusted webhook payload as financial proof. */
+export async function loadStripeCharge(id:string) {
+ if(!/^ch_[a-zA-Z0-9]+$/.test(id))throw new Error("Cobrança Stripe inválida.");
+ return stripeApi<{id:string;payment_intent:string|null;invoice:string|null;amount:number;
+  amount_refunded:number;currency:string;refunded:boolean;disputed:boolean}>("/v1/charges/"+id);
+}
+export async function loadStripeDispute(id:string) {
+ if(!/^dp_[a-zA-Z0-9]+$/.test(id))throw new Error("Contestação Stripe inválida.");
+ return stripeApi<{id:string;charge:string|{id:string};status:string}>("/v1/disputes/"+id);
 }
 export function stripeSubscriptionId(invoice:Invoice) {
  const raw=invoice.subscription??invoice.parent?.subscription_details?.subscription;
