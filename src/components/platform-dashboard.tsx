@@ -51,6 +51,10 @@ export function PlatformDashboard() {
         body:JSON.stringify({status,observacoesInternas:item.observacoesInternas}),
       });
       if(!res.ok)throw new Error("Não foi possível atualizar a solicitação.");
+      if(status==="APROVADO"){
+        const p=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
+        if(!p.ok)throw new Error("Solicitação aprovada; abra a aba Aprovadas e clique em Preparar banco exclusivo.");
+      }
       await load();
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setBusy(null);}
