@@ -46,14 +46,15 @@ test("notificações são agendadas para canais oficiais sem expor token no fron
  assert.match(worker,/CRON_SECRET/);
  assert.doesNotMatch(worker,/NEXT_PUBLIC_/);
 });
-test("treinamento oficial e vídeos configurados permanecem disponíveis em Como usar",()=>{
+test("treinamento oficial e manual permanecem disponíveis sem vídeo adicional em Como usar",()=>{
  const help=readFileSync("src/app/(dashboard)/como-usar/page.tsx","utf8");
- // Os tutoriais oficiais usam hospedagem permanente; vídeos adicionais continuam configuráveis.
+ // Os dois tutoriais oficiais usam hospedagem permanente; o manual configurável permanece disponível.
  assert.ok(help.includes("Treinamento Ducha Elitte"));
  assert.ok(help.includes("ducha_elitte_guia_rapido_todas_abas.mp4"));
  assert.ok(help.includes("ducha_elitte_treinamento_abas_suporte_chamados.mp4"));
  assert.ok(help.includes("public.blob.vercel-storage.com"));
- assert.ok(help.includes("data?.configuracao.manualVideoUrl"));
- assert.ok(help.includes("youtube-nocookie.com/embed"));
+ assert.ok(!help.includes("data?.configuracao.manualVideoUrl"));
+ assert.ok(!help.includes("Vídeo adicional do estabelecimento"));
+ assert.ok(help.includes('href="/suporte"'));
  assert.ok(help.includes("manualPdfUrl"));
 });
