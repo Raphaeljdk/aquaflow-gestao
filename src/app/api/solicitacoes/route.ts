@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { solicitacaoEmpresaSchema } from "@/lib/platform-onboarding";
 import { resolvePlatformOffer } from "@/lib/platform-billing";
+import { saasPilotMode } from "@/lib/saas/identity";
+import { withControlPlane } from "@/lib/saas/control-plane";
+import { registerTrialRequest } from "@/lib/saas/signup";
 
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
@@ -12,6 +15,15 @@ export async function POST(request: NextRequest) {
     const body = solicitacaoEmpresaSchema.safeParse(await request.json());
     if (!body.success) return NextResponse.json({ error: "Confira os campos e aceite o aviso de privacidade." }, { status: 400 });
     if (body.data.site) return NextResponse.json({ ok: true }, { status: 202 });
+    if (saasPilotMode()) {
+      if(body.data.modalidadeCadastro!=="TESTE_7_DIAS")
+        return NextResponse.json({error:"Apenas piloto gratuito permitido neste ambiente."},{status:400});
+      const contact=body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55"+body.data.whatsapp;
+      const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
+        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact}));
+      return NextResponse.json({ok:true,modalidadeCadastro:"TESTE_7_DIAS",protocolo:result.id,
+        message:"Solicitação recebida. Seu teste de 7 dias começa apenas quando a conta estiver ativada."},{status:201});
+    }
     const salt = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
     if (!salt) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 });
     const ip = request.headers.get("x-vercel-forwarded-for") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
