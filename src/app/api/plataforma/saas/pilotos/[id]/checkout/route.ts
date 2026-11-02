@@ -35,8 +35,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
          WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled=true) AS owners
       FROM platform_tenants t WHERE t.id=${id}::uuid FOR UPDATE`;
     const r=rows[0];
-    if(!r || r.state!=="READY" || r.owners<1)
-      throw new BusinessError("Aguardando ativação e proprietário validado.",409);
+    if(!r || r.state!=="READY")
+      throw new BusinessError("Aguardando banco individual verificado.",409);
     const current=await tx.$queryRaw<Array<{state:string;paid_through:Date|null}>>`
       SELECT state,paid_through FROM platform_entitlements WHERE tenant_id=${id}::uuid`;
     if(current[0]?.state==="ACTIVE" && current[0].paid_through && current[0].paid_through>new Date())
