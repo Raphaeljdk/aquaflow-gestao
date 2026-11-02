@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { prisma } from "./prisma";
 import type { AppData, Mutation, User, Vistoria } from "@/types";
@@ -102,7 +102,7 @@ export function scopeData(d: AppData, u: User): AppData {
     movimentosEstoque: [],
   };
 }
-export async function mutate(m: Mutation, actor: User) {
+export async function mutate(m: Mutation, actor: User, database: PrismaClient = prisma) {
   // Configuração é um registro único por banco operacional: gravação direta,
   // sem percorrer comandas, clientes, estoque e toda a base em snapshot().
   // No futuro, este prisma deve ser injetado a partir do tenant autorizado.
@@ -112,7 +112,7 @@ export async function mutate(m: Mutation, actor: User) {
     if (m.method !== "PATCH")
       throw new BusinessError("Método inválido para configurações.", 405);
     const values = configuracaoSchema.parse(m.data);
-    const saved = await prisma.configuracao.upsert({
+    const saved = await database.configuracao.upsert({
       where: { id: "empresa" },
       create: { id: "empresa", ...values },
       update: values,
@@ -124,7 +124,7 @@ export async function mutate(m: Mutation, actor: User) {
       ? funcionarioSchema.parse(m.data).password
       : undefined;
   const passwordHash = password ? await hash(password, 12) : undefined;
-  return prisma.$transaction(
+  return database.$transaction(
     async (tx) => {
       // A transaction-wide lock serializes queue, booking and commission operations.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(642019)`;

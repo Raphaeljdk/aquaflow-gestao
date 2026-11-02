@@ -9,6 +9,8 @@ declare module "next-auth" {
       email: string;
       role: Role;
       funcionarioId?: string | null;
+      tenantId?: string;
+      tenantSlug?: string;
     };
   }
   interface User {

@@ -9,6 +9,9 @@ export interface User {
   email: string;
   role: Role;
   funcionarioId?: string | null;
+  tenantId?: string;
+  tenantSlug?: string;
+  platformRole?: string;
 }
 export interface Cliente {
   id: string;

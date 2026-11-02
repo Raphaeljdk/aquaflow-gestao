@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { currentUser } from "@/lib/auth";
 import { checkOrigin, apiError } from "@/lib/api";
-import { prisma } from "@/lib/prisma";
+import { withOperationalDatabase } from "@/lib/saas/operations";
 import { BusinessError } from "@/lib/domain";
 import { canWrite } from "@/lib/permissions";
 import { atendimentoRapidoSchema } from "@/lib/atendimento-rapido";
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     if (Number(request.headers.get("content-length") ?? 0) > 16000)
       throw new BusinessError("Requisição muito grande.", 413);
     const values = atendimentoRapidoSchema.parse(await request.json());
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withOperationalDatabase(user,db=>db.$transaction(async (tx) => {
       // Mesmo bloqueio transacional das demais operações de comandas.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(642019)`;
       const services = await tx.servico.findMany({
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         select: { id: true, numero: true },
       });
       return order;
-    }, { timeout: 30000 });
+    }, { timeout: 30000 }));
     return NextResponse.json({ comanda: result }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError)
