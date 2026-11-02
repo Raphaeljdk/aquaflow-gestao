@@ -1,5 +1,6 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
 
 export type StripePlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
@@ -11,20 +12,19 @@ type Invoice = { id:string; status:string; amount_paid:number; currency:string; 
  collection_method?:string; status_transitions?:{paid_at?:number|null}; created:number };
 type Subscription = { id:string; customer:string; metadata?:Record<string,string>; status:string };
 
-function requireStripe() {
- if(process.env.SAAS_QA_MODE!=="true" || process.env.STRIPE_BILLING_ENABLED!=="true")
-  throw new Error("Stripe não habilitada neste ambiente de homologação.");
- const key=process.env.STRIPE_SECRET_KEY;
- if(!key || !key.startsWith("sk_test_")) throw new Error("Configure uma chave Stripe de TESTE no QA.");
- return key;
+export function requireStripe() {
+ const mode=resolveStripeMode(process.env);
+ if(!mode)throw new Error("Cobrança Stripe desabilitada.");
+ return {mode,key:process.env.STRIPE_SECRET_KEY!};
 }
 export function stripePixEnabled() { return process.env.STRIPE_PIX_ENABLED==="true"; }
-async function stripeApi<T>(path:string,body?:URLSearchParams):Promise<T> {
- const secret=requireStripe();
+async function stripeApi<T>(path:string,body?:URLSearchParams,idempotencyKey?:string):Promise<T> {
+ const {key:secret}=requireStripe();
  if(!/^\/v1\/(checkout\/sessions|payment_intents|invoices|subscriptions)(?:\/[a-zA-Z0-9_]+)?$/.test(path))
   throw new Error("Endpoint Stripe inválido.");
  const response=await fetch("https://api.stripe.com"+path,{
   method:body?"POST":"GET",headers:{"Authorization":"Bearer "+secret,
+   ...(body&&idempotencyKey?{"Idempotency-Key":idempotencyKey}:{}),
    ...(body?{"Content-Type":"application/x-www-form-urlencoded"}:{})},
   body:body?.toString(),cache:"no-store",signal:AbortSignal.timeout(12000)
  });
@@ -34,6 +34,7 @@ async function stripeApi<T>(path:string,body?:URLSearchParams):Promise<T> {
 export async function createStripeCheckout(info:{
  tenantId:string; ownerEmail:string; chargeId:string; plan:StripePlan; method:StripeMethod; origin:string
 }) {
+ const {mode}=requireStripe();
  const upFront=info.plan==="ANUAL_AVISTA";
  if(!upFront && info.method!=="CARD")throw new Error("Assinatura mensal exige cartão.");
  if(upFront && info.method==="PIX" && !stripePixEnabled())
@@ -59,13 +60,14 @@ export async function createStripeCheckout(info:{
  p.set("expires_at",String(Math.floor(Date.now()/1000)+1800));
  p.set("success_url",info.origin+"/assinatura?retorno=sucesso");
  p.set("cancel_url",info.origin+"/assinatura?retorno=cancelado");
- const checkout=await stripeApi<Checkout>("/v1/checkout/sessions",p);
- if(!checkout.id?.startsWith("cs_test_") || !checkout.url?.startsWith("https://checkout.stripe.com/"))
-  throw new Error("Stripe não retornou um checkout válido de teste.");
+ const checkout=await stripeApi<Checkout>("/v1/checkout/sessions",p,"aquaflow:"+info.chargeId);
+ if(!checkout.id?.startsWith(expectedStripeCheckoutPrefix(mode)) || !checkout.url?.startsWith("https://checkout.stripe.com/"))
+  throw new Error("Stripe não retornou um checkout válido para o ambiente configurado.");
  return {id:checkout.id,url:checkout.url};
 }
 export async function loadCheckout(id:string) {
  if(!/^cs_(?:test|live)_[a-zA-Z0-9]+$/.test(id))throw new Error("Sessão Stripe inválida.");
+ if(!id.startsWith(expectedStripeCheckoutPrefix(requireStripe().mode)))throw new Error("Checkout de outro ambiente.");
  return stripeApi<Checkout>("/v1/checkout/sessions/"+id);
 }
 export async function loadPaymentIntent(id:string) {
@@ -102,7 +104,8 @@ export function verifyStripeWebhook(body:string,header:string|null,secret:string
   timingSafeEqual(Buffer.from(digest,"hex"),Buffer.from(v,"hex")));
  if(!good)throw new Error("Assinatura de webhook inválida.");
  const event=JSON.parse(body) as {id:string;type:string;livemode:boolean;data:{object:{id?:string}}};
- if(!/^evt_[a-zA-Z0-9]+$/.test(event.id)||!event.data?.object?.id||event.livemode)
-  throw new Error("Evento Stripe fora do ambiente de teste.");
+ if(!/^evt_[a-zA-Z0-9]+$/.test(event.id)||!event.data?.object?.id)
+  throw new Error("Identificador de evento Stripe inválido.");
+ assertStripeEventMode(requireStripe().mode,event.livemode);
  return event;
 }

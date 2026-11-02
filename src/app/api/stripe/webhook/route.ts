@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { recordVerifiedSettlement } from "@/lib/saas/reconciliation";
 import { loadCheckout,loadPaymentIntent,loadInvoice,loadSubscription,stopSubscriptionAfter12,
- stripeSubscriptionId,verifyStripeWebhook } from "@/lib/saas/stripe-gateway";
+ stripeSubscriptionId,verifyStripeWebhook, requireStripe } from "@/lib/saas/stripe-gateway";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -85,8 +85,9 @@ async function finishCheckout(sessionId:string){
 }
 /** Stripe-signed events are triggers, not proof: each checkout/invoice is retrieved from Stripe. */
 export async function POST(request:NextRequest) {
- if(process.env.SAAS_QA_MODE!=="true" || process.env.STRIPE_BILLING_ENABLED!=="true")
-  return NextResponse.json({error:"Cobranças desabilitadas."},{status:503});
+ try { requireStripe(); } catch {
+  return NextResponse.json({error:"Cobranças Stripe desabilitadas."},{status:503});
+ }
  try {
   if(Number(request.headers.get("content-length")||0)>120000)
    return NextResponse.json({error:"Evento grande demais."},{status:413});

@@ -13,7 +13,7 @@ export const dynamic="force-dynamic";
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {
  try {
   await requirePlatformAdmin();assertPilotQaEnabled();checkOrigin(request);
-  if(process.env.STRIPE_BILLING_ENABLED!=="true")
+  if(process.env.SAAS_QA_MODE!=="true" || process.env.STRIPE_BILLING_ENABLED!=="true")
    throw new BusinessError("Stripe ainda não habilitada para testes.",503);
   const {id}=await params;
   if(!/^[0-9a-f-]{36}$/i.test(id))throw new BusinessError("Estabelecimento inválido.",400);
