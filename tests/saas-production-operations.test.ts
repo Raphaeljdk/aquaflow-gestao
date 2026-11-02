@@ -17,7 +17,7 @@ test("operações SaaS são restritas a gestor e modo correto",()=>{
 });
 test("tela de produção emite checkout após banco pronto, antes de criar senha",()=>{
  const src=readFileSync("src/components/saas-production-dashboard.tsx","utf8");
- assert.match(src,/Cobrar R\$ 80\/mês/);
+ assert.match(src,/Mensal R\$ 80/);
  assert.match(src,/Cobrar R\$ 790/);
  assert.match(src,/window.confirm/);
  assert.doesNotMatch(src,/t.usuariosAtivos<1/);
