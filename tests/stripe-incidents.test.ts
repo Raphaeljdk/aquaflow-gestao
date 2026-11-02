@@ -19,5 +19,8 @@ test("webhook nunca concede licença por falha, cancelamento ou estorno",()=>{
  assert.match(route,/loadInvoice/);
  assert.match(route,/loadPaymentIntent/);
  assert.match(route,/processStripeIncident/);
+ assert.match(route,/paid_out_of_band/);
+ assert.match(route,/setup_charge_id/);
+ assert.match(route,/Contrato já atingiu 12 mensalidades/);
  assert.match(route,/STRIPE_BILLING_ENABLED|requireStripe/);
 });

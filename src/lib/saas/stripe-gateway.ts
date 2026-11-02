@@ -9,7 +9,7 @@ type Checkout = { id:string; url:string|null; mode:string; payment_status?:strin
  metadata?:Record<string,string>|null; subscription?:string|null };
 type Invoice = { id:string; status:string; amount_paid:number; currency:string; customer:string;
  subscription?:string|{id:string}|null; parent?:{subscription_details?:{subscription?:string|{id:string}}}|null;
- collection_method?:string; status_transitions?:{paid_at?:number|null}; created:number };
+ collection_method?:string; paid_out_of_band?:boolean; status_transitions?:{paid_at?:number|null}; created:number };
 type Subscription = { id:string; customer:string; metadata?:Record<string,string>; status:string };
 
 export function requireStripe() {

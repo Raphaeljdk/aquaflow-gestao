@@ -38,11 +38,13 @@ async function confirmMonthly(invoiceId:string) {
  const invoice=await loadInvoice(invoiceId);
  const subId=stripeSubscriptionId(invoice);
  if(invoice.status!=="paid"||invoice.amount_paid!==8000||invoice.currency!=="brl"||
-   invoice.collection_method!=="charge_automatically"||!subId)
+   invoice.collection_method!=="charge_automatically"||invoice.paid_out_of_band===true||!subId)
   throw new Error("Fatura mensal não liquidada.");
  const subscription=await loadSubscription(subId);
  const tenantId=subscription.metadata?.tenant_id;
- if(!tenantId||!isUuid(tenantId)||subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
+ const setupChargeId=subscription.metadata?.setup_charge_id;
+ if(!tenantId||!isUuid(tenantId)||!setupChargeId||!isUuid(setupChargeId)||
+    subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
     subscription.customer!==invoice.customer)
   throw new Error("Assinatura não corresponde ao estabelecimento.");
  const stamp=invoice.status_transitions?.paid_at ?? invoice.created;
@@ -51,6 +53,15 @@ async function confirmMonthly(invoiceId:string) {
   const tenants=await db.$queryRaw<Array<{state:string}>>`
    SELECT state FROM platform_tenants WHERE id=${tenantId}::uuid`;
   if(tenants[0]?.state!=="READY")throw new Error("Empresa não provisionada.");
+  const setup=await db.$queryRaw<Array<{qty:number}>>`
+    SELECT count(*)::integer AS qty FROM platform_billing_charges
+    WHERE id=${setupChargeId}::uuid AND tenant_id=${tenantId}::uuid AND provider='STRIPE'
+      AND plan_code='CHECKOUT_MONTHLY'`;
+  if(setup[0]?.qty!==1)throw new Error("Assinatura não vinculada a checkout da plataforma.");
+  const existing=await db.$queryRaw<Array<{qty:number}>>`
+    SELECT count(*)::integer AS qty FROM platform_billing_charges
+    WHERE stripe_subscription_id=${subId} AND status='PAID' AND plan_code='MONTHLY'`;
+  if((existing[0]?.qty??0)>=12)throw new Error("Contrato já atingiu 12 mensalidades; revisar cobrança excedente.");
   const created=await db.$queryRaw<Array<{id:string}>>`
     INSERT INTO platform_billing_charges(id,tenant_id,provider,external_reference,
       expected_cents,plan_code,stripe_subscription_id)
