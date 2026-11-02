@@ -4,6 +4,8 @@ import { getToken } from "next-auth/jwt";
 const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte"]);
 
 export async function proxy(request: NextRequest) {
+  // Public/auth/cron APIs must remain reachable in legacy production; each route validates itself.
+  if (process.env.SAAS_QA_MODE !== "true" && request.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
   // SaaS QA must never reach unscoped legacy API endpoints.
   if (process.env.SAAS_QA_MODE === "true" && request.nextUrl.pathname.startsWith("/api/")) {
     const path=request.nextUrl.pathname;
