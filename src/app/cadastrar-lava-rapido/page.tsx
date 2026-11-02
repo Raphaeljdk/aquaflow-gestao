@@ -186,6 +186,7 @@ export default function CadastroEmpresaPage() {
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Escolha um plano">
+                  <label><input type="radio" name="planoPagamento" value="MENSAL" checked={planoPagamento==="MENSAL"} onChange={()=>escolherPlano("MENSAL")}/> Mensal sem fidelidade — R$ 80,00/mês</label>
                   <label className={`cursor-pointer rounded-xl border p-4 transition-colors ${planoPagamento === "ANUAL_MENSAL" ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
                     <span className="flex items-center gap-2 text-sm font-semibold">
                       <input type="radio" name="planoPagamento" value="ANUAL_MENSAL" checked={planoPagamento === "ANUAL_MENSAL"} onChange={()=>escolherPlano("ANUAL_MENSAL")} className="accent-yellow-400"/>
