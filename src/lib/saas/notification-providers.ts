@@ -1,9 +1,7 @@
 import "server-only";
 /** Never deliver before verified, configured providers are available. */
 export function notificationsConfigured(){
- return Boolean(process.env.RESEND_API_KEY && process.env.NOTIFICATION_FROM_EMAIL &&
-   process.env.WHATSAPP_BUSINESS_TOKEN && process.env.WHATSAPP_PHONE_ID &&
-   process.env.WHATSAPP_GRAPH_VERSION && process.env.WHATSAPP_TEMPLATE_LICENSE_STATUS);
+ return Boolean(process.env.RESEND_API_KEY && process.env.NOTIFICATION_FROM_EMAIL);
 }
 export type Notification = {
   channel:"EMAIL"|"WHATSAPP";
