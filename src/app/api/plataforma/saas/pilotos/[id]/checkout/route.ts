@@ -23,7 +23,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   if((plan!=="ANUAL_MENSAL"&&plan!=="ANUAL_AVISTA") || (method!=="CARD"&&method!=="PIX") ||
     (plan==="ANUAL_MENSAL"&&method!=="CARD"))
     throw new BusinessError("Plano ou pagamento não permitido.",400);
-  if(process.env.SAAS_PRODUCTION_MODE==="true" && !request.headers.get("origin")?.startsWith("https://duchaelitte.com.br"))
+  if(process.env.SAAS_PRODUCTION_MODE==="true" &&
+     !["https://duchaelitte.com.br","https://www.duchaelitte.com.br"].includes(new URL(request.url).origin))
    throw new BusinessError("Origem de produção não autorizada.",403);
   const chargeId=randomUUID(),expected=plan==="ANUAL_AVISTA"?79000:8000;
   const owner=await withControlPlane(db=>db.$transaction(async tx=>{

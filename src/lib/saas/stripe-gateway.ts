@@ -47,7 +47,7 @@ export async function createStripeCheckout(info:{
  p.set("line_items[0][quantity]","1");
  p.set("line_items[0][price_data][currency]","brl");
  p.set("line_items[0][price_data][unit_amount]",upFront?"79000":"8000");
- p.set("line_items[0][price_data][product_data][name]",upFront?"AquaFlow - licença anual à vista":"AquaFlow - contrato anual em 12 mensalidades");
+ p.set("line_items[0][price_data][product_data][name]",upFront?"Ducha Elitte - licença anual à vista":"Ducha Elitte - contrato anual em 12 mensalidades");
  if(!upFront)p.set("line_items[0][price_data][recurring][interval]","month");
  p.set("metadata[tenant_id]",info.tenantId);
  p.set("metadata[charge_id]",info.chargeId);

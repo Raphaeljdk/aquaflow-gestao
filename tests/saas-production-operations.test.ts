@@ -22,3 +22,10 @@ test("tela de produção só emite link quando licença e proprietário estivere
  assert.match(src,/window.confirm/);
  assert.match(src,/t.usuariosAtivos<1/);
 });
+
+test("checkout de produção aceita somente domínio verificado sem prefixos permissivos",()=>{
+ const src=readFileSync("src/app/api/plataforma/saas/pilotos/[id]/checkout/route.ts","utf8");
+ assert.match(src,/https:\/\/www\.duchaelitte\.com\.br/);
+ assert.match(src,/\["https:\/\/duchaelitte\.com\.br","https:\/\/www\.duchaelitte\.com\.br"\]/);
+ assert.doesNotMatch(src,/startsWith\("https:\/\/duchaelitte\.com\.br"\)/);
+});
