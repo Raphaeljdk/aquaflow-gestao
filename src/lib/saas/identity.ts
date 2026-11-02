@@ -6,8 +6,10 @@ import { BusinessError } from "@/lib/domain";
 import type { Role, User } from "@/types";
 import { withControlPlane } from "./control-plane";
 import { effectiveState, type Entitlement } from "./entitlement";
+import {isolationMode} from "./isolation-mode";
 
-export const saasPilotMode = () => process.env.SAAS_QA_MODE === "true";
+/** Legacy name retained for callers: both QA and live SaaS use the central identity and per-tenant DB. */
+export const saasPilotMode = () => isolationMode(process.env)!==null;
 export type TenantSessionUser = User & { tenantId: string; tenantSlug: string; platformRole: string };
 export type PlatformOperatorUser = User & { platformOperator: true };
 type RecordRow = {

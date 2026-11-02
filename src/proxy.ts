@@ -1,13 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { isolationMode } from "@/lib/saas/isolation-mode";
 
 const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte"]);
 
 export async function proxy(request: NextRequest) {
-  // Public/auth/cron APIs must remain reachable in legacy production; each route validates itself.
-  if (process.env.SAAS_QA_MODE !== "true" && request.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
-  // SaaS QA must never reach unscoped legacy API endpoints.
-  if (process.env.SAAS_QA_MODE === "true" && request.nextUrl.pathname.startsWith("/api/")) {
+  // Preserve the legacy path only while SaaS isolation is genuinely disabled.
+  let isolated: ReturnType<typeof isolationMode>;
+  try { isolated=isolationMode(process.env); }
+  catch { return NextResponse.json({error:"Configuração SaaS inconsistente."},{status:503}); }
+  if (!isolated && request.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
+  // Both QA and production must block every API not explicitly scoped to a tenant.
+  if (isolated && request.nextUrl.pathname.startsWith("/api/")) {
     const path=request.nextUrl.pathname;
     const allowed=[
       "/api/auth/","/api/snapshot","/api/relatorios","/api/atendimentos-rapidos",
@@ -15,13 +19,14 @@ export async function proxy(request: NextRequest) {
       "/api/comandas","/api/agendamentos","/api/configuracoes","/api/materiais",
       "/api/movimentosEstoque","/api/chamados","/api/pedidos-agendamento",
       "/api/public/empresa","/api/plataforma/me","/api/plataforma/saas/pilotos",
+      "/api/plataforma/saas/overview",
       "/api/cron/saas-expiry","/api/stripe/webhook","/api/saas/convites/aceitar","/api/solicitacoes",
     ];
     const approved=allowed.some(prefix=>path===prefix||path.startsWith(prefix+"/"));
     if(!approved)return NextResponse.json({error:"Módulo em homologação para ambiente multiempresa."},{status:503});
     return NextResponse.next();
   }
-  if (process.env.NEXT_PUBLIC_DEMO === "true" && process.env.SAAS_QA_MODE !== "true") return NextResponse.next();
+  if (process.env.NEXT_PUBLIC_DEMO === "true" && !isolated) return NextResponse.next();
 
   const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
   if (!secret) {
