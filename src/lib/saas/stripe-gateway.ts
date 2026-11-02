@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
+import {twelfthCycleEnd} from "./stripe-contract-term";
 
 export type StripePlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
@@ -81,15 +82,6 @@ export async function loadInvoice(id:string) {
 export async function loadSubscription(id:string) {
  if(!/^sub_[a-zA-Z0-9]+$/.test(id))throw new Error("Assinatura Stripe inválida.");
  return stripeApi<Subscription>("/v1/subscriptions/"+id);
-}
-export function twelfthCycleEnd(anchorSeconds:number):number {
- if(!Number.isSafeInteger(anchorSeconds)||anchorSeconds<1)throw new Error("Ciclo de cobrança inválido.");
- const anchor=new Date(anchorSeconds*1000);
- const month=anchor.getUTCMonth()+12;
- const monthLast=new Date(Date.UTC(anchor.getUTCFullYear(),month+1,0)).getUTCDate();
- const stamp=Date.UTC(anchor.getUTCFullYear(),month,Math.min(anchor.getUTCDate(),monthLast),
-  anchor.getUTCHours(),anchor.getUTCMinutes(),anchor.getUTCSeconds());
- return Math.floor(stamp/1000);
 }
 /** Install the terminal date at subscription activation, not after the twelfth invoice.
  * A lost webhook must never leave a contract open for a thirteenth charge. */
