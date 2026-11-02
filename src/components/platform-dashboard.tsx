@@ -158,7 +158,7 @@ export function PlatformDashboard() {
               <p className="font-semibold">Condições comerciais previstas</p>
               <p>Implantação: valor a definir</p>
               {item.totalContratoCentavos !== null && item.planoPagamento ? (
-                <p>Plano anual: {item.planoPagamento === "ANUAL_AVISTA" ? "à vista" : "12 mensalidades"} · Total {formatPlatformPrice(item.totalContratoCentavos)} · {item.quantidadeParcelas} pagamento(s)</p>
+                <p>Plano: {item.planoPagamento === "MENSAL" ? "mensal sem fidelidade" : item.planoPagamento === "ANUAL_AVISTA" ? "anual à vista" : "anual em 12 mensalidades"} · Valor {formatPlatformPrice(item.totalContratoCentavos)} · {item.quantidadeParcelas} pagamento(s)</p>
               ) : (
                 <p>Condição anterior: {item.mensalidadeCentavos === null ? "mensalidade não registrada" : formatPlatformPrice(item.mensalidadeCentavos) + "/mês"}</p>
               )}
