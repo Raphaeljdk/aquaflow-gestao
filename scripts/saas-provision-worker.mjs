@@ -123,8 +123,10 @@ async function invite(job){
  const link=originUrl.origin+"/convite?token="+encodeURIComponent(token);
  // Store the one-time token hash BEFORE sending the link. A failed provider send
  // can be replaced by the platform operator with a fresh invitation.
-${sql}
-${marker}
+ await central.$executeRaw`
+   INSERT INTO platform_invitations(tenant_id,email,role,token_hash,expires_at)
+   VALUES(${job.tenant_id}::uuid,${email},'OWNER',${digest},now()+INTERVAL '24 hours')`;
+ const response=await fetch("https://api.resend.com/emails",{
    method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},
    body:JSON.stringify({from,to:[email],subject:"Ducha Elitte | Ative seu teste gratuito",
      text:"Seu ambiente exclusivo está pronto. Crie sua senha pelo link (válido por 24h): "+link+
