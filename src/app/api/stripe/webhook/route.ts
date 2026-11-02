@@ -102,7 +102,7 @@ async function finishCheckout(sessionId:string){
   if(isUuid(id)){
     await withControlPlane(db=>db.$executeRaw`
       UPDATE platform_billing_charges SET status='CANCELED'
-      WHERE id=${id}::uuid AND provider='STRIPE' AND plan_code='CHECKOUT_MONTHLY' AND status='PENDING'`);
+      WHERE id=${id}::uuid AND provider='STRIPE' AND plan_code IN ('CHECKOUT_MONTHLY','CHECKOUT_FLEX') AND status='PENDING'`);
   }
  }
  return {status:"SUBSCRIPTION_PENDING_INVOICE"};
