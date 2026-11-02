@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { cnpjValido, type DadosPublicosCnpj } from "@/lib/cnpj-publico";
 import { PLATFORM_ANNUAL_STANDARD_CENTS, PLATFORM_ANNUAL_UPFRONT_CENTS, PLATFORM_ANNUAL_SAVINGS_CENTS, formatPlatformPrice, type PlatformPlan, type PlatformPaymentMethod } from "@/lib/platform-billing";
 import { ArrowLeft, Building2, CheckCircle2, CreditCard, Loader2, ShieldCheck, Wallet } from "lucide-react";
 type Fields = { nomeEmpresa: string; cnpj: string; razaoSocial: string; nomeResponsavel: string; email: string; whatsapp: string; cidade: string; mensagem: string; site: string };
@@ -25,28 +26,49 @@ export default function CadastroEmpresaPage() {
   }
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
   const [cnpjMensagem, setCnpjMensagem] = useState("");
+  const [cnpjErro, setCnpjErro] = useState(false);
+  const [cnpjDados, setCnpjDados] = useState<DadosPublicosCnpj | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  function edit(key: keyof Fields, value: string) { setForm(v => ({...v,[key]:value})); }
+  function edit(key: keyof Fields, value: string) {
+    setForm(v => ({ ...v, [key]: value }));
+    if (key === "cnpj") {
+      setCnpjMensagem("");
+      setCnpjErro(false);
+      setCnpjDados(null);
+    }
+  }
   async function consultarCnpj() {
-    setCnpjMensagem(""); setConsultandoCnpj(true);
+    const clean = form.cnpj.replace(/\D/g, "");
+    setCnpjMensagem("");
+    setCnpjErro(false);
+    setCnpjDados(null);
+    if (!cnpjValido(clean)) {
+      setCnpjErro(true);
+      setCnpjMensagem("CNPJ inválido. Verifique os 14 dígitos e tente novamente.");
+      return;
+    }
+    setConsultandoCnpj(true);
     try {
-      const clean = form.cnpj.replace(/\D/g, "");
       const res = await fetch("/api/public/cnpj/" + encodeURIComponent(clean), { cache: "no-store" });
-      const dados = await res.json() as {
-        error?: string; razaoSocial?: string; nomeFantasia?: string; cidade?: string; situacao?: string;
-      };
-      if (!res.ok) throw new Error(dados.error || "Não foi possível consultar.");
+      const dados = await res.json() as Partial<DadosPublicosCnpj> & { error?: string };
+      if (!res.ok) throw new Error(dados.error || "Não foi possível consultar. Tente novamente.");
       setForm((atual) => ({
         ...atual,
         razaoSocial: dados.razaoSocial || atual.razaoSocial,
         nomeEmpresa: dados.nomeFantasia || dados.razaoSocial || atual.nomeEmpresa,
         cidade: dados.cidade || atual.cidade,
+        // E-mail público apenas se o contato ainda não preencheu o próprio e-mail.
+        email: atual.email || dados.email || "",
       }));
-      setCnpjMensagem("Dados encontrados. Confira e ajuste antes de enviar.");
+      setCnpjDados(dados as DadosPublicosCnpj);
+      setCnpjMensagem("Dados encontrados! Confira e ajuste as informações antes de enviar.");
     } catch (e) {
+      setCnpjErro(true);
       setCnpjMensagem(e instanceof Error ? e.message : "Não foi possível consultar. Preencha manualmente.");
-    } finally { setConsultandoCnpj(false); }
+    } finally {
+      setConsultandoCnpj(false);
+    }
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if(busy) return;
@@ -132,7 +154,13 @@ export default function CadastroEmpresaPage() {
                     {consultandoCnpj ? "Consultando..." : "Buscar dados do CNPJ"}
                   </button>
                 </div>
-                {cnpjMensagem && <p role="status" className="mt-2 text-xs leading-5 text-muted-foreground">{cnpjMensagem}</p>}
+                {cnpjMensagem && <p role={cnpjErro ? "alert" : "status"} className={cnpjErro ? "mt-2 text-xs leading-5 text-destructive" : "mt-2 text-xs leading-5 text-primary"}>{cnpjMensagem}</p>}
+                {cnpjDados && <div className="mt-3 space-y-1 rounded-lg border border-border bg-background p-3 text-xs leading-5" aria-label="Informações públicas do CNPJ">
+                  <p><strong>Razão social:</strong> {cnpjDados.razaoSocial}</p>
+                  {cnpjDados.situacao && <p><strong>Situação cadastral:</strong> {cnpjDados.situacao}</p>}
+                  {cnpjDados.endereco && <p><strong>Endereço cadastrado:</strong> {cnpjDados.endereco}</p>}
+                  {cnpjDados.atividadePrincipal && <p><strong>Atividade principal:</strong> {cnpjDados.atividadePrincipal}</p>}
+                </div>}
                 <p className="mt-2 text-xs text-muted-foreground">A consulta traz somente dados públicos. Confira o cadastro; o preenchimento manual continua disponível.</p>
               </div>
               {form.razaoSocial && <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Razão social consultada: {form.razaoSocial}</p>}
