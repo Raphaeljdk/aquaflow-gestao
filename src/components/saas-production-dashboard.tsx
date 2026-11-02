@@ -21,7 +21,7 @@ export function SaasProductionDashboard(){
   finally{setLoading(false)}
  },[]);
  useEffect(()=>{void reload()},[reload]);
- async function action(t:Tenant,type:"aprovar"|"convidar"|"checkout",plan?:"ANUAL_MENSAL"|"ANUAL_AVISTA",method?:"CARD"|"PIX"){
+ async function action(t:Tenant,type:"aprovar"|"convidar"|"checkout",plan?:"MENSAL"|"ANUAL_MENSAL"|"ANUAL_AVISTA",method?:"CARD"|"PIX"){
   setError("");setMessage("");setBusy(t.id);
   try{
    if(type==="checkout" && !window.confirm("Confirma a emissão de um link de pagamento REAL para o proprietário cadastrado? O pagamento depende da ação do cliente."))
@@ -62,7 +62,7 @@ export function SaasProductionDashboard(){
      <div className="flex flex-wrap gap-2">
       <button disabled={busy===t.id||t.provisionamento!=="PENDING"} onClick={()=>void action(t,"aprovar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Aprovar banco</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Gerar convite</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 80/mês</button>
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Mensal R$ 80 — sem fidelidade</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
       {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
      </div>
