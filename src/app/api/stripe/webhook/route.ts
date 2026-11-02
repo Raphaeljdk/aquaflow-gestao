@@ -61,7 +61,14 @@ async function confirmMonthly(invoiceId:string) {
   const existing=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE stripe_subscription_id=${subId} AND status='PAID' AND plan_code='MONTHLY'`;
-  if((existing[0]?.qty??0)>=12)throw new Error("Contrato já atingiu 12 mensalidades; revisar cobrança excedente.");
+  if((existing[0]?.qty??0)>=12) {
+    const repeated=await db.$queryRaw<Array<{qty:number}>>`
+     SELECT count(*)::integer AS qty FROM platform_billing_charges
+     WHERE provider='STRIPE' AND external_reference=${invoice.id} AND status='PAID'
+       AND tenant_id=${tenantId}::uuid AND stripe_subscription_id=${subId}`;
+    if(repeated[0]?.qty===1)return {status:"ALREADY_PAID" as const,count:existing[0].qty};
+    throw new Error("Contrato já atingiu 12 mensalidades; revisar cobrança excedente.");
+  }
   const created=await db.$queryRaw<Array<{id:string}>>`
     INSERT INTO platform_billing_charges(id,tenant_id,provider,external_reference,
       expected_cents,plan_code,stripe_subscription_id)
