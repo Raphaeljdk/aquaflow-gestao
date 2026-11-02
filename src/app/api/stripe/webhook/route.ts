@@ -44,11 +44,11 @@ async function confirmMonthly(invoiceId:string) {
  const tenantId=subscription.metadata?.tenant_id;
  const setupChargeId=subscription.metadata?.setup_charge_id;
  if(!tenantId||!isUuid(tenantId)||!setupChargeId||!isUuid(setupChargeId)||
-    subscription.metadata?.plan_code!=="ANNUAL_MONTHLY"||
+    !["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(subscription.metadata?.plan_code??"")||
     subscription.customer!==invoice.customer)
   throw new Error("Assinatura não corresponde ao estabelecimento.");
- // Install provider-side cancellation before extending entitlement.
- await ensureTwelveMonthSubscriptionTerm(subId);
+ const annualContract=subscription.metadata?.plan_code==="ANNUAL_MONTHLY";
+ if(annualContract)await ensureTwelveMonthSubscriptionTerm(subId);
  const stamp=invoice.status_transitions?.paid_at ?? invoice.created;
  if(!Number.isFinite(stamp))throw new Error("Liquidação sem data válida.");
  const outcome=await withControlPlane(async db=>{
@@ -58,7 +58,7 @@ async function confirmMonthly(invoiceId:string) {
   const setup=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE id=${setupChargeId}::uuid AND tenant_id=${tenantId}::uuid AND provider='STRIPE'
-      AND plan_code='CHECKOUT_MONTHLY'`;
+      AND plan_code=${annualContract?'CHECKOUT_MONTHLY':'CHECKOUT_FLEX'}`;
   if(setup[0]?.qty!==1)throw new Error("Assinatura não vinculada a checkout da plataforma.");
   const existing=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
