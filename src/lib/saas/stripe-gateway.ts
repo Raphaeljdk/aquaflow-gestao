@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
 import {twelfthCycleEnd} from "./stripe-contract-term";
 
-export type StripePlan = "ANUAL_MENSAL" | "ANUAL_AVISTA";
+export type StripePlan = "MENSAL" | "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
 type Checkout = { id:string; url:string|null; mode:string; payment_status?:string;
  amount_total?:number|null; currency?:string|null; payment_intent?:string|null;
@@ -37,6 +37,7 @@ export async function createStripeCheckout(info:{
 }) {
  const {mode}=requireStripe();
  const upFront=info.plan==="ANUAL_AVISTA";
+ const flexible=info.plan==="MENSAL";
  if(!upFront && info.method!=="CARD")throw new Error("Assinatura mensal exige cartão.");
  if(upFront && info.method==="PIX" && !stripePixEnabled())
   throw new Error("Pix Stripe ainda não habilitado para esta conta.");
