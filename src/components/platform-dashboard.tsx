@@ -55,6 +55,16 @@ export function PlatformDashboard() {
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setBusy(null);}
   }
+  async function prepare(item:Request){
+    setBusy(item.id);setError("");
+    try{
+      const response=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
+      const body=await response.json() as {error?:string};
+      if(!response.ok)throw new Error(body.error??"Não foi possível preparar o ambiente.");
+      await load();
+    }catch(e){setError(e instanceof Error?e.message:"Erro ao preparar empresa.");}
+    finally{setBusy(null);}
+  }
   async function toggleAccount(account: Account) {
     setBusy(account.id); setError("");
     try {
@@ -161,6 +171,7 @@ export function PlatformDashboard() {
               className="w-full rounded-xl border border-input bg-background p-3 text-sm text-foreground"/>
           </label>
           <div className="mt-5 flex flex-wrap gap-2">
+            {item.status==="APROVADO" && <button disabled={busy===item.id} onClick={()=>void prepare(item)} className="rounded-xl border border-primary/50 px-3 py-2 text-xs font-semibold disabled:opacity-50">Preparar banco exclusivo</button>}
             <button disabled={busy===item.id} onClick={()=>void change(item,"EM_ANALISE")} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Em análise</button>
             <button disabled={busy===item.id} onClick={()=>void change(item,"APROVADO")} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"><Check size={14}/> Aprovar análise</button>
             <button disabled={busy===item.id} onClick={()=>void change(item,"REJEITADO")} className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><X size={14}/> Rejeitar</button>
