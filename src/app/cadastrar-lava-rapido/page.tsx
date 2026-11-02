@@ -181,11 +181,11 @@ export default function CadastroEmpresaPage() {
                 <div className="flex items-start gap-3">
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
-                    <h3 id="condicoes-comerciais" className="text-base font-bold">Escolha seu plano anual</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">As duas opções incluem 12 meses de uso. O pagamento pela Stripe será disponibilizado após a aprovação e a preparação do seu ambiente exclusivo.</p>
+                    <h3 id="condicoes-comerciais" className="text-base font-bold">Escolha seu plano</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Planos mensais ou anuais. Após aprovação, o pagamento será processado na Stripe.</p>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Condição de pagamento do plano anual">
+                <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Escolha um plano">
                   <label className={`cursor-pointer rounded-xl border p-4 transition-colors ${planoPagamento === "ANUAL_MENSAL" ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
                     <span className="flex items-center gap-2 text-sm font-semibold">
                       <input type="radio" name="planoPagamento" value="ANUAL_MENSAL" checked={planoPagamento === "ANUAL_MENSAL"} onChange={()=>escolherPlano("ANUAL_MENSAL")} className="accent-yellow-400"/>
