@@ -3,7 +3,7 @@ import {timingSafeEqual} from "node:crypto";
 import {processOneProvisioningJob} from "@/lib/saas/provisioning-worker";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
-export const maxDuration=60;
+export const maxDuration=300;
 export async function GET(request:NextRequest){
  const secret=process.env.CRON_SECRET;
  const bearer=request.headers.get("authorization")?.replace(/^Bearer /,"")??"";

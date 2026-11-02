@@ -10,5 +10,5 @@ test("bootstrap só funciona uma vez, via admin legado autenticado e senha forte
  assert.match(src,/pg_advisory_xact_lock/);
  assert.match(src,/count\(\*\)::int/);
  assert.match(src,/await hash\(password,12\)/);
- assert.doesNotMatch(src,/default.*password/i);
+ assert.doesNotMatch(src,/password\s*=\s*["\x27][^"\x27]+["\x27]/);
 });

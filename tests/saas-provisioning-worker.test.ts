@@ -1,7 +1,10 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {tenantMigrations,splitTenantSql} from "../src/lib/saas/tenant-migrations";
+import {tenantMigrationsPart1} from "../src/lib/saas/tenant-migration-data-part1";
+import {tenantMigrationsPart2} from "../src/lib/saas/tenant-migration-data-part2";
+import {splitTenantSql} from "../src/lib/saas/tenant-sql-parser";
+const tenantMigrations=[...tenantMigrationsPart1,...tenantMigrationsPart2];
 test("instruções SQL preservam aspas e ignoram comentários",()=>{
  assert.deepEqual(splitTenantSql("SELECT 'a;b';-- comment;\n SELECT \"x;y\";"),["SELECT 'a;b'","-- comment;\n SELECT \"x;y\""]);
 });
