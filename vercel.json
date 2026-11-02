@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/saas-expiry",
       "schedule": "5 * * * *"
+    },
+    {
+      "path": "/api/cron/saas-notifications",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
