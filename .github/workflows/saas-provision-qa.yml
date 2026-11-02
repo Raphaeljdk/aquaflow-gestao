@@ -1,0 +1,29 @@
+name: Provisionar tenant SaaS (QA protegido)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provision-qa:
+    runs-on: ubuntu-latest
+    environment: saas-qa
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: node scripts/saas-provision-worker.mjs
+        env:
+          SAAS_QA_MODE: 'true'
+          CONTROL_DATABASE_URL: ${{ secrets.SAAS_QA_CONTROL_DATABASE_URL }}
+          NEON_ORG_API_KEY: ${{ secrets.NEON_ORG_API_KEY }}
+          TENANT_DB_ENCRYPTION_KEY: ${{ secrets.TENANT_DB_ENCRYPTION_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFICATION_FROM_EMAIL: ${{ vars.NOTIFICATION_FROM_EMAIL }}
+          SAAS_APP_URL: ${{ vars.SAAS_APP_URL }}
