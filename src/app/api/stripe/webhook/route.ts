@@ -63,7 +63,7 @@ async function confirmMonthly(invoiceId:string) {
   const existing=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE stripe_subscription_id=${subId} AND status='PAID' AND plan_code='MONTHLY'`;
-  if((existing[0]?.qty??0)>=12) {
+  if(annualContract && (existing[0]?.qty??0)>=12) {
     const repeated=await db.$queryRaw<Array<{qty:number}>>`
      SELECT count(*)::integer AS qty FROM platform_billing_charges
      WHERE provider='STRIPE' AND external_reference=${invoice.id} AND status='PAID'
@@ -88,14 +88,15 @@ async function confirmMonthly(invoiceId:string) {
   return {...result,count:count[0]?.qty??0};
  });
  // Twelve monthly invoices complete this contract. Prevent a silent 13th charge.
- if(outcome.count>=12) await stopSubscriptionAfter12(subId);
+ if(annualContract && outcome.count>=12) await stopSubscriptionAfter12(subId);
  return outcome;
 }
 async function finishCheckout(sessionId:string){
  const session=await loadCheckout(sessionId);
  if(session.mode==="payment")return confirmUpfront(sessionId);
  if(session.mode==="subscription" && session.subscription && typeof session.subscription==="string")
-  await ensureTwelveMonthSubscriptionTerm(session.subscription);
+  if((await loadSubscription(session.subscription)).metadata?.plan_code==="ANNUAL_MONTHLY")
+   await ensureTwelveMonthSubscriptionTerm(session.subscription);
  if(session.mode==="subscription" && session.payment_status==="paid" && session.metadata?.charge_id){
   const id=session.metadata.charge_id;
   if(isUuid(id)){
