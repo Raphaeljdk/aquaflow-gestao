@@ -29,7 +29,7 @@ async function confirmUpfront(sessionId:string) {
    throw new Error("Cobrança não corresponde ao estabelecimento.");
   return recordVerifiedSettlement(db,chargeId,{
    provider:"STRIPE",externalReference:chargeId,paymentId:payment.id,
-   receivedCents:79000,settledAt:new Date(payment.created*1000),verifiedWithProvider:true
+   receivedCents:79000,settledAt:new Date(),verifiedWithProvider:true
   });
  });
 }

@@ -34,6 +34,10 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     const r=rows[0];
     if(!r || r.state!=="READY" || r.owners<1)
       throw new BusinessError("Aguardando ativação e proprietário validado.",409);
+    const current=await tx.$queryRaw<Array<{state:string;paid_through:Date|null}>>`
+      SELECT state,paid_through FROM platform_entitlements WHERE tenant_id=${id}::uuid`;
+    if(current[0]?.state==="ACTIVE" && current[0].paid_through && current[0].paid_through>new Date())
+      throw new BusinessError("Assinatura ativa: não gerar cobrança duplicada.",409);
     const duplicates=await tx.$queryRaw<Array<{qty:number}>>`
       SELECT count(*)::integer AS qty FROM platform_billing_charges
       WHERE tenant_id=${id}::uuid AND provider='STRIPE' AND status='PENDING'

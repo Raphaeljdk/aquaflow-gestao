@@ -7,6 +7,6 @@ test("licença vencida remove dados da interface e não simula checkout bancári
  assert.match(store,/res\.status === 423/);
  assert.match(store,/setData\(null\)/);
  assert.match(store,/window\.location\.replace\("\/assinatura/);
- assert.match(page,/cobrança automática ainda está em homologação/);
+ assert.match(page,/integração Stripe ainda está em homologação/);
  assert.match(page,/R\$ 790/);
 });
