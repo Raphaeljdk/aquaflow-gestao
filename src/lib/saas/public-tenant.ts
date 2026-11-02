@@ -20,7 +20,7 @@ export async function withPublicTenant<T>(request:Request,fn:(db:PrismaClient)=>
   }>>`SELECT t.state,t.neon_project_id,t.encrypted_database_url,e.state AS license_state,
       e.trial_started_at,e.trial_ends_at,e.paid_through,e.grace_ends_at
     FROM platform_tenants t LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
-    WHERE t.slug=${slug} LIMIT 1`));
+    WHERE t.slug=${slug} LIMIT 1`);
   const t=rows[0];
   if(!t||t.state!=="READY"||!t.neon_project_id||!t.encrypted_database_url||!t.license_state)
     throw new BusinessError("Agendamento indisponível.",404);

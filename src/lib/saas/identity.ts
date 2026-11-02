@@ -52,7 +52,7 @@ async function records(db: PrismaClient, emailOrId: string, byId: boolean, slug?
     LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
     WHERE ${filter} ${whereSlug}
     ORDER BY t.id LIMIT 3
-  `,...slug?[emailOrId,slug]:[emailOrId]);
+  `,...(slug?[emailOrId,slug]:[emailOrId]));
 }
 function userFrom(row: RecordRow): TenantSessionUser {
   return {id:row.id,name:row.full_name,email:row.email,role:mapRole(row.platform_role),
@@ -81,11 +81,14 @@ export async function validateSaasSession(identityId:string,tenantId:string): Pr
 }
 export type TenantConnection = {
   id:string; state:"READY"; neonProjectId:string; encryptedDatabaseUrl:string;
+  entitlement: Entitlement;
 };
 export async function resolveSaasConnection(identityId:string,tenantId:string):Promise<TenantConnection> {
   const rows=await withControlPlane(db=>records(db,identityId,true));
   const row=rows.find(r=>r.tenant_id===tenantId);
   validateAccess(row);
   return {id:row!.tenant_id,state:"READY",neonProjectId:row!.neon_project_id!,
-    encryptedDatabaseUrl:row!.encrypted_database_url!};
+    encryptedDatabaseUrl:row!.encrypted_database_url!,
+    entitlement:{state:row!.license_state!,trialStartedAt:row!.trial_started_at,
+      trialEndsAt:row!.trial_ends_at,paidThrough:row!.paid_through,graceEndsAt:row!.grace_ends_at}};
 }
