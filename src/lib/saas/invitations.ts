@@ -78,6 +78,15 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
       SELECT state,paid_through FROM platform_entitlements WHERE tenant_id=$1::uuid FOR UPDATE
     `,item.tenant_id);
     const paid=paidRows[0]?.state==="ACTIVE" && !!paidRows[0]?.paid_through && paidRows[0].paid_through>new Date();
+    if(!paid){
+      const trialAudit=await tx.$queryRawUnsafe<Array<{qty:number}>>(`
+        SELECT count(*)::integer AS qty FROM platform_audit_events
+        WHERE tenant_id=$1::uuid AND
+          (action='qa_trial_requested' OR
+           (action='saas_signup_requested' AND metadata->>'kind'='TESTE_7_DIAS'))
+      `,item.tenant_id);
+      if(!trialAudit[0]?.qty)throw new BusinessError("Contrato exige pagamento antes da criação do acesso.",409);
+    }
     const activated=paid?[]:await tx.$queryRawUnsafe<Array<{trial_ends_at:Date}>>(`
       UPDATE platform_entitlements
       SET state='TRIAL',trial_started_at=now(),trial_ends_at=now()+INTERVAL '168 hours',updated_at=now()
