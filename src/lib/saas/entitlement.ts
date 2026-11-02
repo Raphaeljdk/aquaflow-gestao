@@ -60,7 +60,7 @@ export class LicenseAccessError extends Error {
 
 /** A settlement is accepted only after a server-side authenticated query to the provider. */
 export type VerifiedSettlement = Readonly<{
-  provider: "INTER_PIX" | "CARD_PROCESSOR";
+  provider: "INTER_PIX" | "CARD_PROCESSOR" | "STRIPE";
   externalReference: string;
   paymentId: string;
   receivedCents: number;
