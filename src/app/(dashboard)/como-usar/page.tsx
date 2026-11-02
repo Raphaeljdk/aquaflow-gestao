@@ -52,10 +52,7 @@ const botaoBase =
 
 export default function ComoUsarPage() {
   const { data, user } = useStore();
-  const video = data?.configuracao.manualVideoUrl ?? "";
   const pdf = data?.configuracao.manualPdfUrl || "/api/manual";
-  const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
-  const descriptId = video.match(/^https:\/\/share\.descript\.com\/view\/([a-zA-Z0-9]+)(?:[/?#]|$)/)?.[1];
 
   return (
     <main className="mx-auto w-full max-w-[1480px] space-y-8 px-4 pb-12 pt-5 sm:px-6 sm:pt-7 lg:px-8">
@@ -122,7 +119,7 @@ export default function ComoUsarPage() {
                   Uma visão direta das principais funções: atendimentos, comandas, agendamentos, estoque, equipe e suporte.
                 </p>
               </div>
-              <div className="overflow-hidden rounded-2xl border border-border bg-black">
+              <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
                 <video
                   controls playsInline preload="metadata"
                   className="aspect-video w-full bg-black object-contain"
@@ -151,7 +148,7 @@ export default function ComoUsarPage() {
                   Entenda o fluxo de atendimento, a vistoria, as abas de gestão e como abrir e acompanhar chamados.
                 </p>
               </div>
-              <div className="overflow-hidden rounded-2xl border border-border bg-black">
+              <div className="overflow-hidden rounded-2xl border border-border bg-black shadow-[0_8px_30px_rgba(0,0,0,0.18)]">
                 <video
                   controls playsInline preload="metadata"
                   className="aspect-video w-full bg-black object-contain"
@@ -168,17 +165,17 @@ export default function ComoUsarPage() {
         </div>
       </section>
 
-      <section aria-label="Materiais e suporte" className="grid gap-4 md:grid-cols-2">
+      <section aria-label="Materiais e suporte" className="grid gap-4 lg:grid-cols-3">
         <article className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex items-start gap-4">
             <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary"><FileText size={22} /></span>
             <div className="space-y-1.5">
               <h2 className="text-lg font-bold">Manual em PDF</h2>
-              <p className="text-sm leading-6 text-muted-foreground">Consulte os procedimentos com calma, sempre que tiver alguma dúvida sobre o sistema.</p>
+              <p className="text-sm leading-6 text-muted-foreground">Consulte o material completo com orientações de uso do sistema.</p>
             </div>
           </div>
           <a href={pdf} target="_blank" rel="noopener noreferrer"
-            className={botaoBase + " w-full border border-border bg-background hover:bg-muted sm:w-fit"}>
+            className={botaoBase + " w-full border border-border bg-background hover:bg-muted"}>
             <FileText size={17} /> Abrir manual em PDF <ExternalLink size={15} />
           </a>
         </article>
@@ -187,42 +184,26 @@ export default function ComoUsarPage() {
             <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary"><LifeBuoy size={22} /></span>
             <div className="space-y-1.5">
               <h2 className="text-lg font-bold">Suporte e chamados</h2>
-              <p className="text-sm leading-6 text-muted-foreground">Encontrou um problema? Abra um chamado, descreva a situação e acompanhe as respostas.</p>
+              <p className="text-sm leading-6 text-muted-foreground">Abra um chamado e acompanhe o retorno da equipe de suporte.</p>
             </div>
           </div>
-          <a href="/suporte" className={botaoBase + " w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-fit"}>
-            <LifeBuoy size={17} /> Abrir suporte e chamados <ArrowRight size={15} />
+          <a href="/suporte" className={botaoBase + " w-full bg-primary text-primary-foreground hover:bg-primary/90"}>
+            <LifeBuoy size={17} /> Abrir suporte <ArrowRight size={15} />
+          </a>
+        </article>
+        <article className="flex min-w-0 flex-col justify-between gap-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="flex items-start gap-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary"><BookOpen size={22} /></span>
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-bold">Resumo rápido</h2>
+              <p className="text-sm leading-6 text-muted-foreground">Assista ao vídeo curto primeiro e use o treinamento completo quando quiser se aprofundar.</p>
+            </div>
+          </div>
+          <a href="#treinamentos" className={botaoBase + " w-full border border-border bg-background hover:bg-muted"}>
+            <PlayCircle size={17} /> Voltar aos vídeos
           </a>
         </article>
       </section>
-
-      {video && (
-        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6" aria-label="Treinamento adicional do estabelecimento">
-          <div className="mb-4 space-y-1.5">
-            <h2 className="flex items-center gap-2 text-lg font-bold"><PlayCircle size={20} className="text-primary" /> Vídeo adicional do estabelecimento</h2>
-            <p className="text-sm text-muted-foreground">Material complementar configurado pelo responsável do lava-rápido.</p>
-          </div>
-          <div className="max-w-2xl space-y-3">
-            {videoId ? (
-              <iframe title="Vídeo: como usar o sistema"
-                src={"https://www.youtube-nocookie.com/embed/" + videoId}
-                loading="lazy" allowFullScreen
-                className="aspect-video w-full rounded-xl border border-border bg-black"
-                referrerPolicy="strict-origin-when-cross-origin" />
-            ) : descriptId ? (
-              <iframe title="Treinamento adicional Ducha Elitte no Descript"
-                src={"https://share.descript.com/embed/" + descriptId}
-                loading="lazy" allowFullScreen
-                className="aspect-video w-full rounded-xl border border-border bg-black"
-                referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen" />
-            ) : null}
-            <a href={video} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4">
-              <ExternalLink size={16} /> Abrir vídeo adicional
-            </a>
-          </div>
-        </section>
-      )}
 
       <section id="modulos" className="scroll-mt-24 space-y-5">
         <div className="space-y-1.5">
@@ -230,10 +211,10 @@ export default function ComoUsarPage() {
           <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">O que faz cada aba do sistema</h2>
           <p className="text-sm leading-6 text-muted-foreground">Consulte rapidamente a finalidade de cada área da Ducha Elitte.</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {modulos.map((item) => (
             <article key={item.titulo}
-              className="flex min-w-0 items-start gap-3.5 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/50 sm:p-5">
+              className="flex min-w-0 items-start gap-3.5 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md sm:p-5">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                 <item.icone size={20} aria-hidden="true" />
               </span>
@@ -267,7 +248,7 @@ export default function ComoUsarPage() {
 
       {user?.role === "ADMIN" && (
         <p className="rounded-xl border border-border bg-card p-4 text-xs leading-5 text-muted-foreground">
-          Administrador: para trocar materiais adicionais, acesse Configurações → Como usar, informe os links HTTPS e salve. Os dois treinamentos oficiais continuam disponíveis para a equipe.
+          Administrador: para personalizar o manual em PDF, acesse Configurações → Como usar. Os dois treinamentos oficiais permanecem disponíveis para a equipe.
         </p>
       )}
     </main>
