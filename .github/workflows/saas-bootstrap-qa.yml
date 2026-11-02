@@ -1,0 +1,35 @@
+name: Bootstrap gestor SaaS (QA protegido)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saas-qa-admin-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap-qa:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: saas-qa
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run db:generate
+      - run: node --check scripts/saas-bootstrap-admin.mjs
+      - name: Criar operador central QA, sem alterar base de producao
+        run: node scripts/saas-bootstrap-admin.mjs
+        env:
+          SAAS_QA_MODE: 'true'
+          CONTROL_DATABASE_URL: ${{ secrets.SAAS_QA_CONTROL_DATABASE_URL }}
+          SAAS_QA_ADMIN_EMAIL: ${{ secrets.SAAS_QA_ADMIN_EMAIL }}
+          SAAS_QA_ADMIN_PASSWORD: ${{ secrets.SAAS_QA_ADMIN_PASSWORD }}
