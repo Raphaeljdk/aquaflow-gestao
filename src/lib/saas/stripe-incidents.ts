@@ -34,7 +34,7 @@ export async function processStripeIncident(db:PrismaClient,eventId:string,type:
  }else if(type==="customer.subscription.deleted"){
   const sub=await loadSubscription(resourceId);
   if(sub.status!=="canceled"||!uuid(sub.metadata?.tenant_id??"")||
-     sub.metadata?.plan_code!=="ANNUAL_MONTHLY")return {status:"NOT_APPLICABLE" as const};
+     !["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(sub.metadata?.plan_code??""))return {status:"NOT_APPLICABLE" as const};
   tenantId=sub.metadata!.tenant_id;detail=sub.id;
   const check=await db.$queryRaw<Array<{qty:number}>>`
    SELECT count(*)::integer AS qty FROM platform_billing_charges
