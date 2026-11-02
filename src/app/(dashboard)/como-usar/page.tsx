@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, ExternalLink, FileText, PlayCircle, ShieldCheck } from "lucide-react";
+import { BookOpen, ExternalLink, FileText, LifeBuoy, PlayCircle, ShieldCheck } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 
 const modulos = [
@@ -13,6 +13,7 @@ const modulos = [
   { titulo: "Faturamento", texto: "Acompanhe totais e recebimentos registrados nas comandas." },
   { titulo: "Configurações", texto: "Altere a logo interna, os dados da empresa e os horários." },
   { titulo: "Como usar", texto: "Acesse este guia e os materiais de treinamento." },
+  { titulo: "Suporte e chamados", texto: "Abra um chamado, descreva o problema e acompanhe as respostas da gestão da plataforma." },
 ];
 const etapas = [
   { titulo: "Receber um veículo", texto: "Abra uma nova comanda, escolha carro ou moto e informe o cliente e os serviços." },
@@ -32,28 +33,37 @@ export default function ComoUsarPage() {
       <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Como usar o sistema</h1>
       <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Treinamento rápido para trabalhar com comandas, vistorias e agendamentos sem complicação.</p>
     </header>
-    <section className="space-y-4 rounded-2xl border border-primary/30 bg-card p-4 sm:p-6" aria-label="Treinamento oficial ilustrado">
+    <section className="space-y-5 rounded-2xl border border-primary/30 bg-card p-4 sm:p-6" aria-label="Vídeos oficiais de treinamento da Ducha Elitte">
       <div className="space-y-2">
-        <h2 className="flex items-center gap-2 text-xl font-bold"><PlayCircle size={22} className="text-primary"/> Treinamento operacional Ducha Elitte</h2>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Guia narrado e ilustrado de 6 minutos e 23 segundos: acesso, atendimento, comandas, vistoria,
-          agenda, estoque, equipe, relatórios, configurações e suporte. O vídeo mostra orientações
-          gerais, não uma demonstração atualizada de cada clique.
-        </p>
+        <h2 className="flex items-center gap-2 text-xl font-bold"><PlayCircle size={22} className="text-primary"/> Treinamento Ducha Elitte</h2>
+        <p className="text-sm leading-6 text-muted-foreground">Assista aos vídeos com narração humanizada para conhecer as abas do sistema, realizar atendimentos e solicitar suporte.</p>
       </div>
-      <iframe title="Vídeo de treinamento operacional da Ducha Elitte"
-        src="https://share.descript.com/embed/v3pWHD1uqeQ"
-        loading="lazy" allowFullScreen
-        className="aspect-video w-full rounded-xl border border-border bg-black"
-        referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen"/>
-      <a href="https://share.descript.com/view/v3pWHD1uqeQ" target="_blank" rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4">
-        <ExternalLink size={16}/> Abrir treinamento em nova aba
-      </a>
+      <article className="space-y-3">
+        <div>
+          <h3 className="font-semibold">Comece aqui — Guia rápido (32 segundos)</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">Uma apresentação prática de visão geral, clientes, comandas, agenda, estoque, serviços, funcionários, faturamento e suporte.</p>
+        </div>
+        <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
+          src="https://zbpfvd9tctfhm3g8.public.blob.vercel-storage.com/ducha-elitte/treinamento/ducha_elitte_guia_rapido_todas_abas.mp4"
+          aria-label="Guia rápido Ducha Elitte com narração profissional em português brasileiro">
+          Seu navegador não suporta reprodução de vídeos.
+        </video>
+      </article>
+      <article className="space-y-3 border-t border-border pt-5">
+        <div>
+          <h3 className="font-semibold">Treinamento completo (1 minuto e 48 segundos)</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">Explica com mais detalhes cada aba, o fluxo de atendimento e como abrir e acompanhar chamados.</p>
+        </div>
+        <video controls playsInline preload="metadata" className="aspect-video w-full rounded-xl border border-border bg-black"
+          src="https://zbpfvd9tctfhm3g8.public.blob.vercel-storage.com/ducha-elitte/treinamento/ducha_elitte_treinamento_abas_suporte_chamados.mp4"
+          aria-label="Treinamento completo Ducha Elitte com narração profissional em português brasileiro">
+          Seu navegador não suporta reprodução de vídeos.
+        </video>
+      </article>
     </section>
     <div className="grid gap-4 md:grid-cols-2">
       <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><PlayCircle size={20} className="text-primary"/> Vídeo explicativo</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><PlayCircle size={20} className="text-primary"/> Vídeo adicional do estabelecimento</h2>
         {video ? <div className="space-y-3">
           {videoId ? <iframe title="Vídeo: como usar o sistema" src={"https://www.youtube-nocookie.com/embed/" + videoId}
             loading="lazy" allowFullScreen className="aspect-video w-full rounded-xl border border-border" referrerPolicy="strict-origin-when-cross-origin" /> : descriptId
@@ -65,7 +75,7 @@ export default function ComoUsarPage() {
             <ExternalLink size={16}/> Abrir vídeo completo
           </a>
         </div> :
-          <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">Vídeo ainda não disponibilizado. O administrador pode adicionar o link em Configurações → Como usar.</p>}
+          <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">Sem vídeo adicional configurado. O administrador pode adicionar um link em Configurações → Como usar.</p>}
       </section>
       <section className="min-w-0 rounded-2xl border border-border bg-card p-5">
         <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><FileText size={20} className="text-primary"/> Manual em PDF</h2>
@@ -92,6 +102,7 @@ export default function ComoUsarPage() {
         <h3 className="font-bold">{etapa.titulo}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{etapa.texto}</p>
       </article>)}</div>
     </section>
-    {user?.role==="ADMIN" && <p className="text-xs text-muted-foreground">Para trocar os materiais, acesse Configurações → Como usar, informe os links HTTPS e salve.</p>}
+    <a href="/suporte" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"><LifeBuoy size={17} className="text-primary"/> Precisa de ajuda? Abrir suporte e chamados <ExternalLink size={14}/></a>
+    {user?.role==="ADMIN" && <p className="text-xs text-muted-foreground">Para trocar materiais adicionais, acesse Configurações → Como usar, informe os links HTTPS e salve.</p>}
   </main>;
 }
