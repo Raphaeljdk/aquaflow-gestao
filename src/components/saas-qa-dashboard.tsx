@@ -3,7 +3,7 @@ import {useCallback,useEffect,useState} from "react";
 import {signOut} from "next-auth/react";
 type Pilot={
  id:string;slug:string;provisionamento:string;licenca:string|null;usuariosAtivos:number;
- bancoConfigurado:boolean;testeJaIniciado:boolean;testeExpiraEm:string|null;aptoParaTeste:boolean;
+ bancoConfigurado:boolean;testeJaIniciado:boolean;testeExpiraEm:string|null;aptoParaTeste:boolean;stripeHabilitada:boolean;stripePixHabilitado:boolean;
 };
 export function SaasQaDashboard(){
  const [tenants,setTenants]=useState<Pilot[]>([]);
@@ -22,6 +22,18 @@ export function SaasQaDashboard(){
   finally{setLoading(false)}
  },[]);
  useEffect(()=>{void load()},[load]);
+ async function checkout(p:Pilot,plan:"ANUAL_MENSAL"|"ANUAL_AVISTA",method:"CARD"|"PIX"){
+  setBusy(p.id);setError("");setMessage("");
+  try{
+   const res=await fetch("/api/plataforma/saas/pilotos/"+encodeURIComponent(p.id)+"/checkout",{
+    method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan,method})});
+   const json=await res.json() as {url?:string;error?:string};
+   if(!res.ok||!json.url)throw new Error(json.error??"Não foi possível gerar link.");
+   await navigator.clipboard.writeText(json.url);
+   setMessage("Link de CHECKOUT DE TESTE da Stripe copiado. Envie somente para o proprietário validado; nenhuma cobrança real foi iniciada.");
+  }catch(e){setError(e instanceof Error?e.message:"Erro no checkout de teste.");}
+  finally{setBusy(null)}
+ }
  async function perform(p:Pilot,action:"aprovar"|"convidar"){
   setBusy(p.id);setError("");setMessage("");
   try{
@@ -72,6 +84,14 @@ export function SaasQaDashboard(){
         <button disabled={busy===p.id} onClick={()=>void perform(p,"convidar")}
           className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">Gerar convite ao proprietário</button>}
       {p.aptoParaTeste&&<span className="rounded-xl border px-4 py-2 text-xs font-semibold">Conta preparada para validação</span>}
+      {p.provisionamento==="READY"&&p.usuariosAtivos>0&&p.stripeHabilitada&&<>
+        <button disabled={busy===p.id} onClick={()=>void checkout(p,"ANUAL_MENSAL","CARD")}
+          className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Stripe teste: 12x R$ 80 no crédito</button>
+        <button disabled={busy===p.id} onClick={()=>void checkout(p,"ANUAL_AVISTA","CARD")}
+          className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Stripe teste: R$ 790 crédito 1x</button>
+        {p.stripePixHabilitado&&<button disabled={busy===p.id} onClick={()=>void checkout(p,"ANUAL_AVISTA","PIX")}
+          className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Stripe teste: R$ 790 Pix</button>}
+      </>}
     </div>
   </article>)}</div>}
  </main>

@@ -13,7 +13,7 @@ export const solicitacaoEmpresaSchema = z.object({
   cienteCondicoesComerciais: z.boolean().default(false),
   modalidadeCadastro: z.enum(["CONTRATACAO", "TESTE_7_DIAS"]).default("CONTRATACAO"),
   planoPagamento: z.enum(["ANUAL_MENSAL", "ANUAL_AVISTA"]).default("ANUAL_MENSAL"),
-  metodoPagamento: z.enum(["CARTAO_DEBITO", "PIX_INTER", "CARTAO_CREDITO_1X"]).default("CARTAO_DEBITO"),
+  metodoPagamento: z.enum(["CARTAO_CREDITO_RECORRENTE", "PIX_STRIPE", "CARTAO_CREDITO_1X"]).default("CARTAO_CREDITO_RECORRENTE"),
   site: z.string().max(100).default(""),
 }).superRefine((data, context) => {
   if (data.modalidadeCadastro === "TESTE_7_DIAS") return;
@@ -21,8 +21,8 @@ export const solicitacaoEmpresaSchema = z.object({
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["cienteCondicoesComerciais"], message: "Confirme as condições comerciais antes de contratar." });
   }
   const valido = data.planoPagamento === "ANUAL_MENSAL"
-    ? data.metodoPagamento === "CARTAO_DEBITO"
-    : data.metodoPagamento === "PIX_INTER" || data.metodoPagamento === "CARTAO_CREDITO_1X";
+    ? data.metodoPagamento === "CARTAO_CREDITO_RECORRENTE"
+    : data.metodoPagamento === "PIX_STRIPE" || data.metodoPagamento === "CARTAO_CREDITO_1X";
   if (!valido) context.addIssue({ code: z.ZodIssueCode.custom, path: ["metodoPagamento"], message: "Forma de pagamento indisponível para este plano." });
 });
 export const decisaoSolicitacaoSchema = z.object({

@@ -16,6 +16,10 @@ export async function GET() {
         testeJaIniciado: Boolean(t.trial_started_at),
         testeExpiraEm: t.trial_ends_at,
         aptoParaTeste: t.state === "READY" && t.has_database && t.members > 0,
+        stripeHabilitada: process.env.STRIPE_BILLING_ENABLED === "true" &&
+          process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true &&
+          process.env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") === true,
+        stripePixHabilitado: process.env.STRIPE_PIX_ENABLED === "true",
       })),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {

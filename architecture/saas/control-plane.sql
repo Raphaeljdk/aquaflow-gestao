@@ -46,9 +46,11 @@ CREATE TABLE IF NOT EXISTS platform_billing_charges (
  status TEXT NOT NULL DEFAULT 'PENDING'
    CHECK(status IN ('PENDING','PAID','EXPIRED','CANCELED','REFUNDED')),
  paid_at TIMESTAMPTZ, provider_payment_id TEXT,
+ stripe_subscription_id TEXT,
  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
  UNIQUE(provider,external_reference)
 );
+CREATE INDEX IF NOT EXISTS platform_stripe_subscription_idx ON platform_billing_charges(stripe_subscription_id,status);
 CREATE TABLE IF NOT EXISTS platform_billing_events (
  provider TEXT NOT NULL, external_event_id TEXT NOT NULL,
  event_hash TEXT NOT NULL,
