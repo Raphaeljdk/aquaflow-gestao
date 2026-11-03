@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/saas-provision",
-      "schedule": "*/10 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/saas-expiry",
@@ -14,7 +14,7 @@
     },
     {
       "path": "/api/cron/saas-notifications",
-      "schedule": "*/5 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/saas-legacy-link",
