@@ -3,6 +3,7 @@ import {requirePlatformAdmin} from "@/lib/platform-admin";
 import {withControlPlane} from "@/lib/saas/control-plane";
 import {apiError} from "@/lib/api";
 import {adminOnboardingMode} from "@/lib/saas/admin-onboarding-mode";
+import {stripeBillingReadiness} from "@/lib/saas/billing-readiness";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const PAGE_SIZE=25;
@@ -17,13 +18,16 @@ export async function GET(request:NextRequest){
   const q=new URL(request.url).searchParams;
   const mode=q.get("mode")==="accounts"?"accounts":"companies";
   const search=(q.get("search")??"").trim().toLowerCase().slice(0,80);
-  const filter=["all","attention","provisioning","ready","active"].includes(q.get("filter")??"")
+  const filter=["all","attention","provisioning","ready","active","archived"].includes(q.get("filter")??"")
     ? q.get("filter")!:"all";
   const page=Math.min(10000,Math.max(1,Number.parseInt(q.get("page")??"1",10)||1));
   const offset=(page-1)*PAGE_SIZE;
   const result=await withControlPlane(async db=>{
-   const stats=await db.$queryRaw<Array<{total:number;ready:number;live:number;action:number}>>`
-    SELECT count(*)::int AS total,
+   const stats=await db.$queryRaw<Array<{total:number;ready:number;live:number;action:number;archived:number}>>`
+    SELECT count(*) FILTER(WHERE NOT(t.state='SUSPENDED' AND EXISTS(
+        SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id AND a.action='tenant_archived')))::int AS total,
+      count(*) FILTER(WHERE t.state='SUSPENDED' AND EXISTS(
+        SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id AND a.action='tenant_archived'))::int AS archived,
       count(*) FILTER(WHERE t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL)::int AS ready,
       count(*) FILTER(WHERE t.state='READY'
         AND t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL
@@ -49,7 +53,11 @@ export async function GET(request:NextRequest){
       WHERE ($1::text='' OR lower(t.display_name) LIKE '%'||$1||'%'
         OR lower(t.owner_email) LIKE '%'||$1||'%'
         OR lower(t.slug) LIKE '%'||$1||'%')
-      AND ($2::text='all'
+      AND (($2::text='archived' AND t.state='SUSPENDED' AND EXISTS(
+           SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id AND a.action='tenant_archived'))
+        OR ($2<>'archived' AND NOT(t.state='SUSPENDED' AND EXISTS(
+           SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id AND a.action='tenant_archived'))))
+      AND ($2::text IN ('all','archived')
         OR ($2='attention' AND (t.state='ERROR'
           OR (t.state='PROVISIONING' AND t.neon_project_id IS NULL
             AND t.created_at<now()-INTERVAL '45 minutes'
@@ -108,7 +116,7 @@ export async function GET(request:NextRequest){
         'owner_invitation_queued','owner_invite_recovery_requested',
         'owner_email_verified_provisioning_queued','owner_invite_activated',
         'self_service_trial_started_after_db_ready','trial_activated_qa',
-        'notification_send_failed','tenant_provisioning_failed')
+        'notification_send_failed','tenant_provisioning_failed','tenant_archived')
       ORDER BY a.created_at DESC LIMIT 250`,ids):[];
     return {tenants,accounts:[],events,totalMatched:found[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
    }
@@ -136,6 +144,8 @@ export async function GET(request:NextRequest){
       WHERE NOT EXISTS(SELECT 1 FROM platform_memberships m
         JOIN platform_identities i ON i.id=m.identity_id
         WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled)
+        AND NOT(t.state='SUSPENDED' AND EXISTS(
+          SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id AND a.action='tenant_archived'))
     ) a WHERE ($1::text='' OR lower(a.name) LIKE '%'||$1||'%'
       OR lower(a.email) LIKE '%'||$1||'%'
       OR lower(COALESCE(a."tenantName",'')) LIKE '%'||$1||'%')`;
@@ -148,7 +158,8 @@ export async function GET(request:NextRequest){
       search,PAGE_SIZE,offset);
    return {tenants:[],accounts,events:[],totalMatched:matched[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
   });
-  return NextResponse.json({...result,adminOnboardingEnabled:adminOnboardingMode(process.env)},
+  return NextResponse.json({...result,adminOnboardingEnabled:adminOnboardingMode(process.env),
+    billingReadiness:stripeBillingReadiness(process.env)},
     {headers:{"Cache-Control":"private,no-store"}});
  }catch(error){return apiError(error);}
 }
