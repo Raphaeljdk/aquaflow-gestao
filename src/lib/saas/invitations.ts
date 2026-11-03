@@ -51,7 +51,9 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
       FOR UPDATE OF v,t
     `,digest);
     const item=rows[0];
-    if(!item || item.state!=="READY" || !item.db_ready || item.role!=="OWNER")
+    const pending=!!item && item.state==="PENDING" && !item.db_ready;
+    const ready=!!item && item.state==="READY" && item.db_ready;
+    if(!item || item.role!=="OWNER" || (!pending && !ready))
       throw new BusinessError("Convite expirado ou estabelecimento indisponível.",409);
     const exists=await tx.$queryRawUnsafe<Array<{id:string}>>(`
       SELECT id::text FROM platform_identities WHERE lower(email)=lower($1) LIMIT 1
@@ -74,6 +76,32 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
       INSERT INTO platform_memberships(tenant_id,identity_id,role)
       VALUES($1::uuid,$2::uuid,'OWNER')
     `,item.tenant_id,identityId);
+    if(pending) {
+      // The invitation proves email ownership; only now create the expensive Neon job.
+      const signup=await tx.$queryRawUnsafe<Array<{qty:number}>>(`
+        SELECT count(*)::integer AS qty FROM platform_audit_events
+        WHERE tenant_id=$1::uuid AND action='saas_signup_requested'
+      `,item.tenant_id);
+      if(!signup[0]?.qty)throw new BusinessError("Cadastro não verificado.",409);
+      const updated=await tx.$queryRawUnsafe<Array<{id:string}>>(`
+        UPDATE platform_tenants SET state='PROVISIONING',updated_at=now()
+        WHERE id=$1::uuid AND state='PENDING' AND neon_project_id IS NULL
+          AND encrypted_database_url IS NULL RETURNING id::text
+      `,item.tenant_id);
+      if(!updated.length)throw new BusinessError("Cadastro alterado durante ativação.",409);
+      await tx.$executeRawUnsafe(`
+        INSERT INTO platform_provisioning_jobs(tenant_id,idempotency_key,state)
+        VALUES($1::uuid,$2,'PENDING') ON CONFLICT(tenant_id) DO NOTHING
+      `,item.tenant_id,"neon-tenant:"+item.tenant_id);
+      await tx.$executeRawUnsafe(`
+        UPDATE platform_invitations SET used_at=now() WHERE id=$1::uuid
+      `,item.id);
+      await tx.$executeRawUnsafe(`
+        INSERT INTO platform_audit_events(tenant_id,actor_identity_id,action)
+        VALUES($1::uuid,$2::uuid,'owner_email_verified_provisioning_queued')
+      `,item.tenant_id,identityId);
+      return {activated:true,provisioning:true,paid:false,trialEndsAt:null};
+    }
     const paidRows=await tx.$queryRawUnsafe<Array<{state:string;paid_through:Date|null}>>(`
       SELECT state,paid_through FROM platform_entitlements WHERE tenant_id=$1::uuid FOR UPDATE
     `,item.tenant_id);
@@ -99,6 +127,6 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
       INSERT INTO platform_audit_events(tenant_id,actor_identity_id,action)
       VALUES($1::uuid,$2::uuid,'owner_invite_activated')
     `,item.tenant_id,identityId);
-    return {activated:true,paid,trialEndsAt:activated[0]?.trial_ends_at??null};
+    return {activated:true,provisioning:false,paid,trialEndsAt:activated[0]?.trial_ends_at??null};
   });
 }
