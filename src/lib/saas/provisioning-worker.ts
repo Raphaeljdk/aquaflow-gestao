@@ -74,15 +74,21 @@ export async function processOneProvisioningJob(tenantFilter?:string) {
    await queueOwnerInvitation(tx,tenantId,"TRIAL");
   }));
   return {processed:true,ready:true};
- }catch{
+ }catch(error){
+  // Persist only a strictly whitelisted diagnostic code, never provider details or secrets.
+  const detail=error instanceof Error?error.message:"";
+  const match=detail.match(/^neon_(?:inventory_http|create_http)_([0-9]{3})$/);
+  const code=match?detail:
+   ["neon_project_exists_manual_reconciliation_required","neon_inventory_invalid","neon_inventory_incomplete"].includes(detail)
+    ?detail:"manual_reconciliation_required";
   // Retain encrypted URL/project ID on failure; no automatic retries of an unknown POST outcome.
   await withControlPlane(db=>db.$transaction(async tx=>{
    await tx.$executeRaw`UPDATE platform_tenants SET state='ERROR',updated_at=now()
      WHERE id=${tenantId}::uuid AND state='PROVISIONING'`;
-   await tx.$executeRaw`UPDATE platform_provisioning_jobs SET state='ERROR',last_error='manual_reconciliation_required'
+   await tx.$executeRaw`UPDATE platform_provisioning_jobs SET state='ERROR',last_error=${code}
      WHERE id=${jobId}::uuid AND state='RUNNING'`;
    await tx.$executeRaw`INSERT INTO platform_audit_events(tenant_id,action,metadata)
-     VALUES(${tenantId}::uuid,'tenant_provisioning_failed','{"requires_manual_review":true}'::jsonb)`;
+     VALUES(${tenantId}::uuid,'tenant_provisioning_failed',${JSON.stringify({requires_manual_review:true,code})}::jsonb)`;
   }));
   return {processed:true,ready:false,manualReview:true};
  }
