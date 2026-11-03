@@ -60,8 +60,7 @@ export function SaasQaDashboard(){
     </div>
   </div>
   <div className="rounded-xl border p-4 text-sm text-muted-foreground">
-    Aprovar somente estabelecimentos autorizados. O provisionamento roda em worker protegido; nenhum banco novo é criado pelo navegador.
-    O teste de 168 horas só é iniciado após o proprietário aceitar o convite e criar sua senha.
+    O proprietário cria a senha pelo link enviado automaticamente. Após confirmar o e-mail, o worker prepara um banco Neon exclusivo e inicia os 7 dias gratuitos somente quando estiver pronto.
   </div>
   {message&&<p role="status" className="rounded-xl border p-4 text-sm">{message}</p>}
   {error&&<p role="alert" className="rounded-xl border border-destructive p-4 text-sm text-destructive">{error}</p>}
@@ -77,12 +76,9 @@ export function SaasQaDashboard(){
     </dl>
     {p.testeExpiraEm&&<p className="text-sm">Fim do teste: {new Date(p.testeExpiraEm).toLocaleString("pt-BR")}</p>}
     <div className="flex flex-wrap gap-2">
-      {p.provisionamento==="PENDING"&&
-        <button disabled={busy===p.id} onClick={()=>void perform(p,"aprovar")}
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">Aprovar e provisionar</button>}
       {p.provisionamento==="READY"&&p.licenca==="PENDING"&&p.usuariosAtivos===0&&
         <button disabled={busy===p.id} onClick={()=>void perform(p,"convidar")}
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">Gerar convite ao proprietário</button>}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">Recuperar convite (suporte)</button>}
       {p.aptoParaTeste&&<span className="rounded-xl border px-4 py-2 text-xs font-semibold">Conta preparada para validação</span>}
       {p.provisionamento==="READY"&&p.usuariosAtivos>0&&p.stripeHabilitada&&<>
         <button disabled={busy===p.id} onClick={()=>void checkout(p,"ANUAL_MENSAL","CARD")}
