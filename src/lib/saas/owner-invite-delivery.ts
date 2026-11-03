@@ -1,6 +1,6 @@
 import "server-only";
 import {decryptInvitationLink} from "./secure-owner-invites";
-export type OwnerInviteNotice={channel:"EMAIL"|"WHATSAPP";recipient:string;payload?:{encryptedUrl?:string}};
+export type OwnerInviteNotice={channel:"EMAIL"|"WHATSAPP";recipient:string;payload?:{encryptedUrl?:string;reason?:string}};
 export function ownerInviteChannelReady(channel:"EMAIL"|"WHATSAPP") {
  if(channel==="EMAIL")return Boolean(process.env.RESEND_API_KEY && process.env.NOTIFICATION_FROM_EMAIL);
  return Boolean(process.env.WHATSAPP_BUSINESS_TOKEN && process.env.WHATSAPP_PHONE_ID &&
@@ -15,8 +15,11 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
    body:JSON.stringify({
     from:process.env.NOTIFICATION_FROM_EMAIL,to:[n.recipient],
     subject:"Ducha Elitte | Crie sua senha de acesso",
-    text:"Seu ambiente Ducha Elitte está pronto. Use o link seguro para criar sua senha em até 48 horas:\n"+url+
-    "\n\nSe você não reconhece essa contratação, ignore este e-mail."
+    text:n.payload?.reason==="SIGNUP" ?
+      "Recebemos seu cadastro na Ducha Elitte. Confirme seu e-mail e crie sua senha pelo link seguro (válido por 48 horas):\n"+url+
+      "\n\nDepois disso, seu banco exclusivo será preparado automaticamente. O teste grátis só começa quando ele estiver pronto. Não há cobrança nesta etapa.\n\nSe não foi você, ignore este e-mail." :
+      "Seu ambiente Ducha Elitte está pronto. Use o link seguro para criar sua senha em até 48 horas:\n"+url+
+      "\n\nSe você não reconhece essa solicitação, ignore este e-mail."
    }),signal:AbortSignal.timeout(12000)
   });
   if(!response.ok)throw new Error("Falha ao enviar convite por e-mail.");
