@@ -4,10 +4,10 @@ import Link from "next/link";
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,Database,Loader2,Mail,RefreshCw,ShieldCheck,TriangleAlert} from "lucide-react";
 
 type Progress={name:string;trial:boolean;tenantId:string|null;state:string;jobState:string|null;
- hasDatabase:boolean;invitationQueued:boolean;invitationSent:boolean;invitationFailed:boolean};
+ hasDatabase:boolean;invitationQueued:boolean;invitationSent:boolean;invitationFailed:boolean;canRecover?:boolean};
 export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;autoStart:boolean}){
  const [status,setStatus]=useState<Progress|null>(null);
- const [loading,setLoading]=useState(true),[starting,setStarting]=useState(false);
+ const [loading,setLoading]=useState(true),[starting,setStarting]=useState(false),[recovering,setRecovering]=useState(false);
  const [error,setError]=useState("");
  const started=useRef(false);
  const endpoint="/api/plataforma/solicitacoes/"+encodeURIComponent(requestId)+"/preparar";
@@ -27,6 +27,17 @@ export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;auto
   }catch(e){setError(e instanceof Error?e.message:"Falha na implantação.");try{await refresh()}catch{}}
   finally{setStarting(false)}
  },[endpoint,refresh]);
+ const recover=useCallback(async()=>{
+   if(!window.confirm("Reenviar um novo link seguro ao e-mail cadastrado? O link anterior será invalidado. Nenhum banco será recriado."))return;
+   setRecovering(true);setError("");
+   try{
+     const response=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(requestId)+"/recuperar-convite",{method:"POST"});
+     const body=await response.json() as {error?:string;queued?:boolean};
+     if(!response.ok||!body.queued)throw new Error(body.error||"Não foi possível recuperar o convite.");
+     await refresh();
+   }catch(e){setError(e instanceof Error?e.message:"Falha ao recuperar convite.");}
+   finally{setRecovering(false)}
+ },[requestId,refresh]);
  useEffect(()=>{
   let mounted=true;
   void refresh().catch(e=>{if(mounted)setError(e instanceof Error?e.message:"Falha ao carregar.")})
@@ -63,6 +74,10 @@ export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;auto
      {(state==="NOT_STARTED"||state==="PENDING")&&!loading&&
       <button type="button" disabled={starting} onClick={()=>void begin()} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
        {starting?<Loader2 size={17} className="animate-spin"/>:<Database size={17}/>} {starting?"Preparando...":"Preparar banco"} <ArrowRight size={16}/></button>}
+     {ready&&status?.canRecover&&<button type="button" disabled={recovering} onClick={()=>void recover()}
+      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary/50 px-4 py-2 text-sm font-semibold text-primary disabled:opacity-50">
+      {recovering?<Loader2 size={16} className="animate-spin"/>:<Mail size={16}/>}
+      {recovering?"Solicitando reenvio...":"Recuperar convite por e-mail"}</button>}
      {state==="PROVISIONING"&&<span className="inline-flex items-center gap-2 text-sm text-muted-foreground"><Clock3 size={16}/> {starting?"Processando":"Provisionamento em andamento"}</span>}
      {ready&&<span className="self-center text-sm font-semibold text-primary">Banco exclusivo pronto</span>}
      {failed&&<span className="self-center text-sm font-semibold text-destructive">Revisão manual necessária</span>}
