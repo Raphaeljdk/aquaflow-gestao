@@ -93,7 +93,7 @@ export async function completePasswordReset(token:string,password:string){
  if(result.kind==="LEGACY"){
    const changed=await prisma.user.updateMany({where:{id:result.id,ativo:true},data:{password:passwordHash}});
    if(changed.count!==1)throw new BusinessError("Conta indisponível. Solicite outro link ou procure o suporte.",409);
-   await prisma.loginAttempt.deleteMany({where:{key:digest(result.id)}});
+
  }
  return {changed:true};
 }
