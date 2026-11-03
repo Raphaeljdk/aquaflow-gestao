@@ -12,6 +12,7 @@ declare module "next-auth" {
       tenantId?: string;
       tenantSlug?: string;
       platformOperator?: boolean;
+      passwordVersion?: string;
     };
   }
   interface User {
@@ -20,6 +21,7 @@ declare module "next-auth" {
     tenantId?: string;
     tenantSlug?: string;
       platformOperator?: boolean;
+      passwordVersion?: string;
   }
 }
 declare module "next-auth/jwt" {
@@ -29,5 +31,6 @@ declare module "next-auth/jwt" {
     tenantId?: string;
     tenantSlug?: string;
       platformOperator?: boolean;
+      passwordVersion?: string;
   }
 }
