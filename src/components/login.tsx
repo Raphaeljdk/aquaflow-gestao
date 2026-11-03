@@ -54,7 +54,7 @@ export function Login() {
     try {
       const result = await signIn("credentials", { ...values, tenantSlug: tenantSlug.trim(), redirect: false });
       if (!result?.ok || result.error) {
-        setError("E-mail ou senha inválidos. Confira os dados e tente novamente. Após muitas tentativas, aguarde 15 minutos.");
+        setError("Não foi possível entrar. Confira seus dados. Se ainda não criou sua senha, use Primeiro acesso; se esqueceu, recupere por e-mail. Após muitas tentativas, aguarde 15 minutos.");
         return;
       }
       const session = await getSession();
