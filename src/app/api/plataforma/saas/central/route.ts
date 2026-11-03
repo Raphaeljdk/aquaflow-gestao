@@ -31,6 +31,10 @@ export async function GET(request:NextRequest){
           JOIN platform_identities i ON i.id=m.identity_id
           WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled))::int AS live,
       count(*) FILTER(WHERE t.state='ERROR'
+        OR (t.state='PROVISIONING' AND t.neon_project_id IS NULL
+          AND t.created_at<now()-INTERVAL '45 minutes'
+          AND EXISTS(SELECT 1 FROM platform_provisioning_jobs j
+            WHERE j.tenant_id=t.id AND j.state='PENDING' AND j.attempts=0))
         OR EXISTS(SELECT 1 FROM platform_provisioning_jobs j WHERE j.tenant_id=t.id AND j.state='ERROR')
         OR (NOT EXISTS(SELECT 1 FROM platform_memberships m
               JOIN platform_identities i ON i.id=m.identity_id
@@ -46,6 +50,10 @@ export async function GET(request:NextRequest){
         OR lower(t.slug) LIKE '%'||$1||'%')
       AND ($2::text='all'
         OR ($2='attention' AND (t.state='ERROR'
+          OR (t.state='PROVISIONING' AND t.neon_project_id IS NULL
+            AND t.created_at<now()-INTERVAL '45 minutes'
+            AND EXISTS(SELECT 1 FROM platform_provisioning_jobs j
+              WHERE j.tenant_id=t.id AND j.state='PENDING' AND j.attempts=0))
           OR EXISTS(SELECT 1 FROM platform_provisioning_jobs j WHERE j.tenant_id=t.id AND j.state='ERROR')
           OR (NOT EXISTS(SELECT 1 FROM platform_memberships m JOIN platform_identities i ON i.id=m.identity_id
             WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled)
