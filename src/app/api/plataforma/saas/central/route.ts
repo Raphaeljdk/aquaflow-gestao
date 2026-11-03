@@ -56,7 +56,7 @@ export async function GET(request:NextRequest){
         OR ($2='active' AND t.state='READY' AND e.state IN ('TRIAL','ACTIVE','GRACE')
           AND t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL
           AND EXISTS(SELECT 1 FROM platform_memberships m JOIN platform_identities i ON i.id=m.identity_id
-            WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled))))`;
+            WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled)))`;
     const found=await db.$queryRawUnsafe<Array<{quantity:number}>>(
      `SELECT count(*)::integer AS quantity FROM platform_tenants t
        LEFT JOIN platform_entitlements e ON e.tenant_id=t.id ${where}`,search,filter);
