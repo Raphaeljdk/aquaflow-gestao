@@ -7,7 +7,7 @@ import {queueOwnerInvitation} from "./secure-owner-invites";
 
 /** Claim only a PENDING job; stalled RUNNING is inspected manually to avoid duplicate Neon projects. */
 export async function processOneProvisioningJob(tenantFilter?:string) {
- if(tenantFilter && !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(tenantFilter))
+ if(tenantFilter && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantFilter))
    throw new Error("Identificador de empresa inválido.");
  const claimed=await withControlPlane(db=>db.$transaction(async tx=>{
   const rows=await tx.$queryRaw<Array<{id:string;tenant_id:string}>>`
