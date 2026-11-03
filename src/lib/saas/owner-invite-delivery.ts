@@ -11,19 +11,19 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
  const url=decryptInvitationLink(n.payload?.encryptedUrl??"");
  const isSignup=n.payload?.reason==="SIGNUP";
  // The only HTML interpolation is a validated, decrypted official HTTPS invite URL.
- const html=\`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head>
+ const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head>
  <body style="margin:0;padding:32px 16px;background:#090909;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif">
  <main style="max-width:530px;margin:auto;padding:32px;border:1px solid #313131;border-radius:18px;background:#151515">
  <p style="font-size:12px;letter-spacing:2px;font-weight:bold;color:#facc15">DUCHA ELITTE</p>
  <h1 style="font-size:26px;line-height:1.25;color:#fff">Crie sua senha de acesso</h1>
- <p style="font-size:15px;line-height:1.7;color:#d4d4d4">\${isSignup?
+ <p style="font-size:15px;line-height:1.7;color:#d4d4d4">${isSignup?
    "Recebemos seu cadastro! Confirme seu e-mail criando sua senha. Depois disso, vamos preparar automaticamente o banco exclusivo do seu lava-rápido.":
    "Seu ambiente está pronto. Defina uma senha segura para começar a usar o sistema."}</p>
- <p style="margin:30px 0"><a href="\${url}" style="display:inline-block;padding:15px 26px;border-radius:10px;background:#facc15;color:#111;font-size:15px;text-decoration:none;font-weight:bold">Criar minha senha</a></p>
+ <p style="margin:30px 0"><a href="${url}" style="display:inline-block;padding:15px 26px;border-radius:10px;background:#facc15;color:#111;font-size:15px;text-decoration:none;font-weight:bold">Criar minha senha</a></p>
  <p style="font-size:13px;line-height:1.6;color:#a3a3a3">Este link é individual e válido por 48 horas. O teste grátis só começa quando o ambiente estiver pronto. Nenhuma cobrança é feita nesta etapa.</p>
  <hr style="border:0;border-top:1px solid #333;margin:24px 0">
  <p style="font-size:12px;line-height:1.6;color:#888">Se você não fez este cadastro, ignore esta mensagem.</p>
- </main></body></html>\`;
+ </main></body></html>`;
  if(n.channel==="EMAIL"){
   const response=await fetch("https://api.resend.com/emails",{
    method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},
