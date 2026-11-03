@@ -16,6 +16,8 @@ function authorized(req:NextRequest) {
 /** One durable claim per message. Unknown send outcomes require manual review, not duplicate messages. */
 export async function GET(req:NextRequest) {
  if(!authorized(req))return NextResponse.json({error:"Não autorizado."},{status:401});
+ if(process.env.SAAS_QA_MODE!=="true" && process.env.SAAS_PRODUCTION_MODE!=="true")
+  return NextResponse.json({processed:false,disabled:true},{status:503});
  if(!notificationsConfigured() && !ownerInviteChannelReady("EMAIL") && !ownerInviteChannelReady("WHATSAPP"))
   return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
  try {
