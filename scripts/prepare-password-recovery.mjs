@@ -2,7 +2,7 @@ import {PrismaClient} from "@prisma/client";
 export async function preparePasswordRecovery(){
  if(process.env.VERCEL_ENV!=="production")return;
  const central=process.env.CONTROL_DATABASE_URL;
- const operational=process.env.DATABASE_URL;
+ const operational=process.env.DATABASE_URL??process.env.NEON_DATABASE_URL??process.env.POSTGRES_PRISMA_URL??process.env.POSTGRES_URL;
  if(!central||!operational)throw new Error("Recuperação: conexões obrigatórias ausentes.");
  const a=new URL(central),b=new URL(operational);
  if(a.hostname===b.hostname)throw new Error("Recuperação: controle central e banco operacional devem ser isolados.");
