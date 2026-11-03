@@ -6,6 +6,7 @@ import { deliverOwnerInvite,ownerInviteChannelReady } from "@/lib/saas/owner-inv
 import { ResendDeliveryError } from "@/lib/saas/resend-diagnostics";
 import {publicSignupMode} from "@/lib/saas/public-signup-mode";
 import {inviteRecoveryMode} from "@/lib/saas/invite-recovery";
+import {licenseNotificationsMode} from "@/lib/saas/license-notifications-mode";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -19,7 +20,7 @@ function authorized(req:NextRequest) {
 export async function GET(req:NextRequest) {
  if(!authorized(req))return NextResponse.json({error:"Não autorizado."},{status:401});
  if(process.env.SAAS_QA_MODE!=="true" && process.env.SAAS_PRODUCTION_MODE!=="true" &&
-    !publicSignupMode(process.env) && !inviteRecoveryMode(process.env))
+    !publicSignupMode(process.env) && !inviteRecoveryMode(process.env) && !licenseNotificationsMode(process.env))
   return NextResponse.json({processed:false,disabled:true},{status:503});
  if(!notificationsConfigured() && !ownerInviteChannelReady("EMAIL") && !ownerInviteChannelReady("WHATSAPP"))
   return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
@@ -27,7 +28,9 @@ export async function GET(req:NextRequest) {
   const result=await withControlPlane(async db=>{
    const publicOnly=publicSignupMode(process.env);
    const recoveryOnly=inviteRecoveryMode(process.env);
-   const restricted=publicOnly || recoveryOnly;
+   const licenseOnly=licenseNotificationsMode(process.env);
+   const restricted=(publicOnly || recoveryOnly || licenseOnly) &&
+     process.env.SAAS_PRODUCTION_MODE!=="true" && process.env.SAAS_QA_MODE!=="true";
    const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string;reason?:string}}>>`
       SELECT o.id::text,o.channel,o.recipient,o.template_key,o.payload
       FROM platform_notification_outbox o WHERE o.state='PENDING'
@@ -45,7 +48,11 @@ export async function GET(req:NextRequest) {
                 AND EXISTS(SELECT 1 FROM platform_audit_events a
                   WHERE a.tenant_id=o.tenant_id
                     AND a.action='owner_invite_recovery_requested'
-                    AND a.created_at<=o.created_at)))
+                    AND a.created_at<=o.created_at))
+             OR (${licenseOnly}::boolean AND o.channel='EMAIL'
+                AND o.template_key IN ('trial_to_paid_offer','license_status')
+                AND EXISTS(SELECT 1 FROM platform_entitlements e
+                  WHERE e.tenant_id=o.tenant_id AND e.state IN ('EXPIRED','GRACE','SUSPENDED'))))
       ORDER BY o.created_at LIMIT 25
    `;
    let delivered=0,failed=0,skipped=0;
