@@ -1,24 +1,23 @@
 "use client";
-import {useCallback,useEffect,useMemo,useState} from "react";
-import Link from "next/link";
+import {useCallback,useEffect,useState} from "react";
 import {
-  Activity,AlertCircle,ArrowRight,Building2,CheckCircle2,Clock3,Database,
-  ExternalLink,Filter,Loader2,Mail,RefreshCw,Search,ShieldCheck,Users,ChevronDown,
-  KeyRound,ServerCrash,ClipboardList
+  Activity,AlertCircle,Building2,CheckCircle2,Database,
+  Filter,Loader2,Mail,RefreshCw,Search,ShieldCheck,ChevronDown,
+  ServerCrash,ClipboardList
 } from "lucide-react";
 
 type Tenant={
  id:string;name:string;email:string;slug:string;state:string;createdAt:string;
  dbReady:boolean;license:string|null;trialEndsAt:string|null;
  ownerActive:boolean;members:number;jobState:string|null;jobAttempts:number|null;
- inviteStatus:string|null;inviteAt:string|null;signupType:string|null;legacyLinked:boolean;
+ inviteStatus:string|null;inviteAt:string|null;signupType:string|null;
 };
 type Account={
  id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
  tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM";
 };
 type Event={tenantId:string;action:string;createdAt:string};
-type Result={tenants:Tenant[];accounts:Account[];events:Event[]};
+type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number}};
 type FilterValue="all"|"attention"|"provisioning"|"ready"|"active";
 
 const date=(value:string|null)=>value?
@@ -68,35 +67,29 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
  const [updating,setUpdating]=useState(false);
  const [search,setSearch]=useState("");
  const [filter,setFilter]=useState<FilterValue>("all");
+ const [page,setPage]=useState(1);
  const [selected,setSelected]=useState<string|null>(null);
  const [lastRefresh,setLastRefresh]=useState<Date|null>(null);
  const load=useCallback(async()=>{
    setUpdating(true);setError("");
    try{
-    const response=await fetch("/api/plataforma/saas/central",{cache:"no-store"});
+    const query=new URLSearchParams({mode,search:search.trim(),filter,page:String(page)});
+    const response=await fetch("/api/plataforma/saas/central?"+query.toString(),{cache:"no-store"});
     const body=await response.json() as Result & {error?:string};
     if(!response.ok)throw new Error(body.error??"Não foi possível consultar o controle central.");
-    setData({tenants:body.tenants??[],accounts:body.accounts??[],events:body.events??[]});
+    setData(body);
     setLastRefresh(new Date());
    }catch(e){setError(e instanceof Error?e.message:"Falha ao atualizar o banco central.");}
    finally{setUpdating(false);setLoading(false);}
- },[]);
- useEffect(()=>{void load();const timer=setInterval(()=>void load(),60000);return ()=>clearInterval(timer);},[load,refreshKey]);
- const normalized=search.trim().toLocaleLowerCase("pt-BR");
- const tenants=useMemo(()=>data?.tenants??[],[data]);
- const accounts=useMemo(()=>data?.accounts??[],[data]);
- const shown=useMemo(()=>tenants.filter(t=>{
-  const match=!normalized||[t.name,t.email,t.slug,t.signupType].some(v=>v?.toLocaleLowerCase("pt-BR").includes(normalized));
-  const st=stage(t);
-  const attention=st.tone==="danger"||(t.state==="PROVISIONING"&&t.jobState==="ERROR");
-  const category=filter==="all"||filter==="attention"&&attention||filter==="provisioning"&&["PENDING","PROVISIONING"].includes(t.state)||
-    filter==="ready"&&t.dbReady||filter==="active"&&st.label==="Acesso liberado";
-  return match&&category;
- }),[tenants,normalized,filter]);
- const members=useMemo(()=>accounts.filter(a=>!normalized||[a.name,a.email,a.tenantName??"",a.role].some(v=>v.toLocaleLowerCase("pt-BR").includes(normalized))),[accounts,normalized]);
- const statusCounts={total:tenants.length,ready:tenants.filter(t=>t.dbReady).length,
-  live:tenants.filter(t=>stage(t).label==="Acesso liberado").length,
-  action:tenants.filter(t=>stage(t).tone==="danger").length};
+ },[mode,search,filter,page]);
+ useEffect(()=>{const timer=setTimeout(()=>void load(),250);return ()=>clearTimeout(timer);},[load,refreshKey]);
+ useEffect(()=>{const timer=setInterval(()=>void load(),60000);return ()=>clearInterval(timer);},[load]);
+ const shown=data?.tenants??[];
+ const members=data?.accounts??[];
+ const statusCounts=data?.counts??{total:0,ready:0,live:0,action:0};
+ const totalMatched=data?.totalMatched??0;
+ const pageSize=data?.pageSize??25;
+ const totalPages=Math.max(1,Math.ceil(totalMatched/pageSize));
  return <section className="space-y-5" aria-label={mode==="companies"?"Empresas do controle central":"Acessos do controle central"}>
   <div className="flex flex-wrap items-center justify-between gap-3">
    <div>
@@ -128,14 +121,14 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
    <label className="relative flex-1">
     <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
     <span className="sr-only">Buscar {mode==="companies"?"empresas":"usuários"}</span>
-    <input type="search" value={search} onChange={e=>setSearch(e.target.value)}
+    <input type="search" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}
      placeholder={mode==="companies"?"Buscar empresa, e-mail ou código...":"Buscar usuário, e-mail ou empresa..."}
      className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"/>
    </label>
    {mode==="companies"&&<label className="relative flex items-center gap-2">
     <Filter className="text-muted-foreground" size={17}/>
     <span className="sr-only">Filtrar situação</span>
-    <select value={filter} onChange={e=>setFilter(e.target.value as FilterValue)}
+    <select value={filter} onChange={e=>{setFilter(e.target.value as FilterValue);setPage(1);}}
      className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm sm:w-auto">
      <option value="all">Todas as situações</option>
      <option value="attention">Exigem revisão</option>
@@ -152,7 +145,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
   {loading?<p className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><Loader2 size={18} className="animate-spin"/> Consultando empresas e permissões...</p>:
    !data? <Empty title="Dados temporariamente indisponíveis" detail="Tente atualizar; não confunda uma falha de conexão com uma lista de empresas vazia."/>:
    mode==="companies" ? (
-    shown.length===0?<Empty title="Nenhuma empresa neste filtro" detail={tenants.length?"Limpe a busca ou selecione outra situação.":"O controle central ainda não contém empresas cadastradas."}/>:
+    shown.length===0?<Empty title="Nenhuma empresa neste filtro" detail={statusCounts.total?"Limpe a busca ou selecione outra situação.":"O controle central ainda não contém empresas cadastradas."}/>:
     <div className="space-y-3">
      {shown.map(t=>{
       const s=stage(t),open=selected===t.id;
@@ -201,7 +194,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
      })}
     </div>
    ) : (
-    members.length===0?<Empty title="Nenhum acesso encontrado" detail={accounts.length?"Tente outra busca.":"Ainda não existem identidades ativadas no controle central. Os cadastros pendentes estão na aba Empresas."}/>:
+    members.length===0?<Empty title="Nenhum acesso encontrado" detail={search?"Tente outra busca.":"Ainda não existem identidades ativadas no controle central. Os cadastros pendentes estão na aba Empresas."}/>:
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
      <table className="w-full min-w-[650px] text-left text-sm">
       <thead className="bg-muted/70 text-xs text-muted-foreground"><tr>
@@ -216,6 +209,18 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
      </table>
     </div>
    )}
+  {data&&totalMatched>0&&<nav aria-label="Páginas do banco central" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+   <p className="text-muted-foreground">
+    Registros {Math.min((page-1)*pageSize+1,totalMatched)}–{Math.min(page*pageSize,totalMatched)} de {totalMatched}
+   </p>
+   <div className="flex items-center gap-3">
+    <button type="button" disabled={page<=1||updating} onClick={()=>setPage(p=>Math.max(1,p-1))}
+     className="min-h-10 rounded-lg border border-border px-3 font-semibold disabled:opacity-40">Anterior</button>
+    <span className="text-xs font-semibold">{page} / {totalPages}</span>
+    <button type="button" disabled={page>=totalPages||updating} onClick={()=>setPage(p=>p+1)}
+     className="min-h-10 rounded-lg border border-border px-3 font-semibold disabled:opacity-40">Próxima</button>
+   </div>
+  </nav>}
   {data&&<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
    <span><ShieldCheck size={14} className="mr-1 inline"/> Consulta protegida por administrador · dados separados por empresa</span>
    <span>{lastRefresh?"Atualizado às "+lastRefresh.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"Aguardando atualização"} · atualização automática a cada 60 segundos</span>
