@@ -3,7 +3,7 @@ import {useCallback,useEffect,useState} from "react";
 import {
   Activity,AlertCircle,Building2,CheckCircle2,Database,
   Filter,Loader2,Mail,RefreshCw,Search,ShieldCheck,ChevronDown,
-  ServerCrash,ClipboardList
+  ServerCrash,ClipboardList,Archive,ShieldAlert,CreditCard
 } from "lucide-react";
 
 type Tenant={
@@ -17,8 +17,8 @@ type Account={
  tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
-type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number};adminOnboardingEnabled:boolean};
-type FilterValue="all"|"attention"|"provisioning"|"ready"|"active";
+type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number;archived:number};adminOnboardingEnabled:boolean;billingReadiness:{liveConfigurationReady:boolean;pixFlagEnabled:boolean;blockers:string[];checksStillRequired:string[]}};
+type FilterValue="all"|"attention"|"provisioning"|"ready"|"active"|"archived";
 
 const date=(value:string|null)=>value?
  new Date(value).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Não registrado";
@@ -33,8 +33,10 @@ const eventLabels:Record<string,string>={
  trial_activated_qa:"Teste ativado pelo gestor",
  notification_send_failed:"Falha no envio de notificação",
  tenant_provisioning_failed:"Provisionamento exige revisão",
+ tenant_archived:"Cadastro não aprovado arquivado pelo administrador",
 };
 function stage(t:Tenant){
+ if(t.state==="SUSPENDED")return {label:"Arquivado",tone:"neutral" as const};
  const overdue=Date.now()-new Date(t.createdAt).getTime()>45*60*1000;
  if(t.state==="PROVISIONING"&&!t.dbReady&&t.jobState==="PENDING"&&(t.jobAttempts??0)===0&&overdue)
   return {label:"Provisionamento parado",tone:"danger" as const};
@@ -107,9 +109,25 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível concluir.");}
   finally{setBusyTenant(null);}
  }
+ async function archive(t:Tenant){
+  if(!window.confirm("Arquivar este cadastro não aprovado? A empresa desaparecerá da lista principal, mas os identificadores serão mantidos para impedir outro teste. Bancos e contas existentes não serão excluídos."))return;
+  setBusyTenant(t.id);setError("");setActionMessage("");
+  try{
+   const response=await fetch("/api/plataforma/saas/tenants/"+encodeURIComponent(t.id)+"/arquivar",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({confirmation:"ARQUIVAR"})
+   });
+   const body=await response.json() as {error?:string;archived?:boolean};
+   if(!response.ok||!body.archived)throw new Error(body.error??"Arquivamento não autorizado.");
+   setActionMessage("Cadastro incompleto arquivado. Os dados de identificação foram preservados para bloquear novos testes.");
+   setSelected(null);
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:"Não foi possível arquivar.");}
+  finally{setBusyTenant(null);}
+ }
  const shown=data?.tenants??[];
  const members=data?.accounts??[];
- const statusCounts=data?.counts??{total:0,ready:0,live:0,action:0};
+ const statusCounts=data?.counts??{total:0,ready:0,live:0,action:0,archived:0};
  const totalMatched=data?.totalMatched??0;
  const pageSize=data?.pageSize??25;
  const totalPages=Math.max(1,Math.ceil(totalMatched/pageSize));
@@ -140,6 +158,27 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     <p className="mt-3 text-3xl font-black tabular-nums">{loading?"—":value}</p>
    </div>)}
   </div>}
+  {mode==="companies" && data?.billingReadiness && <section className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Situação de pagamentos">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+     <div>
+      <h3 className="flex items-center gap-2 font-bold"><CreditCard size={18}/> Pagamentos Stripe</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+       {data.billingReadiness.liveConfigurationReady?
+        "Configuração de produção presente; ainda é necessário homologar o webhook e a conciliação antes da primeira cobrança.":
+        "Cobrança em produção ainda bloqueada. Nenhuma assinatura é iniciada automaticamente ao terminar o teste."}
+      </p>
+     </div>
+     <span className={"rounded-full border px-3 py-1 text-xs font-bold "+(data.billingReadiness.liveConfigurationReady?
+       "border-amber-500/30 text-amber-700 dark:text-amber-300":"border-red-500/30 text-red-700 dark:text-red-300")}>
+       {data.billingReadiness.liveConfigurationReady?"Aguardando homologação":"Não liberado"}
+     </span>
+    </div>
+    {!data.billingReadiness.liveConfigurationReady && <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+      <ShieldAlert size={17} className="mt-0.5 shrink-0"/>
+      <p>Verificar: {data.billingReadiness.blockers.join(" · ")}</p>
+    </div>}
+    <p className="mt-2 text-xs text-muted-foreground">Pix pela Stripe: {data.billingReadiness.pixFlagEnabled?"flag habilitada — confirmar aprovação na conta":"ainda não habilitado"}.</p>
+   </section>}
   <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
    <label className="relative flex-1">
     <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
@@ -158,6 +197,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
      <option value="provisioning">Em implantação</option>
      <option value="ready">Banco preparado</option>
      <option value="active">Acesso liberado</option>
+     <option value="archived">Arquivados ({statusCounts.archived})</option>
     </select>
    </label>}
   </div>
@@ -225,6 +265,15 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
            {busyTenant===t.id&&<span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={16} className="animate-spin"/> Processando...</span>}
           </div>
         )}
+        {t.state!=="SUSPENDED" && ["PENDING","PROVISIONING"].includes(t.state) && !t.dbReady &&
+          !t.ownerActive && t.members===0 && !t.inviteStatus && t.license==="PENDING" && (t.jobAttempts??0)===0 &&
+          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+           <button type="button" disabled={busyTenant===t.id} onClick={()=>void archive(t)}
+             className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-500/30 px-4 text-sm font-semibold text-red-600 disabled:opacity-50">
+             <Archive size={16}/> Arquivar cadastro incompleto
+           </button>
+           <span className="text-xs text-muted-foreground">A ação é recusada se houver qualquer recurso ou cobrança registrada.</span>
+          </div>}
         <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
          <ShieldCheck size={17}/>
          <span>Consulta somente leitura. As ações de ativação, quando disponíveis, exigem confirmação administrativa e validam o banco antes de executar.</span>
