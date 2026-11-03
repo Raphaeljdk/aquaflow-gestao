@@ -1,5 +1,6 @@
 import "server-only";
-import { randomBytes,createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import { queueOwnerInvitation } from "./secure-owner-invites";
 import type { PrismaClient } from "@prisma/client";
 import { BusinessError } from "@/lib/domain";
 
@@ -9,7 +10,7 @@ export function ownerSlug(displayName:string) {
  if(base.length<3)throw new BusinessError("Nome do estabelecimento inválido.",400);
  return base+"-"+randomBytes(4).toString("hex");
 }
-type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string};
+type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string;originHash?:string};
 export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
  const slug=ownerSlug(info.nomeEmpresa);
  const email=info.email.trim().toLowerCase();
@@ -17,6 +18,16 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
  if(!email.includes("@") || !/^55\d{10,11}$/.test(number))
    throw new BusinessError("E-mail ou WhatsApp inválido.",400);
  return db.$transaction(async tx=>{
+   // Serialize requests from the same contact and IP to prevent parallel resource abuse.
+   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+   if(info.originHash){
+     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${info.originHash}))`;
+     const recent=await tx.$queryRaw<Array<{quantity:number}>>`
+       SELECT count(*)::integer AS quantity FROM platform_audit_events
+       WHERE action='saas_signup_requested' AND metadata->>'ip_hash'=${info.originHash}
+         AND created_at>now()-INTERVAL '24 hours'`;
+     if((recent[0]?.quantity??0)>=3)throw new BusinessError("Limite diário de cadastros atingido.",429);
+   }
    const current=await tx.$queryRaw<Array<{quantity:number}>>`
      SELECT count(*)::integer AS quantity FROM platform_tenants
      WHERE lower(owner_email)=${email} AND created_at>now()-INTERVAL '24 hours'`;
@@ -30,7 +41,9 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
       INSERT INTO platform_entitlements(tenant_id,state) VALUES(${tenantId}::uuid,'PENDING')`;
    await tx.$executeRaw`
       INSERT INTO platform_audit_events(tenant_id,action,metadata)
-      VALUES(${tenantId}::uuid,'saas_signup_requested',${JSON.stringify({source:"website",kind:info.kind??"TESTE_7_DIAS",plan:info.plan??null,method:info.method??null,contactName:info.nomeResponsavel.trim().slice(0,80)})}::jsonb)`;
+      VALUES(${tenantId}::uuid,'saas_signup_requested',${JSON.stringify({source:"website",kind:info.kind??"TESTE_7_DIAS",plan:info.plan??null,method:info.method??null,contactName:info.nomeResponsavel.trim().slice(0,80),ip_hash:info.originHash??null})}::jsonb)`;
+   // The invitation verifies ownership of the email BEFORE any Neon project is created.
+   await queueOwnerInvitation(tx,tenantId,"SIGNUP");
    return {id:tenantId,slug};
  });
 }
