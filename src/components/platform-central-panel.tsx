@@ -35,6 +35,9 @@ const eventLabels:Record<string,string>={
  tenant_provisioning_failed:"Provisionamento exige revisão",
 };
 function stage(t:Tenant){
+ const overdue=Date.now()-new Date(t.createdAt).getTime()>45*60*1000;
+ if(t.state==="PROVISIONING"&&!t.dbReady&&t.jobState==="PENDING"&&(t.jobAttempts??0)===0&&overdue)
+  return {label:"Provisionamento parado",tone:"danger" as const};
  if(t.state==="ERROR"||t.jobState==="ERROR")return {label:"Revisão técnica",tone:"danger" as const};
  if(t.inviteStatus==="ERROR" && !t.ownerActive)return {label:"Falha no convite",tone:"danger" as const};
  if(t.state==="PROVISIONING")return {label:t.dbReady?"Migração em andamento":"Preparando banco",tone:"warning" as const};
