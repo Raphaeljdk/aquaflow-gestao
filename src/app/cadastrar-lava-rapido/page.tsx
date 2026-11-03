@@ -29,6 +29,15 @@ export default function CadastroEmpresaPage() {
   const [cnpjErro, setCnpjErro] = useState(false);
   const [cnpjDados, setCnpjDados] = useState<DadosPublicosCnpj | null>(null);
   const [success, setSuccess] = useState(false);
+  const [automatic, setAutomatic] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  useEffect(() => {
+    const controller=new AbortController();
+    fetch("/api/public/cadastro-status",{cache:"no-store",signal:controller.signal})
+      .then(r=>r.ok?r.json() as Promise<{automatic:boolean}>:null)
+      .then(data=>setAutomatic(Boolean(data?.automatic))).catch(()=>{});
+    return ()=>controller.abort();
+  }, []);
   const [error, setError] = useState("");
   function edit(key: keyof Fields, value: string) {
     setForm(v => ({ ...v, [key]: value }));
@@ -78,8 +87,9 @@ export default function CadastroEmpresaPage() {
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({...form, modalidadeCadastro, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais: trial ? false : cienteCondicoesComerciais}),
       });
-      const data = await response.json() as {error?:string};
+      const data = await response.json() as {error?:string;message?:string};
       if(!response.ok) {setError(data.error || "Não foi possível enviar.");return;}
+      setSuccessMessage(data.message??"Cadastro registrado. Confira o andamento pelo suporte.");
       setSuccess(true);
     } catch {setError("Falha de conexão. Tente novamente.");}
     finally {setBusy(false);}
@@ -101,22 +111,23 @@ export default function CadastroEmpresaPage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider"><Building2 size={15}/> Para proprietários</div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Seu lava-rápido com gestão profissional.</h1>
           <p className="text-base leading-8 text-muted-foreground">
-            {trial ? "Experimente 7 dias grátis. Após o cadastro, você recebe um e-mail para criar a senha e o sistema prepara seu ambiente exclusivo automaticamente." :
-              "Cadastre seu lava-rápido e receba um e-mail para criar a senha. A preparação do ambiente acontece sem precisar de aprovação manual."}
+            {automatic ? (trial ? "Experimente 7 dias grátis. Após o cadastro, você recebe um e-mail para criar a senha e o sistema prepara seu ambiente exclusivo automaticamente." :
+              "Cadastre seu lava-rápido e receba um e-mail para criar a senha. A preparação do ambiente acontece sem precisar de aprovação manual.") :
+              "Solicite acesso ao ERP. A criação automática do banco e o envio da senha ainda estão em ativação neste ambiente. Você será informado sobre a liberação do acesso."}
           </p>
           <div className="space-y-3 text-sm">
-            {(trial ? ["Preencha o cadastro sem cartão e sem pagamento","Confirme seu e-mail e crie sua senha pelo link seguro","Seu banco exclusivo é criado automaticamente; 7 dias após ficar pronto"] :
-              ["Cadastre os dados da empresa e do proprietário","Receba o link seguro e crie sua senha","Banco exclusivo automático; acesso pago após pagamento confirmado"]).map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
+            {(automatic ? (trial ? ["Preencha o cadastro sem cartão e sem pagamento","Confirme seu e-mail e crie sua senha pelo link seguro","Banco exclusivo automático; 7 dias após ficar pronto"] :
+              ["Cadastre os dados da empresa e do proprietário","Receba o link seguro e crie sua senha","Banco exclusivo automático; acesso pago após pagamento confirmado"]) :
+              ["Preencha os dados do estabelecimento e proprietário","Acompanhe a preparação do ambiente exclusivo","Seu teste só começa quando o banco estiver validado e você tiver acesso"]).map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
           </div>
-          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> O cadastro não gera cobrança. O banco exclusivo só será preparado após você confirmar seu e-mail; os dados de outros estabelecimentos continuam isolados.</p>
+          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> O cadastro não gera cobrança. {automatic?"O banco exclusivo só será preparado após confirmação do e-mail.":"Acesso e ambiente exclusivo dependem de ativação operacional segura."} Os dados de outros estabelecimentos continuam isolados.</p>
         </section>
         <section className="rounded-3xl border border-border bg-card p-5 shadow-lg sm:p-8">
           {success ? <div role="status" className="space-y-5 py-12 text-center">
             <CheckCircle2 size={52} className="mx-auto text-primary"/>
             <h2 className="text-2xl font-bold">{trial ? "Cadastro realizado!" : "Cadastro recebido!"}</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              {trial ? "Confira seu e-mail: enviaremos um link seguro para criar sua senha. Depois da confirmação, seu banco exclusivo será preparado automaticamente. Os 7 dias só começam quando o ambiente estiver pronto." :
-                "Confira seu e-mail: enviaremos um link seguro para criar sua senha. Seu banco exclusivo será preparado após a confirmação; o acesso pago depende da confirmação do pagamento."}
+              {successMessage}
             </p>
             <Link href="/login" className="inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Voltar ao início</Link>
           </div> : <>
