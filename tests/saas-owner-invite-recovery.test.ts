@@ -42,3 +42,16 @@ test("tela reflete último envio, não marca erro permanente, e oferece recupera
  assert.match(ui,/recuperar-convite/);
  assert.match(ui,/method:"POST"/);
 });
+
+test("recuperação automática é uma única tentativa, exige cron autenticado e não recria banco",()=>{
+ const cron=read("src/app/api/cron/saas-recover-invites/route.ts");
+ const v=JSON.parse(read("vercel.json")) as {crons:Array<{path:string;schedule:string}>};
+ assert.ok(v.crons.some(c=>c.path==="/api/cron/saas-recover-invites"));
+ assert.match(cron,/CRON_SECRET/);
+ assert.match(cron,/inviteRecoveryMode\(process.env\)/);
+ assert.match(cron,/owner_invite_recovery_requested/);
+ assert.match(cron,/provider_message_id IS NOT NULL/);
+ assert.match(cron,/LIMIT 2/);
+ assert.match(cron,/recoverFailedOwnerInvite/);
+ assert.doesNotMatch(cron,/createNeonTenantProject|resend\.com\/emails|platform_tenants SET/);
+});
