@@ -30,8 +30,8 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
    }
    const current=await tx.$queryRaw<Array<{quantity:number}>>`
      SELECT count(*)::integer AS quantity FROM platform_tenants
-     WHERE lower(owner_email)=${email} AND created_at>now()-INTERVAL '24 hours'`;
-   if((current[0]?.quantity??0)>0)throw new BusinessError("Já existe um pedido recente para este contato.",409);
+     WHERE lower(owner_email)=${email}`;
+   if((current[0]?.quantity??0)>0)throw new BusinessError("Este e-mail já possui um estabelecimento cadastrado. Recupere seu convite pelo suporte em vez de cadastrar outra empresa.",409);
    const rows=await tx.$queryRaw<Array<{id:string}>>`
       INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp)
       VALUES(${slug},${info.nomeEmpresa.trim()},${email},${number})
