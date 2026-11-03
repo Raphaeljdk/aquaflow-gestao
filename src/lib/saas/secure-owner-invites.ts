@@ -33,7 +33,7 @@ export type InviteReason="PAID"|"TRIAL"|"SIGNUP";
 export async function queueOwnerInvitation(tx:Prisma.TransactionClient,tenantId:string,reason:InviteReason) {
  const rows=await tx.$queryRaw<Array<{
   state:string;email:string;phone:string|null;entitlement:string|null;paid_through:Date|null;
-  existing_owner:number;valid_invites:number;is_trial:boolean;is_signup:boolean;
+  existing_owner:number;valid_invites:number;is_trial:boolean;is_signup:boolean;preapproved_pending:boolean;
  }>>`
   SELECT t.state,t.owner_email AS email,t.owner_whatsapp AS phone,
    e.state AS entitlement,e.paid_through,
@@ -45,16 +45,30 @@ export async function queueOwnerInvitation(tx:Prisma.TransactionClient,tenantId:
       AND ((a.action='saas_signup_requested' AND a.metadata->>'kind'='TESTE_7_DIAS')
            OR a.action='qa_trial_requested')) AS is_trial,
    EXISTS(SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id
-      AND a.action='saas_signup_requested') AS is_signup
+      AND a.action='saas_signup_requested') AS is_signup,
+   (
+     t.state='PROVISIONING' AND t.neon_project_id IS NULL
+     AND t.encrypted_database_url IS NULL
+     AND EXISTS(SELECT 1 FROM platform_provisioning_jobs j
+       WHERE j.tenant_id=t.id AND j.state='PENDING' AND j.attempts=0)
+     AND EXISTS(SELECT 1 FROM platform_audit_events a
+       WHERE a.tenant_id=t.id AND a.action='qa_provisioning_approved')
+   ) AS preapproved_pending
   FROM platform_tenants t JOIN platform_entitlements e ON e.tenant_id=t.id
   WHERE t.id=${tenantId}::uuid FOR UPDATE OF t`;
  const t=rows[0];
  if(!t)throw new Error("Empresa não encontrada.");
  if(reason==="SIGNUP"){
-   if(t.state!=="PENDING"||!t.is_signup||t.entitlement!=="PENDING")
+   if(!(t.state==="PENDING"||t.preapproved_pending)||!t.is_signup||t.entitlement!=="PENDING")
      throw new Error("Cadastro não elegível para convite automático.");
  }else if(t.state!=="READY")throw new Error("Empresa ainda não provisionada.");
  if(t.existing_owner>0||t.valid_invites>0)return {queued:false};
+ if(reason==="SIGNUP" && t.preapproved_pending){
+   const recent=await tx.$queryRaw<Array<{n:number}>>`
+     SELECT count(*)::int AS n FROM platform_invitations
+     WHERE tenant_id=${tenantId}::uuid AND created_at>now()-INTERVAL '24 hours'`;
+   if((recent[0]?.n??0)>=3)throw new Error("Limite de convites deste cadastro atingido.");
+ }
  if(reason==="PAID" && (t.entitlement!=="ACTIVE"||!t.paid_through||t.paid_through<=new Date()))
   throw new Error("Licença paga não confirmada.");
  if(reason==="TRIAL" && (!t.is_trial||t.entitlement!=="PENDING"))
