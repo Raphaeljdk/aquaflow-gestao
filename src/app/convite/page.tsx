@@ -29,7 +29,7 @@ export default function ConvitePage(){
     <section className="w-full max-w-md rounded-2xl border border-border bg-card p-6 space-y-5">
       <h1 className="text-2xl font-bold">Ativar acesso ao lava-rápido</h1>
       <p className="text-sm text-muted-foreground">Confirme seu e-mail criando uma senha segura. Cada estabelecimento terá seu próprio banco de dados, e os 7 dias gratuitos só começam quando ele estiver pronto.</p>
-      {done?<div role="status" className="space-y-4"><p>{provisioning?"Senha criada! Estamos preparando seu banco de dados exclusivo automaticamente. Enviaremos um e-mail quando seu acesso estiver pronto. O teste ainda não começou.":"Senha criada com sucesso! Seu acesso está pronto."}</p>
+      {done?<div role="status" className="space-y-4"><p>{provisioning?"Senha criada e e-mail confirmado! Seu ambiente individual está aguardando a preparação final. Enviaremos uma confirmação quando o acesso estiver pronto; nenhum teste ou cobrança começa por essa ação.":"Senha criada com sucesso! Seu acesso está pronto."}</p>
         {!provisioning&&<Link href="/login" className="font-bold underline">Entrar no sistema</Link>}</div>:
       <form onSubmit={submit} className="space-y-4">
         <label className="block text-sm font-medium">Senha (12+ caracteres, letras maiúsculas/minúsculas e número)
