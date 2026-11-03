@@ -14,7 +14,7 @@ test("cadastro público consulta modo real, sem prometer envio quando só há le
 });
 test("cadastro legado diferencia já cadastrado de excesso de rede",()=>{
  const route=read("src/app/api/solicitacoes/route.ts");
- assert.match(route,/solicitacaoEmpresa\.findUnique/);
+ assert.match(route,/solicitacaoEmpresa\\.findFirst/);
  assert.match(route,/limite >= 10/);
  assert.match(route,/Retry-After/);
 });
