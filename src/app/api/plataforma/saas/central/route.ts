@@ -126,6 +126,15 @@ export async function GET(request:NextRequest){
         NULL::text AS "tenantId",NULL::text AS "tenantName",
         NULL::text AS "tenantState",NULL::text AS license,'PLATFORM'::text AS source
       FROM platform_operators p JOIN platform_identities i ON i.id=p.identity_id
+      UNION ALL
+      SELECT t.id::text AS id,t.display_name AS name,t.owner_email AS email,
+        'PENDING_OWNER'::text AS role,false AS enabled,t.id::text AS "tenantId",
+        t.display_name AS "tenantName",t.state AS "tenantState",e.state AS license,
+        'PENDING'::text AS source
+      FROM platform_tenants t LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
+      WHERE NOT EXISTS(SELECT 1 FROM platform_memberships m
+        JOIN platform_identities i ON i.id=m.identity_id
+        WHERE m.tenant_id=t.id AND m.role='OWNER' AND m.enabled AND i.enabled)
     ) a WHERE ($1::text='' OR lower(a.name) LIKE '%'||$1||'%'
       OR lower(a.email) LIKE '%'||$1||'%'
       OR lower(COALESCE(a."tenantName",'')) LIKE '%'||$1||'%')`;
