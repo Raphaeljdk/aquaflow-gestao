@@ -23,10 +23,18 @@ export async function GET(req:NextRequest) {
   return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
  try {
   const result=await withControlPlane(async db=>{
-   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string}}>>`
-      SELECT id::text,channel,recipient,template_key,payload
-      FROM platform_notification_outbox WHERE state='PENDING'
-      ORDER BY created_at LIMIT 25
+   const publicOnly=publicSignupMode(process.env);
+   const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string;reason?:string}}>>`
+      SELECT o.id::text,o.channel,o.recipient,o.template_key,o.payload
+      FROM platform_notification_outbox o WHERE o.state='PENDING'
+        AND (${!publicOnly}::boolean OR
+             (o.template_key='owner_invite' AND o.payload->>'reason'='SIGNUP'
+               AND EXISTS(SELECT 1 FROM platform_audit_events a
+                 WHERE a.tenant_id=o.tenant_id AND a.action='saas_signup_requested')) OR
+             (o.template_key='tenant_ready'
+               AND EXISTS(SELECT 1 FROM platform_audit_events a
+                 WHERE a.tenant_id=o.tenant_id AND a.action='owner_email_verified_provisioning_queued')))
+      ORDER BY o.created_at LIMIT 25
    `;
    let delivered=0,failed=0,skipped=0;
    for(const row of rows) {
