@@ -30,10 +30,24 @@ export async function POST(request: NextRequest) {
     if (!salt) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 });
     const ip = request.headers.get("x-vercel-forwarded-for") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
     const origemHash = createHash("sha256").update(salt + ":" + ip).digest("hex");
+    const existing = await prisma.solicitacaoEmpresa.findUnique({
+      where:{email:body.data.email},select:{id:true}
+    });
+    if(existing)return NextResponse.json({
+      error:"Este e-mail já possui cadastro registrado. Não é necessário preencher novamente. Entre em contato com o suporte para recuperar o acesso."
+    },{status:409});
     const limite = await prisma.solicitacaoEmpresa.count({
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     });
-    if (limite >= 3) return NextResponse.json({ error: "Limite diário de solicitações atingido. Tente novamente amanhã." }, { status: 429 });
+    if (limite >= 10) {
+      const [oldest]=await prisma.solicitacaoEmpresa.findMany({
+        where:{origemHash,createdAt:{gte:new Date(Date.now()-24*60*60*1000)}},
+        orderBy:{createdAt:"asc"},take:1,select:{createdAt:true}
+      });
+      const retryIn=Math.max(60,Math.ceil(((oldest?.createdAt.getTime()??Date.now())+24*60*60*1000-Date.now())/1000));
+      return NextResponse.json({error:"Muitas solicitações desta rede nas últimas 24 horas. Aguarde ou procure o suporte."},
+        {status:429,headers:{"Retry-After":String(retryIn)}});
+    }
     const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial, planoPagamento, metodoPagamento, modalidadeCadastro } = body.data;
     const trial = modalidadeCadastro === "TESTE_7_DIAS";
     const offer = trial ? null : resolvePlatformOffer(planoPagamento, metodoPagamento);
