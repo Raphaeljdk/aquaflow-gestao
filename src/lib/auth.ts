@@ -8,6 +8,7 @@ import { loginSchema } from "./validations";
 import { BusinessError } from "./domain";
 import { saasPilotMode, loginSaas, validateSaasSession, validateSaasOperatorSession } from "./saas/identity";
 import { publicSignupMode } from "./saas/public-signup-mode";
+import { adminOnboardingMode } from "./saas/admin-onboarding-mode";
 import {passwordVersion} from "./auth/password-version";
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
@@ -34,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         }
         // Hybrid rollout: legacy credentials remain untouched. A tenant slug,
         // or an email absent from the legacy DB, authenticates against SaaS.
-        if(publicSignupMode(process.env)){
+        if(publicSignupMode(process.env) || adminOnboardingMode(process.env)){
           const slug=typeof raw?.tenantSlug==="string" && raw.tenantSlug.trim()?raw.tenantSlug.trim().toLowerCase():undefined;
           const legacy=await prisma.user.findUnique({where:{email},select:{id:true}});
           if(slug || !legacy)return await loginSaas(email,password,slug);
