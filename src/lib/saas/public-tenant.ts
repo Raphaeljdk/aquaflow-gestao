@@ -5,12 +5,14 @@ import { BusinessError } from "@/lib/domain";
 import { withControlPlane } from "./control-plane";
 import { decryptTenantDatabaseUrl } from "./database-secrets";
 import { saasPilotMode } from "./identity";
+import { publicSignupMode } from "./public-signup-mode";
 import { effectiveState, type Entitlement } from "./entitlement";
 const SAFE_SLUG=/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Booking API is public, but must resolve an explicit, licensed tenant slug. */
 export async function withPublicTenant<T>(request:Request,fn:(db:PrismaClient)=>Promise<T>):Promise<T> {
-  if(!saasPilotMode())return fn(prisma);
   const slug=new URL(request.url).searchParams.get("loja")??"";
+  // Legacy public booking without a slug continues using the original database.
+  if(!saasPilotMode() && (!publicSignupMode(process.env)||!slug))return fn(prisma);
   if(slug.length<3||slug.length>60||!SAFE_SLUG.test(slug))
     throw new BusinessError("Informe o endereço do estabelecimento.",400);
   const rows=await withControlPlane(db=>db.$queryRaw<Array<{
