@@ -2,6 +2,7 @@ import {NextRequest,NextResponse} from "next/server";
 import {requirePlatformAdmin} from "@/lib/platform-admin";
 import {withControlPlane} from "@/lib/saas/control-plane";
 import {apiError} from "@/lib/api";
+import {adminOnboardingMode} from "@/lib/saas/admin-onboarding-mode";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const PAGE_SIZE=25;
@@ -147,6 +148,7 @@ export async function GET(request:NextRequest){
       search,PAGE_SIZE,offset);
    return {tenants:[],accounts,events:[],totalMatched:matched[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
   });
-  return NextResponse.json(result,{headers:{"Cache-Control":"private,no-store"}});
+  return NextResponse.json({...result,adminOnboardingEnabled:adminOnboardingMode(process.env)},
+    {headers:{"Cache-Control":"private,no-store"}});
  }catch(error){return apiError(error);}
 }

@@ -35,6 +35,13 @@ test("painel não cria bancos, altera licenças nem dispara cobrança",()=>{
  const route=file("src/app/api/plataforma/saas/central/route.ts");
  const ui=file("src/components/platform-central-panel.tsx");
  assert.doesNotMatch(route,/export async function POST|export async function PATCH|UPDATE platform_tenants|DELETE FROM/);
- assert.doesNotMatch(ui,/method:"POST"|method:"PATCH"|createNeon|Stripe/);
+ // The inventory stays read-only; activation is a separate guarded administrative endpoint.
+ assert.match(ui,/method:"POST"/);
+ assert.match(ui,/adminOnboardingEnabled/);
+ assert.doesNotMatch(ui,/createNeonTenantProject|checkout|Stripe/);
  assert.match(ui,/somente leitura/);
+ const activation=file("src/app/api/plataforma/saas/tenants/[id]/ativar/route.ts");
+ assert.match(activation,/await requirePlatformAdmin\(\)/);
+ assert.match(activation,/adminOnboardingMode\(process.env\)/);
+ assert.match(activation,/owner_email_verified_provisioning_queued/);
 });

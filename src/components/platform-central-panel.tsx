@@ -17,7 +17,7 @@ type Account={
  tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
-type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number}};
+type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number};adminOnboardingEnabled:boolean};
 type FilterValue="all"|"attention"|"provisioning"|"ready"|"active";
 
 const date=(value:string|null)=>value?
@@ -73,6 +73,8 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
  const [page,setPage]=useState(1);
  const [selected,setSelected]=useState<string|null>(null);
  const [lastRefresh,setLastRefresh]=useState<Date|null>(null);
+ const [busyTenant,setBusyTenant]=useState<string|null>(null);
+ const [actionMessage,setActionMessage]=useState("");
  const load=useCallback(async()=>{
    setUpdating(true);setError("");
    try{
@@ -87,6 +89,24 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
  },[mode,search,filter,page]);
  useEffect(()=>{const timer=setTimeout(()=>void load(),250);return ()=>clearTimeout(timer);},[load,refreshKey]);
  useEffect(()=>{const timer=setInterval(()=>void load(),60000);return ()=>clearInterval(timer);},[load]);
+ async function activate(t:Tenant,action:"send-invite"|"prepare-db"){
+  const explanation=action==="send-invite"?
+   "Enviar um link único de criação de senha ao proprietário? Isso não cria banco nem cobra o cliente.":
+   "O proprietário já confirmou o e-mail? Preparar o banco individual agora pode criar um novo projeto Neon; não repita a ação em caso de falha.";
+  if(!window.confirm(explanation))return;
+  setBusyTenant(t.id);setActionMessage("");setError("");
+  try{
+   const response=await fetch("/api/plataforma/saas/tenants/"+encodeURIComponent(t.id)+"/ativar",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action})
+   });
+   const body=await response.json() as {error?:string;detail?:string};
+   if(!response.ok)throw new Error(body.error??"Falha na ativação deste cadastro.");
+   setActionMessage(body.detail??"Ação registrada; atualize a implantação.");
+   await load();
+  }catch(e){setError(e instanceof Error?e.message:"Não foi possível concluir.");}
+  finally{setBusyTenant(null);}
+ }
  const shown=data?.tenants??[];
  const members=data?.accounts??[];
  const statusCounts=data?.counts??{total:0,ready:0,live:0,action:0};
@@ -141,6 +161,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     </select>
    </label>}
   </div>
+  {actionMessage&&<p role="status" className="rounded-xl border border-border bg-card p-4 text-sm font-semibold">{actionMessage}</p>}
   {error&&<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
    <div className="flex items-center gap-2 font-bold"><ServerCrash size={17}/> Não foi possível sincronizar o Neon central</div>
    <p className="mt-1">Os acessos do ERP antigo permanecem disponíveis. {error}</p>
@@ -187,9 +208,26 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
            <span className="shrink-0 text-xs text-muted-foreground">{date(e.createdAt)}</span>
           </li>)}</ol>:<p className="text-sm text-muted-foreground">Ainda não há eventos registrados no histórico.</p>}
         </div>
+        {data.adminOnboardingEnabled && t.state==="PROVISIONING" && !t.dbReady && t.jobState==="PENDING" && (t.jobAttempts??0)===0 && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+           {!t.ownerActive && !t.inviteStatus &&
+            <button type="button" disabled={busyTenant===t.id}
+              onClick={()=>void activate(t,"send-invite")}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
+              <Mail size={16}/> Enviar convite de primeiro acesso
+            </button>}
+           {t.ownerActive&&
+            <button type="button" disabled={busyTenant===t.id}
+              onClick={()=>void activate(t,"prepare-db")}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary/50 px-4 py-2 text-sm font-bold text-primary disabled:opacity-50">
+              <Database size={16}/> Preparar banco após confirmação do e-mail
+            </button>}
+           {busyTenant===t.id&&<span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={16} className="animate-spin"/> Processando...</span>}
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
          <ShieldCheck size={17}/>
-         <span>Operação somente leitura: esta tela não recria bancos, não altera senhas e não dispara cobranças.</span>
+         <span>Consulta somente leitura. As ações de ativação, quando disponíveis, exigem confirmação administrativa e validam o banco antes de executar.</span>
          <a href={"mailto:"+t.email} className="ml-auto inline-flex items-center gap-1 font-semibold text-foreground underline underline-offset-4"><Mail size={14}/> Contatar proprietário</a>
         </div>
        </div>}

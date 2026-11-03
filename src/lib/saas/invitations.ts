@@ -52,8 +52,9 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
     `,digest);
     const item=rows[0];
     const pending=!!item && item.state==="PENDING" && !item.db_ready;
+    const preapproved=!!item && item.state==="PROVISIONING" && !item.db_ready;
     const ready=!!item && item.state==="READY" && item.db_ready;
-    if(!item || item.role!=="OWNER" || (!pending && !ready))
+    if(!item || item.role!=="OWNER" || (!pending && !preapproved && !ready))
       throw new BusinessError("Convite expirado ou estabelecimento indisponível.",409);
     const exists=await tx.$queryRawUnsafe<Array<{id:string}>>(`
       SELECT id::text FROM platform_identities WHERE lower(email)=lower($1) LIMIT 1
@@ -76,23 +77,40 @@ export async function acceptOwnerInvitation(db:PrismaClient,token:string,passwor
       INSERT INTO platform_memberships(tenant_id,identity_id,role)
       VALUES($1::uuid,$2::uuid,'OWNER')
     `,item.tenant_id,identityId);
-    if(pending) {
+    if(pending || preapproved) {
+      // The invitation proves email ownership. Never repeat an already-queued Neon job.
+      if(preapproved){
+        const eligible=await tx.$queryRawUnsafe<Array<{id:string}>>(`
+          SELECT j.id::text FROM platform_provisioning_jobs j
+          JOIN platform_tenants t ON t.id=j.tenant_id
+          WHERE j.tenant_id=$1::uuid AND j.state='PENDING' AND j.attempts=0
+            AND t.neon_project_id IS NULL AND t.encrypted_database_url IS NULL
+            AND EXISTS(SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id
+              AND a.action='qa_provisioning_approved')
+            AND EXISTS(SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id
+              AND a.action='saas_signup_requested')
+          FOR UPDATE OF j
+        `,item.tenant_id);
+        if(eligible.length!==1)throw new BusinessError("Implantação alterada; procure o suporte.",409);
+      }
       // The invitation proves email ownership; only now create the expensive Neon job.
       const signup=await tx.$queryRawUnsafe<Array<{qty:number}>>(`
         SELECT count(*)::integer AS qty FROM platform_audit_events
         WHERE tenant_id=$1::uuid AND action='saas_signup_requested'
       `,item.tenant_id);
       if(!signup[0]?.qty)throw new BusinessError("Cadastro não verificado.",409);
-      const updated=await tx.$queryRawUnsafe<Array<{id:string}>>(`
-        UPDATE platform_tenants SET state='PROVISIONING',updated_at=now()
-        WHERE id=$1::uuid AND state='PENDING' AND neon_project_id IS NULL
-          AND encrypted_database_url IS NULL RETURNING id::text
-      `,item.tenant_id);
-      if(!updated.length)throw new BusinessError("Cadastro alterado durante ativação.",409);
-      await tx.$executeRawUnsafe(`
-        INSERT INTO platform_provisioning_jobs(tenant_id,idempotency_key,state)
-        VALUES($1::uuid,$2,'PENDING') ON CONFLICT(tenant_id) DO NOTHING
-      `,item.tenant_id,"neon-tenant:"+item.tenant_id);
+      if(pending){
+        const updated=await tx.$queryRawUnsafe<Array<{id:string}>>(`
+          UPDATE platform_tenants SET state='PROVISIONING',updated_at=now()
+          WHERE id=$1::uuid AND state='PENDING' AND neon_project_id IS NULL
+            AND encrypted_database_url IS NULL RETURNING id::text
+        `,item.tenant_id);
+        if(!updated.length)throw new BusinessError("Cadastro alterado durante ativação.",409);
+        await tx.$executeRawUnsafe(`
+          INSERT INTO platform_provisioning_jobs(tenant_id,idempotency_key,state)
+          VALUES($1::uuid,$2,'PENDING') ON CONFLICT(tenant_id) DO NOTHING
+        `,item.tenant_id,"neon-tenant:"+item.tenant_id);
+      }
       await tx.$executeRawUnsafe(`
         UPDATE platform_invitations SET used_at=now() WHERE id=$1::uuid
       `,item.id);

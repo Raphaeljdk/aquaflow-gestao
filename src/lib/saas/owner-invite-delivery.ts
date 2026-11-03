@@ -18,7 +18,7 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
  <p style="font-size:12px;letter-spacing:2px;font-weight:bold;color:#facc15">DUCHA ELITTE</p>
  <h1 style="font-size:26px;line-height:1.25;color:#fff">Crie sua senha de acesso</h1>
  <p style="font-size:15px;line-height:1.7;color:#d4d4d4">${isSignup?
-   "Recebemos seu cadastro! Confirme seu e-mail criando sua senha. Depois disso, vamos preparar automaticamente o banco exclusivo do seu lava-rápido.":
+   "Recebemos seu cadastro! Confirme seu e-mail criando sua senha. Depois disso, seu cadastro seguirá para a preparação segura do banco exclusivo do lava-rápido.":
    "Seu ambiente está pronto. Defina uma senha segura para começar a usar o sistema."}</p>
  <p style="margin:30px 0"><a href="${url}" style="display:inline-block;padding:15px 26px;border-radius:10px;background:#facc15;color:#111;font-size:15px;text-decoration:none;font-weight:bold">Criar minha senha</a></p>
  <p style="font-size:13px;line-height:1.6;color:#a3a3a3">Este link é individual e válido por 48 horas. O teste grátis só começa quando o ambiente estiver pronto. Nenhuma cobrança é feita nesta etapa.</p>
@@ -34,7 +34,7 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
     subject:"Ducha Elitte | Crie sua senha de acesso",
     text:n.payload?.reason==="SIGNUP" ?
       "Recebemos seu cadastro na Ducha Elitte. Confirme seu e-mail e crie sua senha pelo link seguro (válido por 48 horas):\n"+url+
-      "\n\nDepois disso, seu banco exclusivo será preparado automaticamente. O teste grátis só começa quando ele estiver pronto. Não há cobrança nesta etapa.\n\nSe não foi você, ignore este e-mail." :
+      "\n\nDepois disso, seu banco exclusivo seguirá para preparação. Caso haja teste grátis, ele só começa quando o ambiente estiver pronto. Não há cobrança nesta etapa.\n\nSe não foi você, ignore este e-mail." :
       "Seu ambiente Ducha Elitte está pronto. Use o link seguro para criar sua senha em até 48 horas:\n"+url+
       "\n\nSe você não reconhece essa solicitação, ignore este e-mail."
    }),signal:AbortSignal.timeout(12000)
