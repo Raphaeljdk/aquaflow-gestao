@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
+import { CentralPlatformPanel } from "@/components/platform-central-panel";
 import { PlatformTickets } from "@/components/platform-tickets";
 import { formatPlatformPrice } from "@/lib/platform-billing";
 import { getTrialState } from "@/lib/platform-trial";
@@ -23,9 +24,10 @@ const labels:Record<Status,string> = {PENDENTE:"Pendente",EM_ANALISE:"Em anális
 export function PlatformDashboard() {
   const [requests,setRequests] = useState<Request[]>([]);
   const [accounts,setAccounts] = useState<Account[]>([]);
+  const [centralRefresh,setCentralRefresh]=useState(0);
   const [busy,setBusy] = useState<string|null>(null);
   const [loading,setLoading] = useState(true);
-  const [tab,setTab] = useState<"solicitacoes" | "aprovadas" | "testes" | "parceiros" | "acessos" | "chamados">("solicitacoes");
+  const [tab,setTab] = useState<"empresas" | "solicitacoes" | "aprovadas" | "testes" | "parceiros" | "acessos" | "chamados">("empresas");
   const [error,setError] = useState("");
   const load = useCallback(async()=>{
     setLoading(true);setError("");
@@ -72,27 +74,29 @@ export function PlatformDashboard() {
     } catch(e) {setError(e instanceof Error?e.message:"Não foi possível atualizar a conta.");}
     finally {setBusy(null);}
   }
+  const visibleRequests=requests.filter(item=>tab==="aprovadas"?item.status==="APROVADO":tab==="testes"?item.modalidadeCadastro==="TESTE_7_DIAS":item.status!=="APROVADO");
   return <main className="min-h-dvh bg-background text-foreground">
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8 lg:py-10">
       <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-7">
         <div>
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.15em] text-muted-foreground"><ShieldCheck size={16}/> Administração da plataforma</p>
-          <h1 className="mt-3 text-3xl font-bold">Gestão da plataforma</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Acompanhe novos interessados, parceiros, chamados de suporte e acessos desta instância.</p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Gestão da plataforma</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Controle de empresas, cadastros, bancos individuais, convites, acessos, assinaturas e suporte em um só lugar.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={()=>void load()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold"><RefreshCw size={16}/> Atualizar</button>
+          <button onClick={()=>{setCentralRefresh(v=>v+1);void load();}} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold"><RefreshCw size={16}/> Atualizar tudo</button>
           <button type="button" onClick={() => void signOut({ callbackUrl: "/login" })} className="inline-flex h-10 items-center rounded-xl border border-border bg-card px-4 text-sm font-semibold">Sair com segurança</button>
         </div>
       </header>
-      <section className="mt-5 rounded-xl border border-border bg-card p-4 text-sm" aria-label="Migração para multiempresa">
+      <section className="mt-6 rounded-2xl border border-border bg-card p-4 text-sm sm:p-5" aria-label="Migração para multiempresa">
         <p className="font-semibold">Migração segura do banco existente</p>
         <p className="mt-1 text-muted-foreground">Confira os totais do ERP antigo e do banco central antes de preparar a cópia. Este diagnóstico não altera usuários, comandas ou cobranças.</p>
         <a className="mt-2 inline-block font-semibold underline underline-offset-4" href="/api/plataforma/saas/migracao/diagnostico" target="_blank" rel="noopener noreferrer">Ver diagnóstico de migração</a>
       </section>
       <nav aria-label="Seções da administração" className="my-7 flex flex-wrap gap-2 border-b border-border pb-4">
         {([
-          ["solicitacoes","Solicitações"],
+          ["empresas","Empresas e implantação"],
+          ["solicitacoes","Solicitações antigas"],
           ["testes","Testes de 7 dias"],
           ["aprovadas","Aprovadas"],
           ["parceiros","Parceiros"],
@@ -107,6 +111,7 @@ export function PlatformDashboard() {
           </button>
         ))}
       </nav>
+      {tab==="empresas" && <CentralPlatformPanel mode="companies" refreshKey={centralRefresh}/>}
       {tab==="parceiros" && <PartnersManager />}
       {tab==="chamados" && <PlatformTickets />}
       {(tab==="solicitacoes" || tab==="testes" || tab==="aprovadas") && <>
@@ -117,12 +122,12 @@ export function PlatformDashboard() {
       </div>
       {error&&<p role="alert" className="mb-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{error}</p>}
       {loading&&<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={17} className="animate-spin"/> Carregando solicitações...</p>}
-      {!loading&&requests.filter(x=>tab==="aprovadas"?x.status==="APROVADO":x.status!=="APROVADO").length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Ainda não há solicitações cadastradas.</p>}
+      {!loading&&visibleRequests.length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Não há solicitações antigas neste filtro. Os novos cadastros estão na aba Empresas e implantação.</p>}
       {tab==="testes" && <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
         Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
       </p>}
       <div className="grid gap-4 lg:grid-cols-2">
-        {requests.filter(item=>tab==="aprovadas" ? item.status==="APROVADO" : item.status!=="APROVADO" && (tab!=="testes" || item.modalidadeCadastro==="TESTE_7_DIAS")).map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        {visibleRequests.map(item=><article key={item.id} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <h2 className="text-lg font-bold">{item.nomeEmpresa}</h2>
@@ -183,10 +188,12 @@ export function PlatformDashboard() {
       </div>
       </>}
       {tab==="acessos" && (
-      <section className="mt-12 border-t border-border pt-8">
-        <h2 className="text-2xl font-bold">Logins existentes nesta instância</h2>
+      <section className="space-y-9">
+        <CentralPlatformPanel mode="accounts" refreshKey={centralRefresh}/>
+        <div className="border-t border-border pt-8">
+        <h2 className="text-xl font-bold">Usuários do ERP antigo</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Controle inicial de acessos. A administração de logins de vários estabelecimentos só estará disponível após a implementação do isolamento multiempresa.
+          Contas do banco operacional legado. Alterações nesta tabela não afetam os bancos Neon das novas empresas.
         </p>
         <div className="mt-5 overflow-x-auto rounded-2xl border border-border bg-card">
           <table className="w-full min-w-[650px] text-left text-sm">
@@ -207,6 +214,7 @@ export function PlatformDashboard() {
               </tr>)}
             </tbody>
           </table>
+        </div>
         </div>
       </section>
       )}
