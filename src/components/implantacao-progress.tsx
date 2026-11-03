@@ -39,7 +39,7 @@ export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;auto
  const ready=state==="READY"&&status?.hasDatabase;
  const failed=state==="ERROR"||status?.jobState==="ERROR";
  const steps=[
-  {label:"Cadastro aprovado",description:"Solicitação aprovada pela administração.",done:true,icon:ShieldCheck},
+  {label:"Cadastro recebido",description:"Dados da empresa registrados na plataforma.",done:true,icon:ShieldCheck},
   {label:"Banco exclusivo",description:failed?"Revisão manual necessária. Não repetir a criação do banco.":ready?"Banco Neon exclusivo preparado e validado.":state==="PROVISIONING"?"O banco individual está em preparação.":"Aguardando início do provisionamento.",done:!!ready,icon:Database},
   {label:"Convite por e-mail",description:status?.invitationSent?"Convite entregue ao provedor de e-mail.":status?.invitationQueued?"Convite na fila de envio pelo Resend.":status?.trial?"Enviado após preparar o banco exclusivo.":"Disponível após a confirmação do pagamento Stripe.",done:!!status?.invitationSent,icon:Mail}
  ];
