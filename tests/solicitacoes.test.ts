@@ -120,7 +120,7 @@ test("login mostra CTA explícito e registro permite selecionar teste ou contrat
 
 test("cadastro não repete solicitação já registrada e protege limite de rede",()=>{
  const route=readFileSync("src/app/api/solicitacoes/route.ts","utf8");
- assert.match(route,/solicitacaoEmpresa\.findUnique/);
+ assert.match(route,/solicitacaoEmpresa\\.findFirst/);
  assert.match(route,/limite >= 10/);
  assert.match(route,/Retry-After/);
  assert.match(route,/status:409/);
