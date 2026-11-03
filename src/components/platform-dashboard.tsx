@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
-import { Check, Clock3, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
 import { PlatformTickets } from "@/components/platform-tickets";
 import { formatPlatformPrice } from "@/lib/platform-billing";
@@ -51,23 +51,13 @@ export function PlatformDashboard() {
         body:JSON.stringify({status,observacoesInternas:item.observacoesInternas}),
       });
       if(!res.ok)throw new Error("Não foi possível atualizar a solicitação.");
-      if(status==="APROVADO"){
-        const p=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
-        if(!p.ok)throw new Error("Solicitação aprovada; abra a aba Aprovadas e clique em Preparar banco exclusivo.");
-      }
       await load();
+      if(status==="APROVADO")setTab("aprovadas");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
     finally{setBusy(null);}
   }
-  async function prepare(item:Request){
-    setBusy(item.id);setError("");
-    try{
-      const response=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id)+"/preparar",{method:"POST"});
-      const body=await response.json() as {error?:string};
-      if(!response.ok)throw new Error(body.error??"Não foi possível preparar o ambiente.");
-      await load();
-    }catch(e){setError(e instanceof Error?e.message:"Erro ao preparar empresa.");}
-    finally{setBusy(null);}
+  function prepare(item:Request){
+    window.location.assign("/plataforma/implantacao?solicitacao="+encodeURIComponent(item.id)+"&iniciar=1");
   }
   async function toggleAccount(account: Account) {
     setBusy(account.id); setError("");
@@ -180,10 +170,14 @@ export function PlatformDashboard() {
               className="w-full rounded-xl border border-input bg-background p-3 text-sm text-foreground"/>
           </label>
           <div className="mt-5 flex flex-wrap gap-2">
-            {item.status==="APROVADO" && <button disabled={busy===item.id} onClick={()=>void prepare(item)} className="rounded-xl border border-primary/50 px-3 py-2 text-xs font-semibold disabled:opacity-50">Preparar banco exclusivo</button>}
-            <button disabled={busy===item.id} onClick={()=>void change(item,"EM_ANALISE")} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Em análise</button>
-            <button disabled={busy===item.id} onClick={()=>void change(item,"APROVADO")} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"><Check size={14}/> Aprovar análise</button>
-            <button disabled={busy===item.id} onClick={()=>void change(item,"REJEITADO")} className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><X size={14}/> Rejeitar</button>
+            {item.status==="APROVADO" ? <>
+              <button disabled={busy===item.id} onClick={()=>prepare(item)} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"><Database size={17}/> Preparar e acompanhar banco <ArrowRight size={16}/></button>
+              <button disabled={busy===item.id} onClick={()=>void change(item,"EM_ANALISE")} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Reabrir análise</button>
+            </> : <>
+              <button disabled={busy===item.id} onClick={()=>void change(item,"EM_ANALISE")} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">Em análise</button>
+              <button disabled={busy===item.id} onClick={()=>void change(item,"APROVADO")} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"><Check size={14}/> Aprovar análise</button>
+              <button disabled={busy===item.id} onClick={()=>void change(item,"REJEITADO")} className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><X size={14}/> Rejeitar</button>
+            </>}
           </div>
         </article>)}
       </div>
