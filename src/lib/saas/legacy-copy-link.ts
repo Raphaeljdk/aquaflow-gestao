@@ -1,6 +1,6 @@
 import "server-only";
 import {PrismaClient} from "@prisma/client";
-import {prisma} from "@/lib/prisma";
+
 import {withControlPlane} from "./control-plane";
 import {encryptTenantDatabaseUrl} from "./database-secrets";
 
@@ -37,22 +37,32 @@ export async function linkVerifiedLegacyCopy(){
  const raw=process.env.LEGACY_TENANT_MIGRATION_URL;
  if(!projectId||!raw||!/^([a-z0-9]+-){2}[0-9]+$/.test(projectId))
   throw new Error("Projeto operacional de destino não configurado.");
- const dbUrl=new URL(raw);
- const oldUrl=process.env.DATABASE_URL;
+ const apiKey=process.env.NEON_ORG_API_KEY;
  const centralUrl=process.env.CONTROL_DATABASE_URL;
- if(!oldUrl||!centralUrl||
-    !["postgresql:","postgres:"].includes(dbUrl.protocol)||
-    !dbUrl.password||!dbUrl.hostname.endsWith(".neon.tech")||
-    dbUrl.searchParams.get("sslmode")!=="require"||
-    [new URL(oldUrl).hostname,new URL(centralUrl).hostname].includes(dbUrl.hostname))
-  throw new Error("Conexão individual não está isolada do controle central e do legado.");
+ if(!apiKey||!centralUrl)throw new Error("Credenciais de controle e provisionamento ausentes.");
+ const response=await fetch(
+  "https://console.neon.tech/api/v2/projects/lingering-voice-54405395/connection_uri?database_name=neondb&role_name=neondb_owner&pooled=false",
+  {headers:{"Authorization":"Bearer "+apiKey,"Accept":"application/json"},
+   cache:"no-store",signal:AbortSignal.timeout(15000)});
+ if(!response.ok)throw new Error("Neon recusou conexão à origem legada.");
+ const originPayload=await response.json() as {uri?:string};
+ if(!originPayload.uri)throw new Error("Origem legada indisponível.");
+ const destUrl=new URL(raw),sourceUrl=new URL(originPayload.uri),controlUrl=new URL(centralUrl);
+ if(!["postgresql:","postgres:"].includes(destUrl.protocol)||
+    !["postgresql:","postgres:"].includes(sourceUrl.protocol)||
+    !destUrl.password||!sourceUrl.password||
+    !destUrl.hostname.endsWith(".neon.tech")||!sourceUrl.hostname.endsWith(".neon.tech")||
+    destUrl.searchParams.get("sslmode")!=="require"||sourceUrl.searchParams.get("sslmode")!=="require"||
+    new Set([destUrl.hostname,sourceUrl.hostname,controlUrl.hostname]).size!==3)
+  throw new Error("Bancos operacional, novo e central não estão isolados.");
  const copy=new PrismaClient({datasources:{db:{url:raw}},log:["error"]});
+ const origin=new PrismaClient({datasources:{db:{url:originPayload.uri}},log:["error"]});
  try {
-  const [source,target,sourceUsers,cloneUsers,sourceConfig,cloneConfig]=await Promise.all([
-   fingerprints(prisma),fingerprints(copy),
-   prisma.user.findMany({select:{email:true,name:true,password:true,role:true,ativo:true}}),
+ const [source,target,sourceUsers,cloneUsers,sourceConfig,cloneConfig]=await Promise.all([
+   fingerprints(origin),fingerprints(copy),
+   origin.user.findMany({select:{email:true,name:true,password:true,role:true,ativo:true}}),
    copy.user.findMany({select:{email:true,name:true,password:true,role:true,ativo:true}}),
-   prisma.configuracao.findUnique({where:{id:"empresa"},select:{nome:true}}),
+   origin.configuracao.findUnique({where:{id:"empresa"},select:{nome:true}}),
    copy.configuracao.findUnique({where:{id:"empresa"},select:{nome:true}})
   ]);
   if(!sourceConfig||!cloneConfig||sourceConfig.nome!==cloneConfig.nome)
@@ -72,33 +82,44 @@ export async function linkVerifiedLegacyCopy(){
   const members=cloneUsers.filter(u=>u.email.toLowerCase()!==platformEmail);
   if(members.length<1||members.some(u=>!/^\$2[aby]\$/.test(u.password)))
    throw new Error("Hashes dos usuários incompatíveis.");
-  const ownerWhatsApp=await prisma.configuracao.findUnique({where:{id:"empresa"},select:{telefone:true}});
+  const ownerWhatsApp=await origin.configuracao.findUnique({where:{id:"empresa"},select:{telefone:true}});
   const phone=(ownerWhatsApp?.telefone??"").replace(/\D/g,"");
   const encrypted=encryptTenantDatabaseUrl(raw);
   return withControlPlane(db=>db.$transaction(async tx=>{
    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('saas:legacy-copy:link'))`;
-   const current=await tx.$queryRaw<Array<{id:string;state:string}>>`
-    SELECT id::text,state FROM platform_tenants WHERE neon_project_id=${projectId}`;
-   if(current.length)return {status:"ALREADY_LINKED" as const,tenantId:current[0].id};
+   const current=await tx.$queryRaw<Array<{id:string;state:string;encrypted_database_url:string|null}>>`
+    SELECT id::text,state,encrypted_database_url FROM platform_tenants
+    WHERE neon_project_id=${projectId} OR slug='ducha-talento-legado' FOR UPDATE`;
+   if(current.length>1)throw new Error("Vínculo duplicado; revisão manual necessária.");
+   if(current[0]?.encrypted_database_url){
+    const prior=await tx.$queryRaw<Array<{qty:number}>>`
+     SELECT count(*)::integer AS qty FROM platform_memberships WHERE tenant_id=${current[0].id}::uuid`;
+    if(prior[0]?.qty===members.length)return {status:"ALREADY_STAGED" as const,tenantId:current[0].id};
+    throw new Error("Credencial existente com identidades incompletas.");
+   }
+   if(current[0]&&current[0].state!=="PROVISIONING")
+    throw new Error("Estado incompatível com migração segura.");
    const operator=await tx.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_operators WHERE enabled=true`;
-   const totals=await tx.$queryRaw<Array<{qty:number}>>`
-    SELECT count(*)::integer AS qty FROM platform_tenants`;
-   if(operator[0]?.qty!==1||totals[0]?.qty!==0)
-    throw new Error("O controle central foi alterado; revisão manual necessária.");
+   if(operator[0]?.qty!==1)throw new Error("Operador central não validado.");
    const conflicting=await tx.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_identities
     WHERE lower(email)=ANY(${members.map(u=>u.email.toLowerCase())}::text[])`;
    if(conflicting[0]?.qty)throw new Error("Conta central com e-mail duplicado.");
-   const tenant=await tx.$queryRaw<Array<{id:string}>>`
-    INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp,neon_project_id,encrypted_database_url,state)
-    VALUES('ducha-talento-legado',${cloneConfig.nome},${owner.email.toLowerCase()},
-      ${phone||null},${projectId},${encrypted},'PROVISIONING')
-    RETURNING id::text`;
+   const tenant=current.length?await tx.$queryRaw<Array<{id:string}>>`
+    UPDATE platform_tenants
+    SET display_name=${cloneConfig.nome},owner_email=${owner.email.toLowerCase()},
+      owner_whatsapp=${phone||null},encrypted_database_url=${encrypted},updated_at=now()
+    WHERE id=${current[0].id}::uuid AND state='PROVISIONING'
+      AND neon_project_id=${projectId} AND encrypted_database_url IS NULL RETURNING id::text`:
+    await tx.$queryRaw<Array<{id:string}>>`
+     INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp,neon_project_id,encrypted_database_url,state)
+     VALUES('ducha-talento-legado',${cloneConfig.nome},${owner.email.toLowerCase()},
+       ${phone||null},${projectId},${encrypted},'PROVISIONING') RETURNING id::text`;
    const tenantId=tenant[0]?.id;
    if(!tenantId||!uuid(tenantId))throw new Error("Não foi possível preparar empresa isolada.");
    await tx.$executeRaw`
-    INSERT INTO platform_entitlements(tenant_id,state)VALUES(${tenantId}::uuid,'PENDING')`;
+    INSERT INTO platform_entitlements(tenant_id,state)VALUES(${tenantId}::uuid,'PENDING') ON CONFLICT(tenant_id) DO NOTHING`;
    for(const u of members){
     const role=u.role==="ADMIN"?"OWNER":u.role==="GERENTE"?"MANAGER":"EMPLOYEE";
     const users=await tx.$queryRaw<Array<{id:string}>>`
@@ -114,5 +135,5 @@ export async function linkVerifiedLegacyCopy(){
       ${JSON.stringify({projectId,source:"legacy_operational",tableCounts:Object.fromEntries(Object.entries(target).map(([name,v])=>[name,v.n]))})}::jsonb)`;
    return {status:"STAGED" as const,tenantId,usersStaged:members.length,cutover:false};
   }));
- }finally{await copy.$disconnect();}
+ }finally{await copy.$disconnect();await origin.$disconnect();}
 }
