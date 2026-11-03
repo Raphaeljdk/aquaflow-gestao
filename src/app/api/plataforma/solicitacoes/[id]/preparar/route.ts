@@ -5,6 +5,7 @@ import {withControlPlane} from "@/lib/saas/control-plane";
 import {registerTrialRequest,approveTrialRequest} from "@/lib/saas/signup";
 import {checkOrigin,apiError} from "@/lib/api";
 import {BusinessError} from "@/lib/domain";
+import {inviteRecoveryMode} from "@/lib/saas/invite-recovery";
 import {processOneProvisioningJob} from "@/lib/saas/provisioning-worker";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -41,7 +42,8 @@ function progress(r:Awaited<ReturnType<typeof getCentralProgress>>) {
   hasDatabase:r?.has_database??false,
   invitationQueued:r?.invitation_state==="PENDING",
   invitationSent:r?.invitation_state==="SENT",
-  invitationFailed:r?.invitation_state==="ERROR"};
+  invitationFailed:r?.invitation_state==="ERROR",
+  canRecover:inviteRecoveryMode(process.env) && r?.state==="READY" && r?.invitation_state==="ERROR"};
 }
 export async function GET(_req:NextRequest,{params}:{params:Promise<{id:string}>}){
  try{
