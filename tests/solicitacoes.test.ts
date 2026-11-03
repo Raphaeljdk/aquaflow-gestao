@@ -116,3 +116,12 @@ test("login mostra CTA explícito e registro permite selecionar teste ou contrat
   assert.match(admin, /Aprovar análise/);
   assert.match(admin, /Aprovação administrativa não cria banco/);
 });
+
+
+test("cadastro não repete solicitação já registrada e protege limite de rede",()=>{
+ const route=readFileSync("src/app/api/solicitacoes/route.ts","utf8");
+ assert.match(route,/solicitacaoEmpresa\.findUnique/);
+ assert.match(route,/limite >= 10/);
+ assert.match(route,/Retry-After/);
+ assert.match(route,/status:409/);
+});
