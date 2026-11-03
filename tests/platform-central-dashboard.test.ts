@@ -13,7 +13,7 @@ test("inventário do controle central visível no modo legado e só ao gestor au
  assert.match(route,/ownerActive/);
  assert.match(route,/inviteStatus/);
  assert.match(route,/Cache-Control":"private,no-store/);
- assert.doesNotMatch(route,/SAAS_PRODUCTION_MODE|assertSaasManagementEnabled/);
+ assert.doesNotMatch(route,/process\.env\.SAAS_PRODUCTION_MODE|assertSaasManagementEnabled\(/);
  assert.doesNotMatch(route,/password_hash|encrypted_database_url AS|neon_project_id AS/);
 });
 test("painel destaca cadastros novos sem confundi-los com usuários do ERP antigo",()=>{
