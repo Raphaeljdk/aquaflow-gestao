@@ -52,7 +52,15 @@ export async function POST(request: NextRequest) {
     const limite = await prisma.solicitacaoEmpresa.count({
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     });
-    if (limite >= 10) return NextResponse.json({ error: "Muitas solicitações desta rede nas últimas 24 horas. Aguarde ou procure o suporte." }, { status: 429, headers: { "Retry-After": "3600" } });
+    if (limite >= 10) {
+      const [oldest]=await prisma.solicitacaoEmpresa.findMany({
+        where:{origemHash,createdAt:{gte:new Date(Date.now()-24*60*60*1000)}},
+        orderBy:{createdAt:"asc"},take:1,select:{createdAt:true}
+      });
+      const retryIn=Math.max(60,Math.ceil(((oldest?.createdAt.getTime()??Date.now())+24*60*60*1000-Date.now())/1000));
+      return NextResponse.json({error:"Muitas solicitações desta rede nas últimas 24 horas. Aguarde ou procure o suporte."},
+        {status:429,headers:{"Retry-After":String(retryIn)}});
+    }
     const { nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial, planoPagamento, metodoPagamento, modalidadeCadastro } = body.data;
     const trial = modalidadeCadastro === "TESTE_7_DIAS";
     const offer = trial ? null : resolvePlatformOffer(planoPagamento, metodoPagamento);
