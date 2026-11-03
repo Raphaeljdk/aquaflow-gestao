@@ -6,6 +6,8 @@ import { resolvePlatformOffer } from "@/lib/platform-billing";
 import { saasPilotMode } from "@/lib/saas/identity";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { registerTrialRequest } from "@/lib/saas/signup";
+import { ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
+import { BusinessError } from "@/lib/domain";
 
 export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
@@ -16,6 +18,8 @@ export async function POST(request: NextRequest) {
     if (!body.success) return NextResponse.json({ error: "Confira os campos e aceite o aviso de privacidade." }, { status: 400 });
     if (body.data.site) return NextResponse.json({ ok: true }, { status: 202 });
     if (saasPilotMode()) {
+      if(!ownerInviteChannelReady("EMAIL"))
+        return NextResponse.json({error:"Convites por e-mail indisponíveis temporariamente."},{status:503});
       if(process.env.SAAS_QA_MODE==="true" && body.data.modalidadeCadastro!=="TESTE_7_DIAS")
         return NextResponse.json({error:"Apenas piloto gratuito permitido neste ambiente."},{status:400});
       const contact=body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55"+body.data.whatsapp;
@@ -69,6 +73,7 @@ export async function POST(request: NextRequest) {
         : "Solicitação comercial enviada para análise. Entraremos em contato pelo WhatsApp ou e-mail.",
     }, { status: 201 });
   } catch (error) {
+    if(error instanceof BusinessError)return NextResponse.json({error:error.message},{status:error.status});
     if (error && typeof error === "object" && "code" in error && error.code === "P2002")
       return NextResponse.json({ error: "Já existe uma solicitação com este e-mail." }, { status: 409 });
     console.error("[solicitacoes] erro ao registrar solicitação", error);
