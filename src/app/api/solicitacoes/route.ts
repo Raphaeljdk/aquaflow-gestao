@@ -6,7 +6,7 @@ import { resolvePlatformOffer } from "@/lib/platform-billing";
 import { saasPilotMode } from "@/lib/saas/identity";
 import { publicSignupMode } from "@/lib/saas/public-signup-mode";
 import { withControlPlane } from "@/lib/saas/control-plane";
-import { registerTrialRequest } from "@/lib/saas/signup";
+import { registerTrialRequest,assertRegistrationIdentityAvailable } from "@/lib/saas/signup";
 import { ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
 import { BusinessError } from "@/lib/domain";
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       const ip=request.headers.get("x-vercel-forwarded-for")??request.headers.get("x-forwarded-for")?.split(",")[0]??"unknown";
       const originHash=createHash("sha256").update(salt+":"+ip).digest("hex");
       const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
-        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,
+        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,cnpj:body.data.cnpj,
         kind:body.data.modalidadeCadastro,plan:body.data.planoPagamento,
         method:body.data.metodoPagamento,originHash}));
       return NextResponse.json({ok:true,modalidadeCadastro:body.data.modalidadeCadastro,protocolo:result.id,
@@ -44,11 +44,21 @@ export async function POST(request: NextRequest) {
     if (!salt) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 });
     const ip = request.headers.get("x-vercel-forwarded-for") ?? request.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
     const origemHash = createHash("sha256").update(salt + ":" + ip).digest("hex");
-    const registered = await prisma.solicitacaoEmpresa.findUnique({
-      where:{email:body.data.email},select:{id:true}
+    // Legacy signup must also check the central SaaS registry (including archived signups).
+    // Trial expiry or a different email must never grant the same phone/CNPJ a second trial.
+    const contact=body.data.whatsapp.startsWith("55")?body.data.whatsapp:"55"+body.data.whatsapp;
+    await withControlPlane(db=>assertRegistrationIdentityAvailable(db,{
+      email:body.data.email,whatsapp:contact,cnpj:body.data.cnpj
+    }));
+    const registered = await prisma.solicitacaoEmpresa.findFirst({
+      where:{OR:[
+        {email:body.data.email},
+        {whatsapp:contact},
+        ...(body.data.cnpj?[{cnpj:body.data.cnpj}]:[])
+      ]},select:{id:true}
     });
     if(registered)return NextResponse.json({
-      error:"Este e-mail já possui cadastro registrado. Não é necessário preencher novamente. Entre em contato com o suporte para recuperar o acesso."
+      error:"Já existe solicitação com este e-mail, WhatsApp ou CNPJ. Recupere seu acesso pelo suporte; um novo cadastro não reinicia o teste."
     },{status:409});
     const limite = await prisma.solicitacaoEmpresa.count({
       where: { origemHash, createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
