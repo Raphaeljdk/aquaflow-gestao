@@ -1,5 +1,5 @@
 import "server-only";
-import {PrismaClient} from "@prisma/client";
+import {PrismaClient,Prisma} from "@prisma/client";
 
 import {withControlPlane} from "./control-plane";
 import {encryptTenantDatabaseUrl} from "./database-secrets";
@@ -108,7 +108,7 @@ export async function linkVerifiedLegacyCopy(){
    if(operator[0]?.qty!==1)throw new Error("Operador central não validado.");
    const conflicting=await tx.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_identities
-    WHERE lower(email)=ANY(${members.map(u=>u.email.toLowerCase())}::text[])`;
+    WHERE lower(email) IN (${Prisma.join(members.map(u=>u.email.toLowerCase()))})`;
    if(conflicting[0]?.qty)throw new Error("Conta central com e-mail duplicado.");
    const tenant=current.length?await tx.$queryRaw<Array<{id:string}>>`
     UPDATE platform_tenants
