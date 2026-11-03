@@ -8,6 +8,7 @@ import { loginSchema } from "./validations";
 import { BusinessError } from "./domain";
 import { saasPilotMode, loginSaas, validateSaasSession, validateSaasOperatorSession } from "./saas/identity";
 import { publicSignupMode } from "./saas/public-signup-mode";
+import {passwordVersion} from "./auth/password-version";
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
@@ -73,6 +74,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           role: user.role,
           funcionarioId: user.funcionarioId,
+          passwordVersion:passwordVersion(user.password),
         };
       },
     }),
@@ -85,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         token.tenantId = user.tenantId;
         token.tenantSlug = user.tenantSlug;
         token.platformOperator = user.platformOperator;
+        token.passwordVersion = user.passwordVersion;
       }
       return token;
     },
@@ -95,6 +98,7 @@ export const authOptions: NextAuthOptions = {
       session.user.tenantId = token.tenantId;
       session.user.tenantSlug = token.tenantSlug;
       session.user.platformOperator = token.platformOperator;
+      session.user.passwordVersion = token.passwordVersion;
       return session;
     },
   },
@@ -105,10 +109,16 @@ export async function currentUser(): Promise<import('@/types').User> {
   if (saasPilotMode() || session.user.tenantId || session.user.platformOperator) {
     if(session.user.platformOperator){
       if(session.user.tenantId) throw new BusinessError("Sessão de plataforma inválida.",403);
-      return validateSaasOperatorSession(session.user.id);
+      const u=await validateSaasOperatorSession(session.user.id);
+      if(session.user.passwordVersion&&session.user.passwordVersion!==u.passwordVersion)
+        throw new BusinessError("A senha desta conta foi alterada. Entre novamente.",401);
+      return u;
     }
     if (!session.user.tenantId) throw new BusinessError("Sessão sem estabelecimento autorizado.",401);
-    return validateSaasSession(session.user.id,session.user.tenantId);
+    const u=await validateSaasSession(session.user.id,session.user.tenantId);
+    if(session.user.passwordVersion&&session.user.passwordVersion!==u.passwordVersion)
+      throw new BusinessError("A senha desta conta foi alterada. Entre novamente.",401);
+    return u;
   }
   const u = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -119,8 +129,12 @@ export async function currentUser(): Promise<import('@/types').User> {
       role: true,
       ativo: true,
       funcionarioId: true,
+      password: true,
     },
   });
   if (!u?.ativo) throw new BusinessError("Seu acesso foi desativado.", 401);
-  return u;
+  if(session.user.passwordVersion&&session.user.passwordVersion!==passwordVersion(u.password))
+    throw new BusinessError("A senha desta conta foi alterada. Entre novamente.",401);
+  const {password: _storedHash,...safeUser}=u;
+  return safeUser;
 }

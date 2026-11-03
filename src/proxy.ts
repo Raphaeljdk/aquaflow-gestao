@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { isolationMode } from "@/lib/saas/isolation-mode";
 import { publicSignupMode } from "@/lib/saas/public-signup-mode";
 
-const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte"]);
+const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte", "minha-conta"]);
 
 export async function proxy(request: NextRequest) {
   // Preserve the legacy path only while SaaS isolation is genuinely disabled.
@@ -90,6 +90,7 @@ export const config = {
     "/configuracoes/:path*",
     "/como-usar/:path*",
     "/suporte/:path*",
+    "/minha-conta/:path*",
     "/api/:path*",
   ],
 };

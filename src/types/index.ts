@@ -13,6 +13,7 @@ export interface User {
   tenantSlug?: string;
   platformRole?: string;
   platformOperator?: boolean;
+  passwordVersion?: string;
 }
 export interface Cliente {
   id: string;
