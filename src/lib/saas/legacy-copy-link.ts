@@ -74,8 +74,12 @@ export async function linkVerifiedLegacyCopy(){
   }
   if(sourceUsers.length!==cloneUsers.length||sourceUsers.length<2)
    throw new Error("Usuários divergentes na cópia.");
-  const platformEmail=process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
-  if(!platformEmail)throw new Error("Operador central não configurado.");
+  const operatorAccounts=await withControlPlane(db=>db.$queryRaw<Array<{email:string}>>`
+    SELECT lower(i.email) AS email FROM platform_identities i
+    JOIN platform_operators o ON o.identity_id=i.id
+    WHERE i.enabled=true AND o.enabled=true`);
+  if(operatorAccounts.length!==1)throw new Error("Identidade do operador central ambígua.");
+  const platformEmail=operatorAccounts[0].email;
   const adminUsers=cloneUsers.filter(u=>u.ativo&&u.role==="ADMIN"&&u.email.toLowerCase()!==platformEmail);
   if(adminUsers.length!==1)throw new Error("Um único administrador operacional deve ser identificado.");
   const owner=adminUsers[0];
