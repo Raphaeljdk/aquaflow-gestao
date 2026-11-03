@@ -14,7 +14,7 @@ type Tenant={
 };
 type Account={
  id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
- tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM";
+ tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
 type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number}};
@@ -102,7 +102,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">{mode==="companies"?"Empresas e implantações":"Proprietários e acessos multiempresa"}</h2>
     <p className="mt-1 text-sm text-muted-foreground">{mode==="companies"?
      "Cadastros do Neon central, incluindo empresas que ainda não têm usuário ativo.":
-     "Identidades do controle central, separadas dos colaboradores do ERP antigo."}</p>
+     "Contas ativas e proprietários aguardando a primeira senha, separados do ERP antigo."}</p>
    </div>
    <button type="button" onClick={()=>void load()} disabled={updating}
      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold disabled:opacity-50">
@@ -206,8 +206,13 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
       <tbody>{members.map(a=><tr key={a.id+":"+a.tenantId} className="border-t border-border">
        <td className="p-4"><p className="font-semibold">{a.name}</p><p className="mt-1 break-all text-xs text-muted-foreground">{a.email}</p></td>
        <td className="p-4">{a.source==="PLATFORM"?"Gestão central":a.tenantName??"Não associado"}</td>
-       <td className="p-4">{a.role==="OWNER"?"Proprietário":a.role==="PLATFORM"?"Administrador central":a.role}</td>
-       <td className="p-4"><span className={"inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold "+(a.enabled?"border-emerald-600/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400":"border-border bg-muted text-muted-foreground")}>{a.enabled?"Ativo":"Desativado"}</span></td>
+       <td className="p-4">{a.role==="OWNER"?"Proprietário":a.role==="PENDING_OWNER"?"Proprietário pendente":a.role==="PLATFORM"?"Administrador central":a.role}</td>
+       <td className="p-4">{(()=>{
+        const canAccess=a.source==="PLATFORM"?a.enabled:
+          a.source==="TENANT"&&a.enabled&&a.tenantState==="READY"&&["TRIAL","ACTIVE","GRACE"].includes(a.license??"");
+        const label=a.source==="PENDING"?"Aguardando ativação":canAccess?"Acesso liberado":a.enabled?"Ambiente ou licença pendente":"Desativado";
+        return <span className={"inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold "+(canAccess?"border-emerald-600/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400":"border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-300")}>{label}</span>;
+       })()}</td>
       </tr>)}</tbody>
      </table>
     </div>
