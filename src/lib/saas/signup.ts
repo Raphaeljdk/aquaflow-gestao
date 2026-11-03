@@ -26,7 +26,7 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
        SELECT count(*)::integer AS quantity FROM platform_audit_events
        WHERE action='saas_signup_requested' AND metadata->>'ip_hash'=${info.originHash}
          AND created_at>now()-INTERVAL '24 hours'`;
-     if((recent[0]?.quantity??0)>=3)throw new BusinessError("Limite diário de cadastros atingido.",429);
+     if((recent[0]?.quantity??0)>=10)throw new BusinessError("Limite diário de cadastros atingido.",429);
    }
    const current=await tx.$queryRaw<Array<{quantity:number}>>`
      SELECT count(*)::integer AS quantity FROM platform_tenants
