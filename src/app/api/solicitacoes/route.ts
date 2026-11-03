@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
     if (!body.success) return NextResponse.json({ error: "Confira os campos e aceite o aviso de privacidade." }, { status: 400 });
     if (body.data.site) return NextResponse.json({ ok: true }, { status: 202 });
     if (saasPilotMode()) {
+      // Explicit public rollout gate: do not create SaaS accounts until mail and access are homologated.
+      if(process.env.SAAS_PRODUCTION_MODE==="true" && process.env.SAAS_PUBLIC_SIGNUP_ENABLED!=="true")
+        return NextResponse.json({error:"Cadastro automático em preparação. Entre em contato com o suporte para ativar seu estabelecimento."},{status:503});
       if(!ownerInviteChannelReady("EMAIL"))
         return NextResponse.json({error:"Convites por e-mail indisponíveis temporariamente."},{status:503});
       if(process.env.SAAS_QA_MODE==="true" && body.data.modalidadeCadastro!=="TESTE_7_DIAS")
