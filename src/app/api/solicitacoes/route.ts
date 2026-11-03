@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { solicitacaoEmpresaSchema } from "@/lib/platform-onboarding";
 import { resolvePlatformOffer } from "@/lib/platform-billing";
 import { saasPilotMode } from "@/lib/saas/identity";
+import { publicSignupMode } from "@/lib/saas/public-signup-mode";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { registerTrialRequest } from "@/lib/saas/signup";
 import { ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     const body = solicitacaoEmpresaSchema.safeParse(await request.json());
     if (!body.success) return NextResponse.json({ error: "Confira os campos e aceite o aviso de privacidade." }, { status: 400 });
     if (body.data.site) return NextResponse.json({ ok: true }, { status: 202 });
-    if (saasPilotMode()) {
+    if (saasPilotMode() || publicSignupMode(process.env)) {
       // Explicit public rollout gate: do not create SaaS accounts until mail and access are homologated.
       if(process.env.SAAS_PRODUCTION_MODE==="true" && process.env.SAAS_PUBLIC_SIGNUP_ENABLED!=="true")
         return NextResponse.json({error:"Cadastro automático em preparação. Entre em contato com o suporte para ativar seu estabelecimento."},{status:503});
