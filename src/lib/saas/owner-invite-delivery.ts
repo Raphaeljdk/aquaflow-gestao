@@ -1,6 +1,7 @@
 import "server-only";
 import {decryptInvitationLink} from "./secure-owner-invites";
-export type OwnerInviteNotice={channel:"EMAIL"|"WHATSAPP";recipient:string;payload?:{encryptedUrl?:string;reason?:string}};
+import {ResendDeliveryError,resendFailureCategory,requireValidResendSender} from "./resend-diagnostics";
+export type OwnerInviteNotice={id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;payload?:{encryptedUrl?:string;reason?:string}};
 export function ownerInviteChannelReady(channel:"EMAIL"|"WHATSAPP") {
  if(channel==="EMAIL")return Boolean(process.env.RESEND_API_KEY && process.env.NOTIFICATION_FROM_EMAIL);
  return Boolean(process.env.WHATSAPP_BUSINESS_TOKEN && process.env.WHATSAPP_PHONE_ID &&
@@ -25,10 +26,11 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
  <p style="font-size:12px;line-height:1.6;color:#888">Se você não fez este cadastro, ignore esta mensagem.</p>
  </main></body></html>`;
  if(n.channel==="EMAIL"){
+  const sender=requireValidResendSender(process.env.NOTIFICATION_FROM_EMAIL);
   const response=await fetch("https://api.resend.com/emails",{
-   method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},
+   method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json","Idempotency-Key":"ducha-owner-"+n.id},
    body:JSON.stringify({
-    from:process.env.NOTIFICATION_FROM_EMAIL,to:[n.recipient],html,
+    from:sender,to:[n.recipient],html,
     subject:"Ducha Elitte | Crie sua senha de acesso",
     text:n.payload?.reason==="SIGNUP" ?
       "Recebemos seu cadastro na Ducha Elitte. Confirme seu e-mail e crie sua senha pelo link seguro (válido por 48 horas):\n"+url+
@@ -37,9 +39,9 @@ export async function deliverOwnerInvite(n:OwnerInviteNotice):Promise<string>{
       "\n\nSe você não reconhece essa solicitação, ignore este e-mail."
    }),signal:AbortSignal.timeout(12000)
   });
-  if(!response.ok)throw new Error("Falha ao enviar convite por e-mail.");
+  if(!response.ok)throw new ResendDeliveryError(resendFailureCategory(response.status),response.status);
   const data=await response.json() as {id?:string};
-  if(!data.id)throw new Error("Envio de e-mail não confirmado.");
+  if(!data.id)throw new ResendDeliveryError("provider_no_id");
   return data.id;
  }
  const version=process.env.WHATSAPP_GRAPH_VERSION!,phoneId=process.env.WHATSAPP_PHONE_ID!,
