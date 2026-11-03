@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { isolationMode } from "@/lib/saas/isolation-mode";
+import { publicSignupMode } from "@/lib/saas/public-signup-mode";
 
 const employeePages = new Set(["clientes", "comandas", "agendamentos", "como-usar", "suporte"]);
 
@@ -9,7 +10,26 @@ export async function proxy(request: NextRequest) {
   let isolated: ReturnType<typeof isolationMode>;
   try { isolated=isolationMode(process.env); }
   catch { return NextResponse.json({error:"Configuração SaaS inconsistente."},{status:503}); }
-  if (!isolated && request.nextUrl.pathname.startsWith("/api/")) return NextResponse.next();
+  if (!isolated && request.nextUrl.pathname.startsWith("/api/")) {
+    // While the legacy ERP remains live, only new tenant sessions are restricted.
+    // Legacy users keep existing API access; new tenants may call only audited endpoints.
+    if(!publicSignupMode(process.env))return NextResponse.next();
+    const secret=process.env.NEXTAUTH_SECRET??process.env.AUTH_SECRET;
+    if(!secret)return NextResponse.json({error:"Autenticação não configurada."},{status:503});
+    const token=await getToken({req:request,secret});
+    if(!token?.tenantId)return NextResponse.next();
+    const path=request.nextUrl.pathname;
+    const tenantRoutes=[
+      "/api/auth","/api/snapshot","/api/relatorios","/api/atendimentos-rapidos",
+      "/api/clientes","/api/veiculos","/api/servicos","/api/funcionarios",
+      "/api/comandas","/api/agendamentos","/api/configuracoes","/api/materiais",
+      "/api/movimentosEstoque","/api/chamados","/api/pedidos-agendamento",
+      "/api/public/empresa","/api/plataforma/me","/api/saas/convites/aceitar"
+    ];
+    if(!tenantRoutes.some(prefix=>path===prefix||path.startsWith(prefix+"/")))
+      return NextResponse.json({error:"Módulo indisponível para conta multiempresa."},{status:403});
+    return NextResponse.next();
+  }
   // Both QA and production must block every API not explicitly scoped to a tenant.
   if (isolated && request.nextUrl.pathname.startsWith("/api/")) {
     const path=request.nextUrl.pathname;

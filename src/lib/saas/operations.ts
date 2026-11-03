@@ -8,7 +8,8 @@ import { tenantDatabaseUrl } from "./database-secrets";
 
 /** No fallback to the legacy connection in QA. Owner/membership/licensing checked centrally. */
 export async function withOperationalDatabase<T>(user:User,fn:(db:PrismaClient)=>Promise<T>):Promise<T> {
-  if(!saasPilotMode()) return fn(prisma);
+  if(user.platformOperator)throw new BusinessError("A gestão da plataforma não possui acesso ao banco operacional.",403);
+  if(!saasPilotMode() && !user.tenantId) return fn(prisma);
   const tenantId=user.tenantId;
   if(!tenantId)throw new BusinessError("Não há estabelecimento vinculado à sessão.",403);
   const tenant=await resolveSaasConnection(user.id,tenantId);

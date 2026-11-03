@@ -7,6 +7,7 @@ test("painel administrativo QA usa dados centrais e não legados",()=>{
  assert.match(page,/SaasQaDashboard/);
  assert.match(page,/SAAS_QA_MODE/);
  assert.match(dashboard,/api\/plataforma\/saas\/pilotos/);
- assert.match(dashboard,/Gerar convite ao proprietário/);
- assert.match(dashboard,/Aprovar e provisionar/);
+ assert.match(dashboard,/Recuperar convite \(suporte\)/);
+ assert.doesNotMatch(dashboard,/Aprovar e provisionar/);
+ assert.match(dashboard,/worker prepara um banco Neon exclusivo/);
 });

@@ -28,12 +28,12 @@ export function decryptInvitationLink(value:string) {
   throw new Error("Destino de convite incompatível.");
  return link;
 }
-export type InviteReason="PAID"|"TRIAL";
+export type InviteReason="PAID"|"TRIAL"|"SIGNUP";
 /** Invoked inside the settlement or provisioning transaction. Never expose token in logs. */
 export async function queueOwnerInvitation(tx:Prisma.TransactionClient,tenantId:string,reason:InviteReason) {
  const rows=await tx.$queryRaw<Array<{
   state:string;email:string;phone:string|null;entitlement:string|null;paid_through:Date|null;
-  existing_owner:number;valid_invites:number;is_trial:boolean;
+  existing_owner:number;valid_invites:number;is_trial:boolean;is_signup:boolean;
  }>>`
   SELECT t.state,t.owner_email AS email,t.owner_whatsapp AS phone,
    e.state AS entitlement,e.paid_through,
@@ -43,11 +43,17 @@ export async function queueOwnerInvitation(tx:Prisma.TransactionClient,tenantId:
      WHERE i.tenant_id=t.id AND i.role='OWNER' AND i.used_at IS NULL AND i.expires_at>now()) AS valid_invites,
    EXISTS(SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id
       AND ((a.action='saas_signup_requested' AND a.metadata->>'kind'='TESTE_7_DIAS')
-           OR a.action='qa_trial_requested')) AS is_trial
+           OR a.action='qa_trial_requested')) AS is_trial,
+   EXISTS(SELECT 1 FROM platform_audit_events a WHERE a.tenant_id=t.id
+      AND a.action='saas_signup_requested') AS is_signup
   FROM platform_tenants t JOIN platform_entitlements e ON e.tenant_id=t.id
   WHERE t.id=${tenantId}::uuid FOR UPDATE OF t`;
  const t=rows[0];
- if(!t||t.state!=="READY")throw new Error("Empresa ainda não provisionada.");
+ if(!t)throw new Error("Empresa não encontrada.");
+ if(reason==="SIGNUP"){
+   if(t.state!=="PENDING"||!t.is_signup||t.entitlement!=="PENDING")
+     throw new Error("Cadastro não elegível para convite automático.");
+ }else if(t.state!=="READY")throw new Error("Empresa ainda não provisionada.");
  if(t.existing_owner>0||t.valid_invites>0)return {queued:false};
  if(reason==="PAID" && (t.entitlement!=="ACTIVE"||!t.paid_through||t.paid_through<=new Date()))
   throw new Error("Licença paga não confirmada.");

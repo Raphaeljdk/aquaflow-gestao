@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 import { loginSchema } from "./validations";
 import { BusinessError } from "./domain";
 import { saasPilotMode, loginSaas, validateSaasSession, validateSaasOperatorSession } from "./saas/identity";
+import { publicSignupMode } from "./saas/public-signup-mode";
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
@@ -29,6 +30,13 @@ export const authOptions: NextAuthOptions = {
           if (process.env.NEXT_PUBLIC_DEMO === "true") return null;
           const slug=typeof raw?.tenantSlug === "string" && raw.tenantSlug.trim() ? raw.tenantSlug.trim().toLowerCase() : undefined;
           return await loginSaas(email,password,slug);
+        }
+        // Hybrid rollout: legacy credentials remain untouched. A tenant slug,
+        // or an email absent from the legacy DB, authenticates against SaaS.
+        if(publicSignupMode(process.env)){
+          const slug=typeof raw?.tenantSlug==="string" && raw.tenantSlug.trim()?raw.tenantSlug.trim().toLowerCase():undefined;
+          const legacy=await prisma.user.findUnique({where:{email},select:{id:true}});
+          if(slug || !legacy)return await loginSaas(email,password,slug);
         }
         const key = createHash("sha256").update(email).digest("hex");
         const allowed = await prisma.$transaction(async (tx) => {
@@ -94,7 +102,7 @@ export const authOptions: NextAuthOptions = {
 export async function currentUser(): Promise<import('@/types').User> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new BusinessError("Entre para continuar.", 401);
-  if (saasPilotMode()) {
+  if (saasPilotMode() || session.user.tenantId || session.user.platformOperator) {
     if(session.user.platformOperator){
       if(session.user.tenantId) throw new BusinessError("Sessão de plataforma inválida.",403);
       return validateSaasOperatorSession(session.user.id);

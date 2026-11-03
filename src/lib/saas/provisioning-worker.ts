@@ -48,6 +48,29 @@ export async function processOneProvisioningJob(tenantFilter?:string) {
       WHERE id=${jobId}::uuid AND state='RUNNING'`;
    await tx.$executeRaw`INSERT INTO platform_audit_events(tenant_id,action,metadata)
       VALUES(${tenantId}::uuid,'tenant_database_ready','{"worker":"neon_v1"}'::jsonb)`;
+   // Self-service trials start ONLY after email confirmation AND isolated DB readiness.
+   const started=await tx.$queryRaw<Array<{trial_ends_at:Date}>>`
+      UPDATE platform_entitlements SET state='TRIAL',trial_started_at=now(),
+        trial_ends_at=now()+INTERVAL '168 hours',updated_at=now()
+      WHERE tenant_id=${tenantId}::uuid AND state='PENDING' AND trial_started_at IS NULL
+        AND EXISTS(SELECT 1 FROM platform_memberships m
+          WHERE m.tenant_id=${tenantId}::uuid AND m.role='OWNER' AND m.enabled)
+        AND EXISTS(SELECT 1 FROM platform_audit_events a
+          WHERE a.tenant_id=${tenantId}::uuid AND a.action='saas_signup_requested'
+            AND a.metadata->>'kind'='TESTE_7_DIAS')
+      RETURNING trial_ends_at`;
+   if(started.length){
+     const owner=await tx.$queryRaw<Array<{email:string}>>`
+       SELECT owner_email AS email FROM platform_tenants WHERE id=${tenantId}::uuid`;
+     if(owner[0]){
+       await tx.$executeRaw`INSERT INTO platform_notification_outbox
+         (tenant_id,channel,recipient,template_key,dedupe_key,payload)
+         VALUES(${tenantId}::uuid,'EMAIL',${owner[0].email},'tenant_ready',${"ready:"+tenantId},'{}'::jsonb)
+         ON CONFLICT(dedupe_key) DO NOTHING`;
+     }
+     await tx.$executeRaw`INSERT INTO platform_audit_events(tenant_id,action)
+       VALUES(${tenantId}::uuid,'self_service_trial_started_after_db_ready')`;
+   }
    await queueOwnerInvitation(tx,tenantId,"TRIAL");
   }));
   return {processed:true,ready:true};

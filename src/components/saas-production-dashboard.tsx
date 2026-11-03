@@ -21,7 +21,7 @@ export function SaasProductionDashboard(){
   finally{setLoading(false)}
  },[]);
  useEffect(()=>{void reload()},[reload]);
- async function action(t:Tenant,type:"aprovar"|"convidar"|"checkout",plan?:"MENSAL"|"ANUAL_MENSAL"|"ANUAL_AVISTA",method?:"CARD"|"PIX"){
+ async function action(t:Tenant,type:"convidar"|"checkout",plan?:"MENSAL"|"ANUAL_MENSAL"|"ANUAL_AVISTA",method?:"CARD"|"PIX"){
   setError("");setMessage("");setBusy(t.id);
   try{
    if(type==="checkout" && !window.confirm("Confirma a emissão de um link de pagamento REAL para o proprietário cadastrado? O pagamento depende da ação do cliente."))
@@ -34,7 +34,7 @@ export function SaasProductionDashboard(){
    if(j.url||j.inviteUrl){
     await navigator.clipboard.writeText((j.url||j.inviteUrl)!);
     setMessage(type==="checkout"?"Link de cobrança Stripe copiado. Somente compartilhe com proprietário autorizado.":"Convite protegido copiado. Envie somente ao proprietário.");
-   }else setMessage("Solicitação aprovada. O provisionamento depende da rotina automática.");
+   }else setMessage("Operação registrada. O cadastro e o provisionamento são automáticos.");
    await reload();
   }catch(e){setError(e instanceof Error?e.message:"Operação indisponível.");}
   finally{setBusy(null)}
@@ -49,7 +49,7 @@ export function SaasProductionDashboard(){
     <button className="rounded-xl border px-4 py-2 text-sm" onClick={()=>void signOut({callbackUrl:"/login"})}>Sair</button>
    </div>
   </div>
-  <p className="rounded-xl border p-3 text-sm">Links reais só podem ser gerados pelo gestor autenticado depois que o banco individual estiver pronto. A senha do proprietário é criada após a confirmação do pagamento. Nenhuma solicitação de cadastro gera cobrança automática.</p>
+  <p className="rounded-xl border p-3 text-sm">O proprietário recebe automaticamente o link de criação de senha no cadastro. Depois de confirmar o e-mail, o banco individual é preparado sem aprovação manual. Cobranças continuam separadas, condicionadas à confirmação do pagamento.</p>
   {error&&<p role="alert" className="rounded-lg border p-3 text-sm text-destructive">{error}</p>}
   {message&&<p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
   {loading?<p className="text-sm text-muted-foreground">Consultando controle central...</p>:
@@ -60,8 +60,7 @@ export function SaasProductionDashboard(){
      <p className="text-sm">Banco: {t.bancoConfigurado?"Configurado":"Pendente"} · Licença: {t.licenca??"Pendente"}</p>
      <p className="text-xs text-muted-foreground">Provisionamento: {t.provisionamento} · Usuários ativos: {t.usuariosAtivos}</p>
      <div className="flex flex-wrap gap-2">
-      <button disabled={busy===t.id||t.provisionamento!=="PENDING"} onClick={()=>void action(t,"aprovar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Aprovar banco</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Gerar convite</button>
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Recuperar convite (suporte)</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Mensal R$ 80 — sem fidelidade</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
       {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}

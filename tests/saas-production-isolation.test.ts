@@ -17,7 +17,8 @@ test("rotas comuns passam pelo controle central em SaaS produção",()=>{
  const operations=readFileSync("src/lib/saas/operations.ts","utf8");
  const proxy=readFileSync("src/proxy.ts","utf8");
  assert.match(identity,/isolationMode\(process.env\)/);
- assert.match(operations,/if\(!saasPilotMode\(\)\) return fn\(prisma\)/);
+ assert.match(operations,/if\(!saasPilotMode\(\) && !user.tenantId\) return fn\(prisma\)/);
+ assert.match(operations,/if\(user.platformOperator\)throw/);
  assert.match(proxy,/isolationMode\(process.env\)/);
  assert.match(proxy,/Módulo em homologação para ambiente multiempresa/);
 });
