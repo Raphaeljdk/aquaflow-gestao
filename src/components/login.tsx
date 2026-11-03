@@ -190,7 +190,7 @@ export function Login() {
                 <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-sm font-bold shadow-md shadow-primary/10">
                   {pending ? <><Loader2 className="animate-spin" size={17} /> Entrando...</> : <>Entrar no sistema <ArrowRight size={18} /></>}
                 </Button>
-                <p className="text-center text-xs leading-5 text-muted-foreground">Precisa de acesso? Fale com o administrador do estabelecimento.</p>
+                <div className="flex flex-col items-center gap-2 text-sm"><Link href="/recuperar-acesso" className="font-semibold text-primary underline-offset-4 hover:underline">Esqueci minha senha</Link><Link href="/recuperar-acesso" className="text-muted-foreground underline-offset-4 hover:underline">Ainda não criei minha senha / primeiro acesso</Link></div>
               </form>
             )}
             <div className="mt-8 flex items-center justify-center gap-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
