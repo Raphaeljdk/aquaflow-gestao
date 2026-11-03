@@ -33,6 +33,8 @@ test("painel mostra progresso de banco e e-mail, sem iniciar pagamentos",()=>{
  assert.match(page,/requirePlatformAdmin/);
  assert.match(ui,/Banco exclusivo/);
  assert.match(ui,/Convite por e-mail/);
+ assert.match(ui,/invitationFailed/);
+ assert.match(ui,/O Resend não confirmou o envio/);
  assert.match(ui,/setInterval/);
  assert.doesNotMatch(ui,/\/api\/stripe\/checkout/);
 });
