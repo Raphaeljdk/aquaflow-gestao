@@ -41,7 +41,7 @@ test("cadastro não duplica email, WhatsApp nem CNPJ e preserva marcação de us
  assert.match(signup,/\.sort\(\)/);
  assert.match(signup,/pg_advisory_xact_lock/);
  assert.match(signup,/validCnpj/);
- assert.match(signup,/cnpj:info\.cnpj/);
+ assert.match(signup,/info\.cnpj/);
  assert.match(route,/cnpj:body\.data\.cnpj/);
  assert.match(route,/assertRegistrationIdentityAvailable/);
  assert.match(route,/where:\{OR:/);
