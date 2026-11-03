@@ -101,22 +101,22 @@ export default function CadastroEmpresaPage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-wider"><Building2 size={15}/> Para proprietários</div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Seu lava-rápido com gestão profissional.</h1>
           <p className="text-base leading-8 text-muted-foreground">
-            {trial ? "Peça 7 dias gratuitos para conhecer o ERP. Seu período começa somente após ativarmos um ambiente exclusivo para seu lava-rápido." :
-              "Solicite acesso à plataforma. Nossa equipe analisa o cadastro e entra em contato antes de ativar sua empresa."}
+            {trial ? "Experimente 7 dias grátis. Após o cadastro, você recebe um e-mail para criar a senha e o sistema prepara seu ambiente exclusivo automaticamente." :
+              "Cadastre seu lava-rápido e receba um e-mail para criar a senha. A preparação do ambiente acontece sem precisar de aprovação manual."}
           </p>
           <div className="space-y-3 text-sm">
-            {(trial ? ["Cadastre-se sem cartão e sem pagamento","Nossa equipe confirma a disponibilidade de um ambiente exclusivo","7 dias completos a partir da ativação, sem cobrança automática"] :
-              ["Cadastre seu estabelecimento sem compromisso","Aguarde a análise do administrador","Receba orientações para ativar seu painel"]).map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
+            {(trial ? ["Preencha o cadastro sem cartão e sem pagamento","Confirme seu e-mail e crie sua senha pelo link seguro","Seu banco exclusivo é criado automaticamente; 7 dias após ficar pronto"] :
+              ["Cadastre os dados da empresa e do proprietário","Receba o link seguro e crie sua senha","Banco exclusivo automático; acesso pago após pagamento confirmado"]).map(x=><p key={x} className="flex items-center gap-3"><CheckCircle2 className="text-primary" size={20}/>{x}</p>)}
           </div>
-          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> Uma solicitação não cria uma conta, não gera cobrança e não permite acesso aos dados de outros estabelecimentos.</p>
+          <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground"><ShieldCheck size={18} className="mt-1 shrink-0"/> O cadastro não gera cobrança. O banco exclusivo só será preparado após você confirmar seu e-mail; os dados de outros estabelecimentos continuam isolados.</p>
         </section>
         <section className="rounded-3xl border border-border bg-card p-5 shadow-lg sm:p-8">
           {success ? <div role="status" className="space-y-5 py-12 text-center">
             <CheckCircle2 size={52} className="mx-auto text-primary"/>
-            <h2 className="text-2xl font-bold">{trial ? "Pedido de teste recebido!" : "Solicitação recebida!"}</h2>
+            <h2 className="text-2xl font-bold">{trial ? "Cadastro realizado!" : "Cadastro recebido!"}</h2>
             <p className="text-sm leading-7 text-muted-foreground">
-              {trial ? "Seu pedido de teste gratuito de 7 dias foi registrado. Ainda não há conta liberada; entraremos em contato quando o ambiente isolado estiver pronto. Os 7 dias só contam após a ativação." :
-                "Cadastro recebido. Após a aprovação e preparação do banco exclusivo, enviaremos a cobrança pela Stripe. Com o pagamento confirmado, você receberá um convite seguro para criar sua senha."}
+              {trial ? "Confira seu e-mail: enviaremos um link seguro para criar sua senha. Depois da confirmação, seu banco exclusivo será preparado automaticamente. Os 7 dias só começam quando o ambiente estiver pronto." :
+                "Confira seu e-mail: enviaremos um link seguro para criar sua senha. Seu banco exclusivo será preparado após a confirmação; o acesso pago depende da confirmação do pagamento."}
             </p>
             <Link href="/login" className="inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Voltar ao início</Link>
           </div> : <>
@@ -139,7 +139,7 @@ export default function CadastroEmpresaPage() {
               <p className="font-bold">7 dias gratuitos, contados a partir da ativação</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 O envio deste formulário não cria acesso imediato. Para proteger os dados, cada lava-rápido receberá seu banco próprio somente após a implantação individual.
-                Ao terminar o teste, o acesso dependerá de contratação; nenhuma cobrança será feita automaticamente.
+                Após os 7 dias, o acesso dependerá de contratação; nenhuma cobrança será feita automaticamente.
               </p>
             </div>}
             <form onSubmit={submit} className="space-y-5">
@@ -182,7 +182,7 @@ export default function CadastroEmpresaPage() {
                   <Wallet size={20} className="mt-0.5 shrink-0 text-primary" aria-hidden="true"/>
                   <div>
                     <h3 id="condicoes-comerciais" className="text-base font-bold">Escolha seu plano</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Planos mensais ou anuais. Após aprovação, o pagamento será processado na Stripe.</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">Planos mensais ou anuais. O pagamento será processado na Stripe após a preparação do ambiente; nenhuma cobrança é feita no cadastro.</p>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Escolha um plano">
