@@ -6,12 +6,15 @@ import {migrateNewTenantDatabase} from "./tenant-migrations";
 import {queueOwnerInvitation} from "./secure-owner-invites";
 
 /** Claim only a PENDING job; stalled RUNNING is inspected manually to avoid duplicate Neon projects. */
-export async function processOneProvisioningJob(){
+export async function processOneProvisioningJob(tenantFilter?:string) {
+ if(tenantFilter && !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(tenantFilter))
+   throw new Error("Identificador de empresa inválido.");
  const claimed=await withControlPlane(db=>db.$transaction(async tx=>{
   const rows=await tx.$queryRaw<Array<{id:string;tenant_id:string}>>`
    SELECT j.id::text,j.tenant_id::text FROM platform_provisioning_jobs j
    JOIN platform_tenants t ON t.id=j.tenant_id
    WHERE j.state='PENDING' AND t.state='PROVISIONING' AND t.neon_project_id IS NULL
+     AND (${tenantFilter??null}::uuid IS NULL OR j.tenant_id=${tenantFilter??null}::uuid)
    ORDER BY j.created_at FOR UPDATE OF j SKIP LOCKED LIMIT 1`;
   if(!rows.length)return null;
   const job=rows[0];
