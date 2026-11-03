@@ -23,12 +23,12 @@ async function getApprovedRequest(id:string) {
 }
 async function getCentralProgress(email:string,company:string){
  return withControlPlane(async db=>{
-  const rows=await db.$queryRaw<Array<{id:string;state:string;job_state:string|null;has_database:boolean;invitation_count:number;sent_invitations:number;failed_invitations:number}>>`
+  const rows=await db.$queryRaw<Array<{id:string;state:string;job_state:string|null;has_database:boolean;invitation_state:string|null}>>`
    SELECT t.id::text,t.state,j.state AS job_state,
     (t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL) AS has_database,
-    (SELECT count(*)::int FROM platform_notification_outbox o WHERE o.tenant_id=t.id AND o.channel='EMAIL' AND o.template_key='owner_invite') AS invitation_count,
-    (SELECT count(*)::int FROM platform_notification_outbox o WHERE o.tenant_id=t.id AND o.channel='EMAIL' AND o.template_key='owner_invite' AND o.state='SENT') AS sent_invitations,
-    (SELECT count(*)::int FROM platform_notification_outbox o WHERE o.tenant_id=t.id AND o.channel='EMAIL' AND o.template_key='owner_invite' AND o.state='ERROR') AS failed_invitations
+    (SELECT o.state FROM platform_notification_outbox o
+     WHERE o.tenant_id=t.id AND o.channel='EMAIL' AND o.template_key='owner_invite'
+     ORDER BY o.created_at DESC,o.id DESC LIMIT 1) AS invitation_state
    FROM platform_tenants t LEFT JOIN platform_provisioning_jobs j ON j.tenant_id=t.id
    WHERE lower(t.owner_email)=${email.toLowerCase()} AND t.display_name=${company}
    ORDER BY t.created_at DESC LIMIT 2`;
@@ -38,9 +38,10 @@ async function getCentralProgress(email:string,company:string){
 }
 function progress(r:Awaited<ReturnType<typeof getCentralProgress>>) {
  return {tenantId:r?.id??null,state:r?.state??"NOT_STARTED",jobState:r?.job_state??null,
-  hasDatabase:r?.has_database??false,invitationQueued:(r?.invitation_count??0)>0,
-  invitationSent:(r?.sent_invitations??0)>0,
-  invitationFailed:(r?.failed_invitations??0)>0};
+  hasDatabase:r?.has_database??false,
+  invitationQueued:r?.invitation_state==="PENDING",
+  invitationSent:r?.invitation_state==="SENT",
+  invitationFailed:r?.invitation_state==="ERROR"};
 }
 export async function GET(_req:NextRequest,{params}:{params:Promise<{id:string}>}){
  try{
