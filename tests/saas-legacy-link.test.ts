@@ -6,8 +6,12 @@ test("vínculo da cópia exige flags seguras e comparação de integridade",()=>
  assert.match(src,/LEGACY_MIGRATION_LINK_ENABLED/);
  assert.match(src,/SAAS_PRODUCTION_MODE/);
  assert.match(src,/STRIPE_BILLING_ENABLED/);
- assert.match(src,/fingerprints\(prisma\)/);
+ assert.match(src,/fingerprints\(origin\)/);
  assert.match(src,/fingerprints\(copy\)/);
+ assert.match(src,/new Set\(\[destUrl.hostname,sourceUrl.hostname,controlUrl.hostname\]\).size!==3/);
+ assert.match(src,/platformEmail=operatorAccounts\[0\].email/);
+ assert.match(src,/current.length>1/);
+ assert.match(src,/encrypted_database_url IS NULL/);
  assert.match(src,/PROVISIONING/);
  assert.match(src,/encryptTenantDatabaseUrl/);
  assert.match(src,/tenantId,usersStaged:members.length,cutover:false/);
