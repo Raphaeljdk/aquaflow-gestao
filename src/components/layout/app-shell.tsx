@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  KeyRound,
   ChevronRight,
   Building2,
   ArrowUpRight,
@@ -86,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const page = path.split("/")[1] || "dashboard";
-    const visibleForEmployee = ["clientes", "comandas", "agendamentos", "como-usar", "suporte"];
+    const visibleForEmployee = ["clientes", "comandas", "agendamentos", "como-usar", "suporte", "minha-conta"];
     if (user.role !== "ADMIN" && !visibleForEmployee.includes(page))
       router.replace("/clientes");
   }, [user, path, router]);
@@ -202,6 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter className="gap-2 border-t border-border p-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:gap-4 sm:p-4">
+            <Link href="/minha-conta" className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted"><KeyRound size={16}/> Minha conta e senha</Link>
             <div className="rounded-xl border border-border bg-background p-3.5">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
                 <Building2 size={14} className="text-primary" />
