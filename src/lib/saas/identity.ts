@@ -7,6 +7,7 @@ import type { Role, User } from "@/types";
 import { withControlPlane } from "./control-plane";
 import { effectiveState, type Entitlement } from "./entitlement";
 import {isolationMode} from "./isolation-mode";
+import {passwordVersion} from "@/lib/auth/password-version";
 
 /** Legacy name retained for callers: both QA and live SaaS use the central identity and per-tenant DB. */
 export const saasPilotMode = () => isolationMode(process.env)!==null;
@@ -60,7 +61,8 @@ async function records(db: PrismaClient, emailOrId: string, byId: boolean, slug?
 }
 function userFrom(row: RecordRow): TenantSessionUser {
   return {id:row.id,name:row.full_name,email:row.email,role:mapRole(row.platform_role),
-    tenantId:row.tenant_id,tenantSlug:row.slug,platformRole:row.platform_role,funcionarioId:null};
+    tenantId:row.tenant_id,tenantSlug:row.slug,platformRole:row.platform_role,funcionarioId:null,
+    passwordVersion:passwordVersion(row.password_hash)};
 }
 /** Tenant selection is verified against central membership; never trust session/user-supplied URLs. */
 async function loginAttempts(db:PrismaClient,email:string) {
@@ -87,12 +89,12 @@ async function centralOperator(email:string):Promise<{id:string;email:string;ful
   });
 }
 export async function validateSaasOperatorSession(id:string):Promise<PlatformOperatorUser> {
-  const rows=await withControlPlane(db=>db.$queryRaw<Array<{id:string;email:string;full_name:string}>>`
-    SELECT i.id::text,i.email,i.full_name
+  const rows=await withControlPlane(db=>db.$queryRaw<Array<{id:string;email:string;full_name:string;password_hash:string}>>`
+    SELECT i.id::text,i.email,i.full_name,i.password_hash
     FROM platform_identities i JOIN platform_operators p ON p.identity_id=i.id
     WHERE i.id::text=${id} AND i.enabled=true AND p.enabled=true LIMIT 1`);
   if(rows.length!==1)throw new BusinessError("Administrador da plataforma não autorizado.",403);
-  const u=rows[0];return {id:u.id,email:u.email,name:u.full_name,role:"ADMIN",platformOperator:true};
+  const u=rows[0];return {id:u.id,email:u.email,name:u.full_name,role:"ADMIN",platformOperator:true,passwordVersion:passwordVersion(u.password_hash)};
 }
 export async function loginSaas(email:string,password:string,tenantSlug:string|undefined): Promise<TenantSessionUser|PlatformOperatorUser|null> {
   if (tenantSlug && (!VALID_SLUG.test(tenantSlug)||tenantSlug.length>60)) return null;
@@ -102,7 +104,7 @@ export async function loginSaas(email:string,password:string,tenantSlug:string|u
   if(operator && !tenantSlug) {
     if(!await compare(password,operator.password_hash))return null;
     await withControlPlane(db=>db.$executeRaw`DELETE FROM platform_login_attempts WHERE key=${attempt.key}`);
-    return {id:operator.id,email:operator.email,name:operator.full_name,role:"ADMIN",platformOperator:true};
+    return {id:operator.id,email:operator.email,name:operator.full_name,role:"ADMIN",platformOperator:true,passwordVersion:passwordVersion(operator.password_hash)};
   }
   const rows=await withControlPlane(db=>records(db,email,false,tenantSlug));
   // Never choose an arbitrary establishment for a multi-tenant identity.
