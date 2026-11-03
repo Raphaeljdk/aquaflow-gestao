@@ -36,3 +36,19 @@ test("convites aceitos sem comutar modo global e reservas publicas com slug",()=
  assert.match(publicTenant,/!publicSignupMode\(process.env\)\|\|!slug/);
  assert.match(signup,/saasPilotMode\(\) \|\| publicSignupMode\(process.env\)/);
 });
+
+test("proxy mantém API legado e nega módulo não auditado para novo tenant",()=>{
+ const guard=source("src/proxy.ts");
+ assert.match(guard,/if\(!publicSignupMode\(process.env\)\)return NextResponse.next\(\)/);
+ assert.match(guard,/if\(!token\?\.tenantId\)return NextResponse.next\(\)/);
+ assert.match(guard,/tenantRoutes/);
+ assert.match(guard,/Módulo indisponível para conta multiempresa/);
+ assert.doesNotMatch(guard,/\x2Fapi\x2Fplataforma\x2Fsolicitacoes","/);
+});
+test("cadastrados não geram mais de um projeto e proprietários não viram gestores de plataforma",()=>{
+ const signup=source("src/lib/saas/signup.ts");
+ const admin=source("src/lib/platform-admin.ts");
+ assert.match(signup,/WHERE lower\(owner_email\)=\$\{email\}/);
+ assert.doesNotMatch(signup,/lower\(owner_email\)=\$\{email\} AND created_at/);
+ assert.match(admin,/user.tenantId/);
+});
