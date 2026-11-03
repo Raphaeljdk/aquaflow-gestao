@@ -26,6 +26,7 @@ import type { Configuracao } from "@/types";
 import { canManage } from "@/lib/permissions";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 import { cnpjValido } from "@/lib/cnpj-publico";
+import {ChangePasswordCard} from "./change-password-card";
 export function Settings() {
   const { data, user } = useStore();
   if (!data || !user) return null;
@@ -36,7 +37,7 @@ export function Settings() {
         text="Somente o administrador pode alterar as configurações."
       />
     );
-  return <SettingsForm initial={data.configuracao} />;
+  return <><SettingsForm initial={data.configuracao}/><ChangePasswordCard/></>;
 }
 function SettingsForm({ initial }: { initial: Configuracao }) {
   const [consultandoCnpj, setConsultandoCnpj] = useState(false);
