@@ -10,14 +10,16 @@ export type Notification = {
   payload?:{state?:string};
 };
 export async function deliverNotification(message:Notification):Promise<string> {
- const name=message.template_key==="payment_confirmed"?"Pagamento confirmado":"Atualização da assinatura";
+ const isReady=message.template_key==="tenant_ready";
+ const name=isReady?"Seu ambiente está pronto":message.template_key==="payment_confirmed"?"Pagamento confirmado":"Atualização da assinatura";
  if(message.channel==="EMAIL") {
   const apiKey=process.env.RESEND_API_KEY,from=process.env.NOTIFICATION_FROM_EMAIL;
   if(!apiKey||!from)throw new Error("E-mail transacional não configurado.");
   const r=await fetch("https://api.resend.com/emails",{
     method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
     body:JSON.stringify({from,to:[message.recipient],subject:"Ducha Elitte | "+name,
-      text:"Existe uma atualização sobre sua assinatura do Ducha Elitte. Acesse o painel oficial da plataforma para consultar o status. Nenhuma senha é solicitada nesta mensagem."})
+      text:isReady?"Seu banco de dados exclusivo foi preparado e seu teste gratuito de 7 dias já começou. Acesse https://www.duchaelitte.com.br/login com o e-mail e a senha que você criou.\n\nSe não reconhece este cadastro, procure o suporte.":
+        "Existe uma atualização sobre sua assinatura do Ducha Elitte. Acesse o painel oficial da plataforma para consultar o status. Nenhuma senha é solicitada nesta mensagem."})
   });
   if(!r.ok)throw new Error("Provedor de e-mail indisponível.");
   const j=await r.json() as {id?:string};
