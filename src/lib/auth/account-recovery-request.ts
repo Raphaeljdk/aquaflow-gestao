@@ -72,7 +72,7 @@ export async function requestRecovery(email:string,slug:string,ip:string):Promis
     "AND state IN ('PENDING','PROVISIONING','ERROR') LIMIT 1",email));
    if(pending[0])await deliverRecoveryMessage(pending[0].email,
     "Ducha Elitte | Acompanhamento do cadastro",
-    "Seu cadastro foi recebido, mas a conta ainda não está ativada. A primeira senha será criada por um convite de ativação depois que o estabelecimento estiver preparado. Se precisar de ajuda, fale com o suporte.");
+    "Seu cadastro foi recebido, mas a conta ainda não está ativada. A primeira senha será criada por um convite de ativação após a preparação do estabelecimento e a confirmação do plano, quando aplicável. Se precisar de ajuda, fale com o suporte.");
   }
   return genericRecoveryMessage;
  }
