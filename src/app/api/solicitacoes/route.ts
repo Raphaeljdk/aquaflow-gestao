@@ -19,12 +19,18 @@ export async function POST(request: NextRequest) {
       if(process.env.SAAS_QA_MODE==="true" && body.data.modalidadeCadastro!=="TESTE_7_DIAS")
         return NextResponse.json({error:"Apenas piloto gratuito permitido neste ambiente."},{status:400});
       const contact=body.data.whatsapp.startsWith("55") ? body.data.whatsapp : "55"+body.data.whatsapp;
+      const salt=process.env.NEXTAUTH_SECRET??process.env.AUTH_SECRET;
+      if(!salt)return NextResponse.json({error:"Serviço de cadastro temporariamente indisponível."},{status:503});
+      const ip=request.headers.get("x-vercel-forwarded-for")??request.headers.get("x-forwarded-for")?.split(",")[0]??"unknown";
+      const originHash=createHash("sha256").update(salt+":"+ip).digest("hex");
       const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
-        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,kind:body.data.modalidadeCadastro,plan:body.data.planoPagamento,method:body.data.metodoPagamento}));
+        nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,
+        kind:body.data.modalidadeCadastro,plan:body.data.planoPagamento,
+        method:body.data.metodoPagamento,originHash}));
       return NextResponse.json({ok:true,modalidadeCadastro:body.data.modalidadeCadastro,protocolo:result.id,
         message:body.data.modalidadeCadastro==="TESTE_7_DIAS"?
-         "Solicitação recebida. Seu teste de 7 dias começa apenas quando a conta estiver ativada.":
-         "Solicitação de contratação recebida. O pagamento será disponibilizado após configurar o acesso exclusivo."},{status:201});
+         "Cadastro recebido! Enviaremos um e-mail para criar sua senha. Após a confirmação, seu banco exclusivo será preparado automaticamente e o teste começará quando estiver pronto.":
+         "Cadastro recebido! Enviaremos um e-mail para criar sua senha. O banco será preparado após a confirmação; o acesso pago dependerá da confirmação do pagamento."},{status:201});
     }
     const salt = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
     if (!salt) return NextResponse.json({ error: "Serviço indisponível." }, { status: 503 });
