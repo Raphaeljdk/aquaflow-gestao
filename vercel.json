@@ -19,14 +19,6 @@
     {
       "path": "/api/cron/saas-legacy-link",
       "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/saas-recover-verified",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/saas-resend-preflight",
-      "schedule": "* * * * *"
     }
   ]
 }

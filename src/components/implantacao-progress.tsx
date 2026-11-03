@@ -4,7 +4,7 @@ import Link from "next/link";
 import {ArrowLeft,ArrowRight,CheckCircle2,Clock3,Database,Loader2,Mail,RefreshCw,ShieldCheck,TriangleAlert} from "lucide-react";
 
 type Progress={name:string;trial:boolean;tenantId:string|null;state:string;jobState:string|null;
- hasDatabase:boolean;invitationQueued:boolean;invitationSent:boolean};
+ hasDatabase:boolean;invitationQueued:boolean;invitationSent:boolean;invitationFailed:boolean};
 export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;autoStart:boolean}){
  const [status,setStatus]=useState<Progress|null>(null);
  const [loading,setLoading]=useState(true),[starting,setStarting]=useState(false);
@@ -41,7 +41,7 @@ export function ImplantacaoProgress({requestId,autoStart}:{requestId:string;auto
  const steps=[
   {label:"Cadastro aprovado",description:"Solicitação aprovada pela administração.",done:true,icon:ShieldCheck},
   {label:"Banco exclusivo",description:failed?"Revisão manual necessária. Não repetir a criação do banco.":ready?"Banco Neon exclusivo preparado e validado.":state==="PROVISIONING"?"O banco individual está em preparação.":"Aguardando início do provisionamento.",done:!!ready,icon:Database},
-  {label:"Convite por e-mail",description:status?.invitationSent?"Convite entregue ao provedor de e-mail.":status?.invitationQueued?"Convite na fila de envio pelo Resend.":status?.trial?"Enviado após preparar o banco exclusivo.":"Disponível após a confirmação do pagamento Stripe.",done:!!status?.invitationSent,icon:Mail}
+  {label:"Convite por e-mail",description:status?.invitationSent?"Convite entregue ao provedor de e-mail.":status?.invitationFailed?"O Resend não confirmou o envio. Verifique o remetente e o domínio antes de tentar novamente.":status?.invitationQueued?"Convite na fila de envio pelo Resend.":status?.trial?"Enviado após preparar o banco exclusivo.":"Disponível após a confirmação do pagamento Stripe.",done:!!status?.invitationSent,icon:Mail}
  ];
  return <main className="min-h-dvh bg-background px-4 py-8 text-foreground sm:px-8">
   <section className="mx-auto max-w-4xl space-y-5">
