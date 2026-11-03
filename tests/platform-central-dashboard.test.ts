@@ -1,0 +1,40 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const file=(path:string)=>readFileSync(path,"utf8");
+test("inventário do controle central visível no modo legado e só ao gestor autorizado",()=>{
+ const route=file("src/app/api/plataforma/saas/central/route.ts");
+ assert.match(route,/await requirePlatformAdmin\(\)/);
+ assert.match(route,/withControlPlane/);
+ assert.match(route,/platform_tenants/);
+ assert.match(route,/platform_memberships/);
+ assert.match(route,/platform_notification_outbox/);
+ assert.match(route,/platform_audit_events/);
+ assert.match(route,/ownerActive/);
+ assert.match(route,/inviteStatus/);
+ assert.match(route,/Cache-Control":"private,no-store/);
+ assert.doesNotMatch(route,/process\.env\.SAAS_PRODUCTION_MODE|assertSaasManagementEnabled\(/);
+ assert.doesNotMatch(route,/password_hash|encrypted_database_url AS|neon_project_id AS/);
+});
+test("painel destaca cadastros novos sem confundi-los com usuários do ERP antigo",()=>{
+ const page=file("src/components/platform-dashboard.tsx");
+ const central=file("src/components/platform-central-panel.tsx");
+ assert.match(page,/\["empresas","Empresas e implantação"\]/);
+ assert.match(page,/CentralPlatformPanel mode="companies"/);
+ assert.match(page,/CentralPlatformPanel mode="accounts"/);
+ assert.match(page,/Usuários do ERP antigo/);
+ assert.match(page,/setTab\] = useState[^\n]*\("empresas"\)/);
+ assert.match(central,/api\/plataforma\/saas\/central/);
+ assert.match(central,/Buscar empresa, e-mail ou código/);
+ assert.match(central,/Ver implantação/);
+ assert.match(central,/ownerActive/);
+ assert.match(central,/jobAttempts/);
+ assert.match(central,/invitation/);
+});
+test("painel não cria bancos, altera licenças nem dispara cobrança",()=>{
+ const route=file("src/app/api/plataforma/saas/central/route.ts");
+ const ui=file("src/components/platform-central-panel.tsx");
+ assert.doesNotMatch(route,/export async function POST|export async function PATCH|UPDATE platform_tenants|DELETE FROM/);
+ assert.doesNotMatch(ui,/method:"POST"|method:"PATCH"|createNeon|Stripe/);
+ assert.match(ui,/somente leitura/);
+});
