@@ -6,7 +6,8 @@ export const dynamic="force-dynamic";
 export async function GET() {
   let automatic=false;
   try {
-    automatic=saasPilotMode() && ownerInviteChannelReady("EMAIL") &&
+    automatic=saasPilotMode() && (process.env.SAAS_QA_MODE==="true" ||
+      process.env.SAAS_PUBLIC_SIGNUP_ENABLED==="true") && ownerInviteChannelReady("EMAIL") &&
       Boolean(process.env.CONTROL_DATABASE_URL && process.env.TENANT_DB_ENCRYPTION_KEY);
   }catch{
     automatic=false;
