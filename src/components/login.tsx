@@ -54,7 +54,7 @@ export function Login() {
     try {
       const result = await signIn("credentials", { ...values, tenantSlug: tenantSlug.trim(), redirect: false });
       if (!result?.ok || result.error) {
-        setError("E-mail ou senha inválidos. Confira os dados e tente novamente. Após muitas tentativas, aguarde 15 minutos.");
+        setError("Não foi possível entrar. Confira os dados ou use 'Esqueci minha senha'. Se ainda não criou sua senha pelo convite, procure o suporte para ativar o cadastro. Após muitas tentativas, aguarde 15 minutos.");
         return;
       }
       const session = await getSession();
@@ -178,6 +178,11 @@ export function Login() {
                     </Button>
                   </div>
                   <ErrorText message={form.formState.errors.password?.message} />
+                  <div className="flex justify-end">
+                    <Link href="/esqueci-senha" className="inline-flex min-h-10 items-center text-sm font-semibold text-primary hover:underline">
+                      Esqueci minha senha
+                    </Link>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tenant-slug" className="text-sm font-semibold">Código do lava-rápido (opcional)</Label>
