@@ -8,7 +8,7 @@ export async function preparePasswordRecovery(){
  if(a.hostname===b.hostname)throw new Error("Recuperação: controle central e banco operacional devem ser isolados.");
  const db=new PrismaClient({datasources:{db:{url:central}}});
  try{
-  const tables=await db.$queryRawUnsafe<Array<{tenants:string|null;identities:string|null}>>(
+  const tables=await db.$queryRawUnsafe(
    "SELECT to_regclass('public.platform_tenants')::text AS tenants, to_regclass('public.platform_identities')::text AS identities"
   );
   if(!tables[0]?.tenants||!tables[0]?.identities)throw new Error("Recuperação: controle central inválido.");
