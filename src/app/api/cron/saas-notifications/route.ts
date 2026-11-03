@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { deliverNotification,notificationsConfigured } from "@/lib/saas/notification-providers";
 import { deliverOwnerInvite,ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
+import { ResendDeliveryError } from "@/lib/saas/resend-diagnostics";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -44,7 +45,12 @@ export async function GET(req:NextRequest) {
         db.$executeRaw`UPDATE platform_notification_outbox SET state='SENT',delivered_at=now(),attempts=attempts+1 WHERE id=${row.id}::uuid`
       ]);
       delivered++;
-     } catch {
+      } catch (err) {
+      const category=err instanceof ResendDeliveryError?err.category:"unknown_outcome";
+      const httpStatus=err instanceof ResendDeliveryError?err.httpStatus:null;
+      await db.$executeRaw`INSERT INTO platform_audit_events(tenant_id,action,metadata)
+        SELECT o.tenant_id,'notification_send_failed',${JSON.stringify({category,httpStatus})}::jsonb
+        FROM platform_notification_outbox o WHERE o.id=${row.id}::uuid`;
       await db.$executeRaw`UPDATE platform_notification_outbox SET state='ERROR',attempts=attempts+1 WHERE id=${row.id}::uuid`;
       failed++;
      }
