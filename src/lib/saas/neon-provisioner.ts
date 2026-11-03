@@ -17,14 +17,23 @@ export async function createNeonTenantProject(tenantId:string):Promise<Provision
   if(!orgId||!/^org-[a-z0-9-]+$/.test(orgId))throw new Error("Neon org_id não configurado.");
   const name="ducha-tenant-"+tenantId;
   // Inventory is a read-only reconciliation gate: a retry must not create duplicates.
-  const inventory=await fetch("https://console.neon.tech/api/v2/projects?org_id="+encodeURIComponent(orgId),{
-    headers:{"authorization":"Bearer "+apiKey,"accept":"application/json"},
-    signal:AbortSignal.timeout(15000),cache:"no-store"
-  });
-  if(!inventory.ok)throw new Error("neon_inventory_http_"+inventory.status);
-  const listing=await inventory.json() as {projects?:Array<{name?:string}>};
-  if(listing.projects?.some(p=>p.name===name))
-    throw new Error("neon_project_exists_manual_reconciliation_required");
+  let cursor:string|undefined;
+  for(let page=0;page<20;page++){
+    const params=new URLSearchParams({org_id:orgId,limit:"100"});
+    if(cursor)params.set("cursor",cursor);
+    const inventory=await fetch("https://console.neon.tech/api/v2/projects?"+params,{
+      headers:{"authorization":"Bearer "+apiKey,"accept":"application/json"},
+      signal:AbortSignal.timeout(15000),cache:"no-store"
+    });
+    if(!inventory.ok)throw new Error("neon_inventory_http_"+inventory.status);
+    const listing=await inventory.json() as {projects?:Array<{name?:string}>;pagination?:{next?:string|null}};
+    if(!Array.isArray(listing.projects))throw new Error("neon_inventory_invalid");
+    if(listing.projects.some(p=>p.name===name))
+      throw new Error("neon_project_exists_manual_reconciliation_required");
+    cursor=listing.pagination?.next??undefined;
+    if(!cursor)break;
+    if(page===19)throw new Error("neon_inventory_incomplete");
+  }
   const response=await fetch("https://console.neon.tech/api/v2/projects",{
     method:"POST",
     headers:{"authorization":"Bearer "+apiKey,"accept":"application/json","content-type":"application/json"},
