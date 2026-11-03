@@ -5,6 +5,7 @@ import { deliverNotification,notificationsConfigured } from "@/lib/saas/notifica
 import { deliverOwnerInvite,ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
 import { ResendDeliveryError } from "@/lib/saas/resend-diagnostics";
 import {publicSignupMode} from "@/lib/saas/public-signup-mode";
+import {inviteRecoveryMode} from "@/lib/saas/invite-recovery";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -17,23 +18,34 @@ function authorized(req:NextRequest) {
 /** One durable claim per message. Unknown send outcomes require manual review, not duplicate messages. */
 export async function GET(req:NextRequest) {
  if(!authorized(req))return NextResponse.json({error:"Não autorizado."},{status:401});
- if(process.env.SAAS_QA_MODE!=="true" && process.env.SAAS_PRODUCTION_MODE!=="true" && !publicSignupMode(process.env))
+ if(process.env.SAAS_QA_MODE!=="true" && process.env.SAAS_PRODUCTION_MODE!=="true" &&
+    !publicSignupMode(process.env) && !inviteRecoveryMode(process.env))
   return NextResponse.json({processed:false,disabled:true},{status:503});
  if(!notificationsConfigured() && !ownerInviteChannelReady("EMAIL") && !ownerInviteChannelReady("WHATSAPP"))
   return NextResponse.json({error:"Provedor de notificações não configurado."},{status:503});
  try {
   const result=await withControlPlane(async db=>{
    const publicOnly=publicSignupMode(process.env);
+   const recoveryOnly=inviteRecoveryMode(process.env);
+   const restricted=publicOnly || recoveryOnly;
    const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string;reason?:string}}>>`
       SELECT o.id::text,o.channel,o.recipient,o.template_key,o.payload
       FROM platform_notification_outbox o WHERE o.state='PENDING'
-        AND (${!publicOnly}::boolean OR
-             (o.template_key='owner_invite' AND o.payload->>'reason'='SIGNUP'
-               AND EXISTS(SELECT 1 FROM platform_audit_events a
-                 WHERE a.tenant_id=o.tenant_id AND a.action='saas_signup_requested')) OR
-             (o.template_key='tenant_ready'
-               AND EXISTS(SELECT 1 FROM platform_audit_events a
-                 WHERE a.tenant_id=o.tenant_id AND a.action='owner_email_verified_provisioning_queued')))
+        AND (${!restricted}::boolean OR
+             (${publicOnly}::boolean AND
+               ((o.template_key='owner_invite' AND o.payload->>'reason'='SIGNUP'
+                 AND EXISTS(SELECT 1 FROM platform_audit_events a
+                   WHERE a.tenant_id=o.tenant_id AND a.action='saas_signup_requested'))
+                OR (o.template_key='tenant_ready'
+                 AND EXISTS(SELECT 1 FROM platform_audit_events a
+                   WHERE a.tenant_id=o.tenant_id AND a.action='owner_email_verified_provisioning_queued'))))
+             OR (${recoveryOnly}::boolean AND
+                o.channel='EMAIL' AND o.template_key='owner_invite'
+                AND o.payload->>'reason'='TRIAL'
+                AND EXISTS(SELECT 1 FROM platform_audit_events a
+                  WHERE a.tenant_id=o.tenant_id
+                    AND a.action='owner_invite_recovery_requested'
+                    AND a.created_at<=o.created_at)))
       ORDER BY o.created_at LIMIT 25
    `;
    let delivered=0,failed=0,skipped=0;
