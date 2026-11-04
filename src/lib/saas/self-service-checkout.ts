@@ -1,27 +1,15 @@
 import "server-only";
 import {createHash,randomBytes,randomUUID} from "node:crypto";
-import type {PrismaClient} from "@prisma/client";
 import {BusinessError} from "@/lib/domain";
 import {withControlPlane} from "./control-plane";
 import {requireValidResendSender} from "./resend-diagnostics";
 import {createStripeCheckout,requireStripe,stripePixEnabled,type StripeMethod,type StripePlan} from "./stripe-gateway";
+import {checkoutEntitlementEligible,checkoutAllowedOrigin,validCheckoutCombination} from "./checkout-policy";
 
 const EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TOKEN=/^[a-zA-Z0-9_-]{43}$/;
 const digest=(s:string)=>createHash("sha256").update(s).digest("hex");
 const neutral="Se existir um estabelecimento elegível com este e-mail, você receberá um link seguro para escolher um plano. Verifique também o spam.";
-export function checkoutEntitlementEligible(state:string,paidThrough:Date|null,now=new Date()){
- if(!["PENDING","TRIAL","EXPIRED","GRACE","ACTIVE"].includes(state))return false;
- // Never generate another subscription for a currently paid tenant.
- if(paidThrough && paidThrough.getTime()>now.getTime())return false;
- return true;
-}
-export function checkoutAllowedOrigin(origin:string,env:Record<string,string|undefined>){
- if(["https://www.duchaelitte.com.br","https://duchaelitte.com.br"].includes(origin))return true;
- return env.SAAS_QA_MODE==="true" && env.VERCEL_ENV==="preview" &&
-   /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin);
-}
-
 /** Request a one-time checkout link by email. Never reveal whether the address exists. */
 export async function requestOwnerPaymentLink(input:{email:string;ip:string}){
  requireStripe(); // No link if the provider is not actually enabled in this environment.
@@ -100,9 +88,7 @@ export async function checkoutWithOwnerLink(input:{token:string;plan:StripePlan;
  if(!checkoutAllowedOrigin(input.origin,process.env))
   throw new BusinessError("Origem não autorizada.",403);
  if(!TOKEN.test(input.token))throw new BusinessError("Link de pagamento inválido.",400);
- if(!["MENSAL","ANUAL_MENSAL","ANUAL_AVISTA"].includes(input.plan)||
-    !["CARD","PIX"].includes(input.method)||
-    (input.plan!=="ANUAL_AVISTA" && input.method!=="CARD"))
+ if(!validCheckoutCombination(input.plan,input.method))
   throw new BusinessError("Plano ou meio de pagamento inválido.",400);
  if(input.method==="PIX"&&!stripePixEnabled())
   throw new BusinessError("Pix ainda não disponível para esta conta Stripe.",409);
