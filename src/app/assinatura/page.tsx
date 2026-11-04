@@ -23,6 +23,23 @@ function PaymentPortal(){
  const [availability,setAvailability]=useState<{checkoutAvailable:boolean;pixAvailable:boolean}|null>(null);
  const [busy,setBusy]=useState(false),[sent,setSent]=useState(false),[error,setError]=useState("");
  const returned=params.get("retorno");
+ const sessionId=params.get("session_id")??"";
+ const [paymentStatus,setPaymentStatus]=useState<"PROCESSING"|"CONFIRMED"|"CANCELED"|"UNAVAILABLE">("PROCESSING");
+ useEffect(()=>{
+  if(returned!=="sucesso"||!/^cs_(test|live)_[a-zA-Z0-9]{10,200}$/.test(sessionId))return;
+  let active=true,tries=0;
+  async function check(){
+   try{
+    const response=await fetch("/api/assinatura/status?session_id="+encodeURIComponent(sessionId),{cache:"no-store"});
+    const value=await response.json() as {status?:string};
+    if(active&&["PROCESSING","CONFIRMED","CANCELED","UNAVAILABLE"].includes(value.status??""))
+     setPaymentStatus(value.status as typeof paymentStatus);
+   }catch{if(active)setPaymentStatus("UNAVAILABLE");}
+  }
+  void check();
+  const timer=setInterval(()=>{if(tries++<18)void check();else clearInterval(timer);},5000);
+  return()=>{active=false;clearInterval(timer)};
+ },[returned,sessionId]);
  useEffect(()=>{
   if(initialized.current)return;
   initialized.current=true;
@@ -77,7 +94,10 @@ function PaymentPortal(){
     <p className="text-sm leading-7 text-muted-foreground sm:text-base">Escolha um plano para manter sua operação e seus dados. O período gratuito não é renovado por um novo cadastro. Acesso liberado somente depois da confirmação do pagamento pela Stripe.</p>
    </header>
    {returned==="sucesso"&&<div role="status" className="rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm">
-    Retorno do checkout recebido. A confirmação do pagamento será feita pelo webhook da Stripe. A liberação pode não ser imediata; não tente pagar novamente antes de conferir seu e-mail e o status do acesso.
+    {paymentStatus==="CONFIRMED"?"Pagamento confirmado e registrado no sistema. Sua licença foi atualizada. Você já pode tentar entrar no ERP.":
+     paymentStatus==="CANCELED"?"Esta sessão não resultou em uma cobrança confirmada. Consulte o suporte antes de tentar novamente.":
+     paymentStatus==="UNAVAILABLE"?"Não foi possível consultar a confirmação no momento. Verifique seu e-mail ou procure o suporte; não repita o pagamento.":
+     "Retorno do checkout recebido. A Stripe está confirmando o pagamento. Essa página não libera acesso por si só. Não pague novamente enquanto a confirmação estiver pendente."}
    </div>}
    {returned==="cancelado"&&<div role="status" className="rounded-2xl border border-border bg-card p-4 text-sm">
     Você cancelou o checkout. Nenhum pagamento é confirmado apenas por abrir ou cancelar a página.
