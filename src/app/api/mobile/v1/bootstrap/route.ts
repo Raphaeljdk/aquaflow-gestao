@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { apiError } from "@/lib/api";
+import { allowedPages, canWrite } from "@/lib/permissions";
 
 /**
  * Contrato reservado para consumidores mobile autenticados.
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const user = await currentUser(); // valida sessão, tenant e licença no servidor
-    if (user.platformOperator || (!user.tenantId && !user.id)) {
+    if (user.platformOperator) {
       return NextResponse.json({ error: "Requer acesso a um estabelecimento." }, { status: 403 });
     }
     return NextResponse.json({
@@ -23,9 +24,9 @@ export async function GET() {
       user: { name: user.name, role: user.role },
       establishment: { slug: user.tenantSlug ?? null },
       capabilities: {
-        commands: { view: true, edit: user.role === "ADMIN" || user.role === "FUNCIONARIO" || user.role === "GERENTE" || user.role === "ATENDENTE" || user.role === "LAVADOR" },
-        appointments: { view: true },
-        financialReports: { view: user.role === "ADMIN" },
+        commands: { view: allowedPages[user.role].includes("comandas"), edit: canWrite(user.role, "comandas") },
+        appointments: { view: allowedPages[user.role].includes("agendamentos") },
+        financialReports: { view: allowedPages[user.role].includes("relatorios") },
         smartposPayment: { enabled: false, reason: "Integração e homologação pendentes." },
         nativeAuthentication: { enabled: false, reason: "Autenticação OAuth/PKCE ainda não liberada." },
       },
