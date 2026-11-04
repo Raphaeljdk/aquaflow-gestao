@@ -59,7 +59,10 @@ test("somente cadastro vazio sem banco, licença, pagamento ou convite pode ser 
  assert.match(route,/t\.has_db/);
  assert.match(route,/t\.owner_count!==0/);
  assert.match(route,/t\.charges!==0/);
- assert.match(route,/t\.invitations!==0/);
+ assert.match(route,/t\.used_invitations!==0/);
+ assert.match(route,/t\.identity_exists/);
+ assert.match(route,/SET expires_at=now\(\)/);
+ assert.match(route,/neonRetained/);
  assert.match(route,/t\.job_attempts!==0/);
  assert.match(route,/SET state='SUSPENDED'/);
  assert.match(route,/tenant_archived/);
