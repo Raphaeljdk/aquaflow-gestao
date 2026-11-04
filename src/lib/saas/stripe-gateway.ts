@@ -59,7 +59,9 @@ export async function createStripeCheckout(info:{
   p.set("subscription_data[metadata][plan_code]",flexible?"MONTHLY_FLEX":"ANNUAL_MONTHLY");
   p.set("subscription_data[metadata][setup_charge_id]",info.chargeId);
  }
- p.set("expires_at",String(Math.floor(Date.now()/1000)+1800));
+ // Stripe requires checkout expiry at least 30 minutes from receipt.
+ // Allow transit margin but stay within the 45-minute duplicate-checkout lock.
+ p.set("expires_at",String(Math.floor(Date.now()/1000)+1980));
  p.set("success_url",info.origin+"/assinatura?retorno=sucesso&session_id={CHECKOUT_SESSION_ID}");
  p.set("cancel_url",info.origin+"/assinatura?retorno=cancelado");
  const checkout=await stripeApi<Checkout>("/v1/checkout/sessions",p,"aquaflow:"+info.chargeId);
