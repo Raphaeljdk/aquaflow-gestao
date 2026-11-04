@@ -78,13 +78,15 @@ export async function GET(request:NextRequest){
      `SELECT count(*)::integer AS quantity FROM platform_tenants t
        LEFT JOIN platform_entitlements e ON e.tenant_id=t.id ${where}`,search,filter);
     const tenants=await db.$queryRawUnsafe<Array<{
-      id:string;name:string;email:string;slug:string;state:string;createdAt:Date;
+      id:string;name:string;email:string;slug:string;state:string;createdAt:Date;isArchived:boolean;
       dbReady:boolean;license:string|null;trialEndsAt:Date|null;
       ownerActive:boolean;members:number;jobState:string|null;jobAttempts:number|null;
       inviteStatus:string|null;inviteAt:Date|null;signupType:string|null;
     }>>(`
      SELECT t.id::text AS id,t.display_name AS name,t.owner_email AS email,
        t.slug,t.state,t.created_at AS "createdAt",
+       (t.state='SUSPENDED' AND EXISTS(SELECT 1 FROM platform_audit_events a
+         WHERE a.tenant_id=t.id AND a.action='tenant_archived')) AS "isArchived",
        (t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL) AS "dbReady",
        e.state AS license,e.trial_ends_at AS "trialEndsAt",
        EXISTS(SELECT 1 FROM platform_memberships m JOIN platform_identities i ON i.id=m.identity_id
