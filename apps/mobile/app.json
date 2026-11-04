@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "AquaFlow Gestão",
+    "slug": "aquaflow-gestao",
+    "scheme": "aquaflow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "br.com.duchaelitte.aquaflow",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "br.com.duchaelitte.aquaflow",
+      "versionCode": 1
+    },
+    "extra": {
+      "releaseChannel": "internal-preview"
+    }
+  }
+}
