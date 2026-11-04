@@ -62,7 +62,7 @@ test("token não autoriza checkout em outra empresa e é consumido sob lock tran
  assert.match(s,/FOR UPDATE OF l,t,e/);
  assert.match(s,/owner_verified/);
  assert.match(s,/t\.state AS tenant_state/);
- assert.match(s,/stripe:\+r\.tenant_id/);
+ assert.match(s,/stripe:"\+r\.tenant_id/);
  assert.match(s,/status='PENDING'/);
  assert.match(s,/created_at>now\(\)-INTERVAL '45 minutes'/);
  assert.match(s,/checkoutEntitlementEligible\(r\.license_state,r\.paid_through\)/);
@@ -105,7 +105,7 @@ test("retorno do Checkout não é prova de pagamento: status vem do ledger recon
  const page=src("src/app/assinatura/page.tsx");
  const status=src("src/app/api/assinatura/status/route.ts");
  assert.match(page,/api\/assinatura\/status\?session_id=/);
- assert.match(page,/status==="CONFIRMED"/);
+ assert.match(page,/paymentStatus==="CONFIRMED"/);
  assert.match(page,/A Stripe está confirmando o pagamento/);
  assert.match(status,/b\.status='PAID'/);
  assert.match(status,/p\.status='PAID'/);
