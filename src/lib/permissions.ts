@@ -17,6 +17,7 @@ export const allowedPages: Record<Role, string[]> = {
     "funcionarios",
     "relatorios",
     "configuracoes",
+    "integracoes",
     "como-usar",
     "suporte",
     "materiais",
