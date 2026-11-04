@@ -60,6 +60,9 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       WHERE id=${chargeId}::uuid AND status='PENDING'`);
     throw error;
   }
+  await withControlPlane(db=>db.$executeRaw`
+    UPDATE platform_billing_charges SET stripe_checkout_session_id=${checkout.id}
+    WHERE id=${chargeId}::uuid AND status='PENDING'`);
   return NextResponse.json({url:checkout.url,sessionId:checkout.id},
    {headers:{"Cache-Control":"private, no-store","Referrer-Policy":"no-referrer"}});
  } catch(e){return apiError(e);}
