@@ -63,8 +63,8 @@ export default async function IntegracoesPage() {
       </header>
       <section className="grid gap-3 sm:grid-cols-3">
         {[
-          ["02", "Plataformas mobile planejadas"],
-          ["10", "Marcas de SmartPOS mapeadas"],
+          [String(apps.length).padStart(2,"0"), "Plataformas mobile mapeadas"],
+          [String(terminals.length).padStart(2,"0"), "Marcas de SmartPOS mapeadas"],
           ["00", "Canais publicados por esta integração"],
         ].map(([number, label]) => (
           <div key={label} className="rounded-2xl border border-border bg-card p-4">
