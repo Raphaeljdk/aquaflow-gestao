@@ -34,6 +34,9 @@ export async function GET(req:NextRequest) {
    const rows=await db.$queryRaw<Array<{id:string;channel:"EMAIL"|"WHATSAPP";recipient:string;template_key:string;payload:{state?:string;encryptedUrl?:string;reason?:string}}>>`
       SELECT o.id::text,o.channel,o.recipient,o.template_key,o.payload
       FROM platform_notification_outbox o WHERE o.state='PENDING'
+        AND NOT EXISTS(SELECT 1 FROM platform_tenants t WHERE t.id=o.tenant_id
+          AND t.state='SUSPENDED' AND EXISTS(SELECT 1 FROM platform_audit_events a
+            WHERE a.tenant_id=t.id AND a.action='tenant_archived'))
         AND (${!restricted}::boolean OR
              (${publicOnly}::boolean AND
                ((o.template_key='owner_invite' AND o.payload->>'reason'='SIGNUP'
