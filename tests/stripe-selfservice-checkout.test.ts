@@ -11,6 +11,7 @@ test("somente licença sem período pago vigente pode iniciar checkout",()=>{
  assert.equal(checkoutEntitlementEligible("EXPIRED",null,now),true);
  assert.equal(checkoutEntitlementEligible("PENDING",null,now),true);
  assert.equal(checkoutEntitlementEligible("ACTIVE",new Date(now.getTime()-1),now),true);
+ assert.equal(checkoutEntitlementEligible("ACTIVE",null,now),false);
  assert.equal(checkoutEntitlementEligible("ACTIVE",new Date(now.getTime()+1000),now),false);
  assert.equal(checkoutEntitlementEligible("SUSPENDED",null,now),false);
  assert.equal(checkoutEntitlementEligible("INVALID",null,now),false);
