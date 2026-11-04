@@ -95,10 +95,10 @@ export async function checkoutWithOwnerLink(input:{token:string;plan:StripePlan;
  const hash=digest(input.token),chargeId=randomUUID(),expected=input.plan==="ANUAL_AVISTA"?79000:8000;
  const owner=await withControlPlane(db=>db.$transaction(async tx=>{
   const rows=await tx.$queryRaw<Array<{
-    tenant_id:string;email:string;tenant_state:string;license_state:string;
+    tenant_id:string;email:string;email_hash:string;tenant_state:string;license_state:string;
     paid_through:Date|null;has_db:boolean;owner_verified:boolean
   }>>`
-   SELECT l.tenant_id::text,t.owner_email AS email,t.state AS tenant_state,
+   SELECT l.tenant_id::text,t.owner_email AS email,l.email_hash,t.state AS tenant_state,
      e.state AS license_state,e.paid_through,
      (t.neon_project_id IS NOT NULL AND t.encrypted_database_url IS NOT NULL) AS has_db,
      EXISTS(SELECT 1 FROM platform_memberships m JOIN platform_identities i
@@ -110,7 +110,10 @@ export async function checkoutWithOwnerLink(input:{token:string;plan:StripePlan;
    WHERE l.token_hash=${hash} AND l.state='PENDING' AND l.expires_at>now()
    FOR UPDATE OF l,t,e`;
   const r=rows[0];
-  if(!r||r.tenant_state!=="READY"||!r.has_db||!r.owner_verified||
+  const salt=process.env.NEXTAUTH_SECRET??process.env.AUTH_SECRET;
+  // A previous owner must never be able to pay after the tenant's email changed.
+  const emailMatches=!!r&&!!salt&&r.email_hash===digest(salt+":checkout:email:"+r.email.trim().toLowerCase());
+  if(!r||!emailMatches||r.tenant_state!=="READY"||!r.has_db||!r.owner_verified||
      !checkoutEntitlementEligible(r.license_state,r.paid_through))
    throw new BusinessError("Link expirado, conta não ativada ou assinatura já vigente.",409);
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"stripe:"+r.tenant_id}))`;
