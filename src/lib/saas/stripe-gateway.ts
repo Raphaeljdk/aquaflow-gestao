@@ -60,7 +60,7 @@ export async function createStripeCheckout(info:{
   p.set("subscription_data[metadata][setup_charge_id]",info.chargeId);
  }
  p.set("expires_at",String(Math.floor(Date.now()/1000)+1800));
- p.set("success_url",info.origin+"/assinatura?retorno=sucesso");
+ p.set("success_url",info.origin+"/assinatura?retorno=sucesso&session_id={CHECKOUT_SESSION_ID}");
  p.set("cancel_url",info.origin+"/assinatura?retorno=cancelado");
  const checkout=await stripeApi<Checkout>("/v1/checkout/sessions",p,"aquaflow:"+info.chargeId);
  if(!checkout.id?.startsWith(expectedStripeCheckoutPrefix(mode)) || !checkout.url?.startsWith("https://checkout.stripe.com/"))
