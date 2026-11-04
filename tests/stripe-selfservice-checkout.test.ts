@@ -62,6 +62,8 @@ test("token não autoriza checkout em outra empresa e é consumido sob lock tran
  assert.match(s,/WHERE l\.token_hash=\$\{hash\} AND l\.state='PENDING' AND l\.expires_at>now\(\)/);
  assert.match(s,/FOR UPDATE OF l,t,e/);
  assert.match(s,/owner_verified/);
+ assert.match(s,/emailMatches/);
+ assert.match(s,/r\.email_hash===digest/);
  assert.match(s,/t\.state AS tenant_state/);
  assert.match(s,/stripe:"\+r\.tenant_id/);
  assert.match(s,/status='PENDING'/);
