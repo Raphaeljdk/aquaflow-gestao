@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from "react";
 import {signOut} from "next-auth/react";
 type Tenant={id:string;slug:string;provisionamento:string;licenca:string|null;
- usuariosAtivos:number;bancoConfigurado:boolean;testeExpiraEm:string|null;
+ usuariosAtivos:number;proprietarioAtivo:boolean;bancoConfigurado:boolean;testeExpiraEm:string|null;
  stripeHabilitada:boolean;stripePixHabilitado:boolean};
 export function SaasProductionDashboard(){
  const [rows,setRows]=useState<Tenant[]>([]);
@@ -58,12 +58,13 @@ export function SaasProductionDashboard(){
     <article key={t.id} className="space-y-3 rounded-xl border bg-card p-4">
      <h2 className="font-bold">{t.slug}</h2>
      <p className="text-sm">Banco: {t.bancoConfigurado?"Configurado":"Pendente"} · Licença: {t.licenca??"Pendente"}</p>
-     <p className="text-xs text-muted-foreground">Provisionamento: {t.provisionamento} · Usuários ativos: {t.usuariosAtivos}</p>
+     <p className="text-xs text-muted-foreground">Provisionamento: {t.provisionamento} · Usuários ativos: {t.usuariosAtivos} · Proprietário: {t.proprietarioAtivo?"confirmado":"pendente"}</p>
      <div className="flex flex-wrap gap-2">
       <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Recuperar convite (suporte)</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Mensal R$ 80 — sem fidelidade</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
-      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Mensal R$ 80 — sem fidelidade</button>
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Anual 12 × R$ 80</button>
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
+      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
      </div>
     </article>)}</div>}
  </main>

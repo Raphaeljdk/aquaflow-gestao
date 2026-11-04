@@ -4,7 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 /** Central management never publishes a license for an unprovisioned tenant. */
 export type PilotStatus = {
   id: string; slug: string; state: string; license_state: string | null;
-  members: number; has_database: boolean; trial_started_at: Date | null;
+  members: number; owners: number; has_database: boolean; trial_started_at: Date | null;
   trial_ends_at: Date | null;
 };
 
@@ -26,7 +26,10 @@ export async function listPilotStatus(db: PrismaClient): Promise<PilotStatus[]> 
            e.trial_started_at, e.trial_ends_at,
            (SELECT count(*)::integer FROM platform_memberships m
              JOIN platform_identities i ON i.id = m.identity_id
-             WHERE m.tenant_id=t.id AND m.enabled=true AND i.enabled=true) AS members
+             WHERE m.tenant_id=t.id AND m.enabled=true AND i.enabled=true) AS members,
+           (SELECT count(*)::integer FROM platform_memberships m
+             JOIN platform_identities i ON i.id=m.identity_id
+             WHERE m.tenant_id=t.id AND m.enabled=true AND i.enabled=true AND m.role='OWNER') AS owners
     FROM platform_tenants t
     LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
     ORDER BY t.slug LIMIT 50

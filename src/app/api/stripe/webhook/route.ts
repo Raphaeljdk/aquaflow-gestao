@@ -82,6 +82,10 @@ async function confirmMonthly(invoiceId:string) {
     provider:"STRIPE",externalReference:invoice.id,paymentId:invoice.id,
     receivedCents:8000,settledAt:new Date(stamp*1000),verifiedWithProvider:true
   });
+  await db.$executeRaw`
+    UPDATE platform_billing_charges SET status='CANCELED',stripe_subscription_id=${subId}
+    WHERE id=${setupChargeId}::uuid AND provider='STRIPE'
+      AND plan_code IN ('CHECKOUT_MONTHLY','CHECKOUT_FLEX') AND status='PENDING'`;
   const count=await db.$queryRaw<Array<{qty:number}>>`
     SELECT count(*)::integer AS qty FROM platform_billing_charges
     WHERE stripe_subscription_id=${subId} AND status='PAID' AND plan_code='MONTHLY'`;
@@ -93,18 +97,41 @@ async function confirmMonthly(invoiceId:string) {
 }
 async function finishCheckout(sessionId:string){
  const session=await loadCheckout(sessionId);
- if(session.mode==="payment")return confirmUpfront(sessionId);
- if(session.mode==="subscription" && session.subscription && typeof session.subscription==="string")
-  if((await loadSubscription(session.subscription)).metadata?.plan_code==="ANNUAL_MONTHLY")
-   await ensureTwelveMonthSubscriptionTerm(session.subscription);
- if(session.mode==="subscription" && session.payment_status==="paid" && session.metadata?.charge_id){
-  const id=session.metadata.charge_id;
-  if(isUuid(id)){
-    await withControlPlane(db=>db.$executeRaw`
-      UPDATE platform_billing_charges SET status='CANCELED'
-      WHERE id=${id}::uuid AND provider='STRIPE' AND plan_code IN ('CHECKOUT_MONTHLY','CHECKOUT_FLEX') AND status='PENDING'`);
-  }
+ if(session.mode==="payment"){
+  // Pix can complete Checkout while waiting for asynchronous confirmation.
+  // Only the later paid event, verified against Stripe, activates the tenant.
+  if(session.payment_status==="unpaid")return {status:"AWAITING_ASYNC_PAYMENT"};
+  return confirmUpfront(sessionId);
  }
+ if(session.mode!=="subscription" || !session.subscription || typeof session.subscription!=="string")
+  throw new Error("Assinatura Stripe sem vínculo verificável.");
+ const sub=await loadSubscription(session.subscription);
+ const chargeId=sub.metadata?.setup_charge_id,tenantId=sub.metadata?.tenant_id;
+ if(!chargeId||!tenantId||!isUuid(chargeId)||!isUuid(tenantId)||
+    session.metadata?.charge_id!==chargeId||session.metadata?.tenant_id!==tenantId)
+  throw new Error("Checkout e assinatura pertencem a empresas diferentes.");
+ if(!["ANNUAL_MONTHLY","MONTHLY_FLEX"].includes(sub.metadata?.plan_code??""))
+  throw new Error("Plano da assinatura não reconhecido.");
+ // Keep setup PENDING until the first invoice.paid event has been verified.
+ // Canceling it on checkout.session.completed would enable a second checkout
+ // while the first invoice is still in flight.
+ await withControlPlane(async db=>{
+  const n=await db.$executeRaw`
+    UPDATE platform_billing_charges SET stripe_subscription_id=${sub.id},
+      stripe_checkout_session_id=${session.id}
+    WHERE id=${chargeId}::uuid AND tenant_id=${tenantId}::uuid
+      AND provider='STRIPE' AND status='PENDING'
+      AND plan_code IN ('CHECKOUT_MONTHLY','CHECKOUT_FLEX')`;
+  if(n!==1){
+   const already=await db.$queryRaw<Array<{qty:number}>>`
+     SELECT count(*)::int AS qty FROM platform_billing_charges
+     WHERE id=${chargeId}::uuid AND tenant_id=${tenantId}::uuid
+       AND stripe_subscription_id=${sub.id} AND provider='STRIPE'`;
+   if(!already[0]?.qty)throw new Error("Cobrança de origem não reconhecida.");
+  }
+ });
+ if(sub.metadata?.plan_code==="ANNUAL_MONTHLY")
+  await ensureTwelveMonthSubscriptionTerm(sub.id);
  return {status:"SUBSCRIPTION_PENDING_INVOICE"};
 }
 /** Stripe-signed events are triggers, not proof: each checkout/invoice is retrieved from Stripe. */
@@ -120,6 +147,18 @@ export async function POST(request:NextRequest) {
   const event=verifyStripeWebhook(raw,request.headers.get("stripe-signature"),process.env.STRIPE_WEBHOOK_SECRET);
   if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded")
     await finishCheckout(event.data.object.id!);
+  else if(event.type==="checkout.session.async_payment_failed"){
+    const checkout=await loadCheckout(event.data.object.id!);
+    if(checkout.mode==="payment" && checkout.payment_status!=="paid" &&
+       checkout.metadata?.plan_code==="ANNUAL_UPFRONT" && checkout.metadata?.charge_id &&
+       checkout.metadata?.tenant_id && isUuid(checkout.metadata.charge_id) && isUuid(checkout.metadata.tenant_id)){
+      await withControlPlane(db=>db.$executeRaw`
+        UPDATE platform_billing_charges SET status='CANCELED'
+        WHERE id=${checkout.metadata!.charge_id}::uuid
+          AND tenant_id=${checkout.metadata!.tenant_id}::uuid
+          AND provider='STRIPE' AND status='PENDING' AND expected_cents=79000`);
+    }
+  }
   else if(event.type==="invoice.paid") await confirmMonthly(event.data.object.id!);
   else if(["invoice.payment_failed","customer.subscription.deleted","charge.refunded",
     "charge.dispute.created","charge.dispute.closed"].includes(event.type))
