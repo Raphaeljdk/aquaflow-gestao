@@ -1,6 +1,9 @@
 /** Small, pure payment rules so eligibility can be tested without Stripe secrets. */
 export function checkoutEntitlementEligible(state:string,paidThrough:Date|null,now=new Date()){
  if(!["PENDING","TRIAL","EXPIRED","GRACE","ACTIVE"].includes(state))return false;
+ // A legacy ACTIVE record without a paid-through date is inconsistent:
+ // do not create a second subscription until an administrator reconciles it.
+ if(state==="ACTIVE" && (!paidThrough || paidThrough.getTime()>now.getTime()))return false;
  if(paidThrough && paidThrough.getTime()>now.getTime())return false;
  return true;
 }
