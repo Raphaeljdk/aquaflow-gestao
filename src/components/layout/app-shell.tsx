@@ -12,6 +12,7 @@ import {
   UserRoundCog,
   ChartNoAxesCombined,
   Settings2,
+  Smartphone,
   BookOpen,
   LifeBuoy,
   Search,
@@ -66,6 +67,7 @@ const links = [
   { path: "funcionarios", label: "Funcionários", icon: UserRoundCog },
   { path: "relatorios", label: "Faturamento", icon: ChartNoAxesCombined },
   { path: "configuracoes", label: "Configurações", icon: Settings2 },
+  { path: "integracoes", label: "Apps e maquininhas", icon: Smartphone },
   { path: "como-usar", label: "Como usar", icon: BookOpen },
   { path: "suporte", label: "Suporte / Chamados", icon: LifeBuoy },
 ];
