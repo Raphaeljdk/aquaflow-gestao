@@ -111,7 +111,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
   finally{setBusyTenant(null);}
  }
  async function archive(t:Tenant){
-  if(!window.confirm("Arquivar este cadastro não aprovado? A empresa desaparecerá da lista principal, mas os identificadores serão mantidos para impedir outro teste. Bancos e contas existentes não serão excluídos."))return;
+  if(!window.confirm("Arquivar este cadastro sem licença e sem proprietário? Ele desaparecerá da lista principal, mas e-mail, telefone, convites e qualquer projeto Neon serão preservados. O histórico continuará bloqueando novos testes."))return;
   setBusyTenant(t.id);setError("");setActionMessage("");
   try{
    const response=await fetch("/api/plataforma/saas/tenants/"+encodeURIComponent(t.id)+"/arquivar",{
@@ -266,14 +266,15 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
            {busyTenant===t.id&&<span className="inline-flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={16} className="animate-spin"/> Processando...</span>}
           </div>
         )}
-        {t.state!=="SUSPENDED" && ["PENDING","PROVISIONING"].includes(t.state) && !t.dbReady &&
-          !t.ownerActive && t.members===0 && !t.inviteStatus && t.license==="PENDING" && (t.jobAttempts??0)===0 &&
+        {!t.isArchived && ["PENDING","PROVISIONING","READY"].includes(t.state) &&
+          !t.ownerActive && t.members===0 && t.license==="PENDING" &&
+          ((!t.dbReady && (t.jobAttempts??0)===0) || (t.dbReady && t.state==="READY" && t.jobState==="DONE")) &&
           <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
            <button type="button" disabled={busyTenant===t.id} onClick={()=>void archive(t)}
              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-500/30 px-4 text-sm font-semibold text-red-600 disabled:opacity-50">
              <Archive size={16}/> Arquivar cadastro incompleto
            </button>
-           <span className="text-xs text-muted-foreground">A ação é recusada se houver qualquer recurso ou cobrança registrada.</span>
+           <span className="text-xs text-muted-foreground">Projetos Neon e histórico são preservados; empresas com proprietário, teste ou cobrança são bloqueadas.</span>
           </div>}
         <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
          <ShieldCheck size={17}/>
