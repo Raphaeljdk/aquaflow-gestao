@@ -63,8 +63,8 @@ export function SaasProductionDashboard(){
       <button disabled={busy===t.id||t.provisionamento!=="READY"||t.usuariosAtivos>0} onClick={()=>void action(t,"convidar")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Recuperar convite (suporte)</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Mensal R$ 80 — sem fidelidade</button>
       <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_MENSAL","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Anual 12 × R$ 80</button>
-      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
-      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
+      <button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","CARD")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Cobrar R$ 790</button>
+      {t.stripePixHabilitado&&<button disabled={busy===t.id||t.provisionamento!=="READY"||!t.proprietarioAtivo||!t.stripeHabilitada} onClick={()=>void action(t,"checkout","ANUAL_AVISTA","PIX")} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Pix R$ 790</button>}
      </div>
     </article>)}</div>}
  </main>
