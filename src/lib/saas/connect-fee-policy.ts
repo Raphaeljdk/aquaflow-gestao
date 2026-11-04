@@ -40,3 +40,17 @@ export function connectFeeLedgerKey(tenantId:string, stripeAccountId:string, str
     throw new Error("Identificação Connect inválida.");
   return [tenantId,stripeAccountId,stripePaymentId].join(":");
 }
+
+/** Divisão comercial antes das tarifas do processador: o comprador paga o preço anunciado.
+ * Somente cálculo de referência, não confirma disponibilidade nem executa transferência.
+ */
+export function calculateMerchantDeductedSplit(assessment: FeeAssessment) {
+  if (!assessment.eligible || assessment.feeCents <= 0)
+    throw new Error("Comissão não elegível para divisão.");
+  return {
+    customerPaysCents: assessment.amountCents,
+    merchantBeforeProcessorFeesCents: assessment.amountCents - assessment.feeCents,
+    platformFeeCents: assessment.feeCents,
+    processorFeesIncluded: false as const,
+  };
+}
