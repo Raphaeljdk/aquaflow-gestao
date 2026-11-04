@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 type Tenant={
- id:string;name:string;email:string;slug:string;state:string;createdAt:string;
+ id:string;name:string;email:string;slug:string;state:string;createdAt:string;isArchived:boolean;
  dbReady:boolean;license:string|null;trialEndsAt:string|null;
  ownerActive:boolean;members:number;jobState:string|null;jobAttempts:number|null;
  inviteStatus:string|null;inviteAt:string|null;signupType:string|null;
@@ -36,7 +36,8 @@ const eventLabels:Record<string,string>={
  tenant_archived:"Cadastro não aprovado arquivado pelo administrador",
 };
 function stage(t:Tenant){
- if(t.state==="SUSPENDED")return {label:"Arquivado",tone:"neutral" as const};
+ if(t.isArchived)return {label:"Arquivado",tone:"neutral" as const};
+ if(t.state==="SUSPENDED")return {label:"Suspenso",tone:"warning" as const};
  const overdue=Date.now()-new Date(t.createdAt).getTime()>45*60*1000;
  if(t.state==="PROVISIONING"&&!t.dbReady&&t.jobState==="PENDING"&&(t.jobAttempts??0)===0&&overdue)
   return {label:"Provisionamento parado",tone:"danger" as const};
