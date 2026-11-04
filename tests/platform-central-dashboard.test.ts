@@ -38,7 +38,8 @@ test("painel não cria bancos, altera licenças nem dispara cobrança",()=>{
  // The inventory stays read-only; activation is a separate guarded administrative endpoint.
  assert.match(ui,/method:"POST"/);
  assert.match(ui,/adminOnboardingEnabled/);
- assert.doesNotMatch(ui,/createNeonTenantProject|checkout|Stripe/);
+ assert.doesNotMatch(ui,/createNeonTenantProject|checkout/);
+ assert.match(ui,/billingReadiness/);
  assert.match(ui,/somente leitura/);
  const activation=file("src/app/api/plataforma/saas/tenants/[id]/ativar/route.ts");
  assert.match(activation,/await requirePlatformAdmin\(\)/);

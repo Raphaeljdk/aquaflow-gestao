@@ -10,31 +10,53 @@ export function ownerSlug(displayName:string) {
  if(base.length<3)throw new BusinessError("Nome do estabelecimento inválido.",400);
  return base+"-"+randomBytes(4).toString("hex");
 }
-type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string;originHash?:string};
+function validCnpj(digits:string):boolean{
+ if(!/^\d{14}$/.test(digits)||/^(\d)\1+$/.test(digits))return false;
+ const check=(part:string,weights:number[])=>{
+  const sum=[...part].reduce((n,d,i)=>n+Number(d)*weights[i],0);
+  const mod=sum%11;return mod<2?0:11-mod;
+ };
+ return check(digits.slice(0,12),[5,4,3,2,9,8,7,6,5,4,3,2])===Number(digits[12]) &&
+  check(digits.slice(0,13),[6,5,4,3,2,9,8,7,6,5,4,3,2])===Number(digits[13]);
+}
+type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;cnpj?:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string;originHash?:string};
+export async function assertRegistrationIdentityAvailable(db:PrismaClient,identity:{email:string;whatsapp:string;cnpj?:string}){
+ const email=identity.email.trim().toLowerCase();
+ const phone=identity.whatsapp.replace(/\D/g,"");
+ const cnpj=(identity.cnpj??"").replace(/\D/g,"");
+ if(cnpj && !validCnpj(cnpj))throw new BusinessError("CNPJ inválido. Confira os números informados.",400);
+ const existing=await db.$queryRaw<Array<{quantity:number}>>`
+  SELECT count(*)::integer AS quantity FROM platform_tenants
+  WHERE lower(owner_email)=${email} OR owner_whatsapp=${phone}
+    OR (${cnpj}<>'' AND owner_cnpj=${cnpj})`;
+ if((existing[0]?.quantity??0)>0)
+   throw new BusinessError("Já existe um cadastro associado ao e-mail, WhatsApp ou CNPJ informado. Recuperar o acesso não reinicia o teste gratuito. Entre em contato com o suporte.",409);
+}
 export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
  const slug=ownerSlug(info.nomeEmpresa);
  const email=info.email.trim().toLowerCase();
  const number=info.whatsapp.replace(/\D/g,"");
+ const cnpj=(info.cnpj??"").replace(/\D/g,"");
+ if(cnpj && !validCnpj(cnpj))throw new BusinessError("CNPJ inválido.",400);
  if(!email.includes("@") || !/^55\d{10,11}$/.test(number))
    throw new BusinessError("E-mail ou WhatsApp inválido.",400);
  return db.$transaction(async tx=>{
    // Serialize requests from the same contact and IP to prevent parallel resource abuse.
-   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+   // Lock all registration identifiers in stable order to prevent parallel signups.
+   const keys=["email:"+email,"phone:"+number,...(cnpj?["cnpj:"+cnpj]:[]),
+     ...(info.originHash?["origin:"+info.originHash]:[])].sort();
+   for(const key of keys)await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
    if(info.originHash){
-     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${info.originHash}))`;
      const recent=await tx.$queryRaw<Array<{quantity:number}>>`
        SELECT count(*)::integer AS quantity FROM platform_audit_events
        WHERE action='saas_signup_requested' AND metadata->>'ip_hash'=${info.originHash}
          AND created_at>now()-INTERVAL '24 hours'`;
      if((recent[0]?.quantity??0)>=10)throw new BusinessError("Limite diário de cadastros atingido.",429);
    }
-   const current=await tx.$queryRaw<Array<{quantity:number}>>`
-     SELECT count(*)::integer AS quantity FROM platform_tenants
-     WHERE lower(owner_email)=${email}`;
-   if((current[0]?.quantity??0)>0)throw new BusinessError("Este e-mail já possui um estabelecimento cadastrado. Recupere seu convite pelo suporte em vez de cadastrar outra empresa.",409);
+   await assertRegistrationIdentityAvailable(tx as unknown as PrismaClient,{email,whatsapp:number,cnpj});
    const rows=await tx.$queryRaw<Array<{id:string}>>`
-      INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp)
-      VALUES(${slug},${info.nomeEmpresa.trim()},${email},${number})
+      INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp,owner_cnpj)
+      VALUES(${slug},${info.nomeEmpresa.trim()},${email},${number},${cnpj||null})
       RETURNING id::text`;
    const tenantId=rows[0].id;
    await tx.$executeRaw`
