@@ -12,10 +12,10 @@ export async function GET() {
     return NextResponse.json({
       tenants: tenants.map(t => ({
         id: t.id, slug: t.slug, provisionamento: t.state, licenca: t.license_state,
-        usuariosAtivos: t.members, bancoConfigurado: t.has_database,
+        usuariosAtivos: t.members, proprietarioAtivo:t.owners>0, bancoConfigurado: t.has_database,
         testeJaIniciado: Boolean(t.trial_started_at),
         testeExpiraEm: t.trial_ends_at,
-        aptoParaTeste: t.state === "READY" && t.has_database && t.members > 0,
+        aptoParaTeste: t.state === "READY" && t.has_database && t.owners > 0,
         stripeHabilitada: process.env.STRIPE_BILLING_ENABLED === "true" &&
           (process.env.SAAS_PRODUCTION_MODE === "true" ?
               process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") === true :
