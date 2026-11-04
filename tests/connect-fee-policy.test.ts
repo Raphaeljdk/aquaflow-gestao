@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {assessConnectFee,connectFeeLedgerKey} from "../src/lib/saas/connect-fee-policy";
+import {assessConnectFee,connectFeeLedgerKey,calculateMerchantDeductedSplit} from "../src/lib/saas/connect-fee-policy";
 const paid = {amountCents:10000,currency:"brl" as const,paymentStatus:"paid" as const,
   processedViaConnect:true,connectedAccountReady:true};
 test("venda avulsa gera somente R$ 1",()=>{
@@ -28,4 +28,14 @@ test("chave de conciliação é estável e rejeita IDs malformados",()=>{
  const key=connectFeeLedgerKey(id,"acct_123","in_456");
  assert.equal(key,connectFeeLedgerKey(id,"acct_123","in_456"));
  assert.throws(()=>connectFeeLedgerKey(id,"acct_bad","evil"),/inválida/);
+});
+
+test("desconta comissão do estabelecimento sem aumentar pagamento do cliente",()=>{
+ const sale=calculateMerchantDeductedSplit(assessConnectFee({...paid,amountCents:5000,kind:"AVULSA"}));
+ assert.deepEqual(sale,{customerPaysCents:5000,merchantBeforeProcessorFeesCents:4900,platformFeeCents:100,processorFeesIncluded:false});
+ const membership=calculateMerchantDeductedSplit(assessConnectFee({...paid,amountCents:10000,kind:"ASSINATURA_LAVARAPIDO"}));
+ assert.deepEqual(membership,{customerPaysCents:10000,merchantBeforeProcessorFeesCents:9800,platformFeeCents:200,processorFeesIncluded:false});
+});
+test("split de comissão inelegível falha fechado",()=>{
+ assert.throws(()=>calculateMerchantDeductedSplit(assessConnectFee({...paid,processedViaConnect:false,kind:"AVULSA"})),/não elegível/);
 });
