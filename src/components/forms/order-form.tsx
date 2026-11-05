@@ -637,7 +637,7 @@ export function OrderDetail({
                   <Label>Forma de pagamento</Label>
                   <Choice
                     value={payment}
-                    onChange={setPayment}
+                    onChange={(value) => { setPayment(value); setPixConfirmado(false); }}
                     options={[
                       ...(pixQrSrc ? [{ value: "PIX", label: "Pix" }] : []),
                       { value: "DEBITO", label: "Cartão de débito" },
@@ -663,9 +663,21 @@ export function OrderDetail({
                               className="object-contain"
                             />
                           </div>
+                          {pixCode && (
+                            <Button type="button" size="sm" variant="outline" className="w-full"
+                              onClick={() => void navigator.clipboard.writeText(pixCode)
+                                .then(() => toast.success("Código Pix copia e cola copiado."))
+                                .catch(() => toast.error("Não foi possível copiar o código Pix."))}>
+                              Copiar Pix copia e cola · {money(o.total)}
+                            </Button>
+                          )}
                           <p className="text-center text-xs text-muted-foreground">
                             Confira o valor e confirme o crédito no extrato do banco antes de registrar como pago. O sistema não verifica recebimento automático.
                           </p>
+                          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background p-3 text-xs">
+                            <input type="checkbox" checked={pixConfirmado} onChange={(event) => setPixConfirmado(event.target.checked)} className="mt-0.5 size-4 accent-emerald-600" />
+                            <span>Confirmo que verifiquei o recebimento deste Pix no extrato bancário do estabelecimento. Esta confirmação é manual.</span>
+                          </label>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
