@@ -297,6 +297,19 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               <p className="-mt-3 text-xs text-muted-foreground">Ex.: +55 11 99200-3650. O número será usado na página pública de agendamentos por WhatsApp.</p>
               {input("endereco", "Endereço")}
               <div className="border-t border-border pt-5">
+                <Label>WhatsApp — envio automático de comandas</Label>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  O sistema pode enviar automaticamente o PDF completo quando a comanda é finalizada, somente quando o cliente autorizou e a integração oficial Meta está habilitada. O envio parte da conta empresarial configurada pela plataforma.
+                </p>
+                <label className="mt-3 flex items-start gap-2 rounded-lg border border-border p-3 text-sm">
+                  <input type="checkbox" className="mt-1 size-4" {...f.register("whatsappEnvioAutomatico")} />
+                  Habilitar envio automático das comandas finalizadas com consentimento registrado
+                </label>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Requer WhatsApp Business Platform, modelo com cabeçalho de documento aprovado e consentimento do destinatário. Sem essa integração, os envios ficam pendentes e ninguém é contatado.
+                </p>
+              </div>
+              <div className="border-t border-border pt-5">
                 <Label>Pix para receber lavagens e produtos</Label>
                 <div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
                   Esta opção pertence exclusivamente ao dono deste lava-rápido. Não use aqui a conta ou o Pix das assinaturas da Ducha Elitte.

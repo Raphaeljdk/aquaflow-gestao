@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { whatsappGatewayReady } from "@/lib/whatsapp-oficial";
+import { processarProximaComandaWhatsapp } from "@/lib/whatsapp-envios";
 import { z } from "zod";
 import { currentUser } from "@/lib/auth";
 import { snapshot, scopeData, mutate } from "@/lib/repository";
@@ -18,6 +20,7 @@ const entitySchema = z.enum([
   "materiais",
   "movimentosEstoque",
 ]);
+export const maxDuration=60;
 type Context = { params: Promise<{ entity: string; id?: string[] }> };
 async function handler(request: Request, context: Context) {
   try {
@@ -55,13 +58,19 @@ async function handler(request: Request, context: Context) {
       entity !== "configuracoes"
     )
       throw new BusinessError("Informe o registro.");
-    return NextResponse.json(
-      await withOperationalDatabase(user,db=>mutate(
-        { entity, id, method: request.method as Mutation["method"], data },
-        user, db,
-      )),
-      { status: request.method === "POST" ? 201 : 200 },
-    );
+    const result=await withOperationalDatabase(user,db=>mutate(
+      { entity, id, method: request.method as Mutation["method"], data },
+      user, db,
+    ));
+    if(entity==="comandas" && request.method==="PATCH" &&
+       data.status==="FINALIZADO" && whatsappGatewayReady()){
+      // Apenas após o COMMIT da transação; o outbox é a fonte de verdade.
+      after(async()=>{
+        try{await withOperationalDatabase(user,db=>processarProximaComandaWhatsapp(db));}
+        catch{/* cron autenticado recupera itens PENDING; não duplicar mensagens */}
+      });
+    }
+    return NextResponse.json(result,{status:request.method==="POST"?201:200});
   } catch (e) {
     if (e instanceof SyntaxError)
       return NextResponse.json({ error: "JSON inválido." }, { status: 400 });

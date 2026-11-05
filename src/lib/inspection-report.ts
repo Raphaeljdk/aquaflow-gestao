@@ -35,9 +35,104 @@ export async function gerarPdfVistoria(info: {
   placa: string;
   criadoEm: string;
   vistoria: Vistoria;
+  resumoComanda?: {
+    status: string;
+    pagamento: string;
+    desconto: number;
+    total: number;
+    observacoes: string;
+    finalizadoEm?: string | null;
+    pagoEm?: string | null;
+    servicos: Array<{ nome: string; preco: number; quantidade: number }>;
+    produtos: Array<{ nome: string; preco: number; quantidade: number; devolvido?: number }>;
+  };
 }): Promise<File> {
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  // Emissão completa: resumo comercial vem ANTES do mapa de vistoria.
+  // A versão antiga de vistoria avulsa não sofre alterações.
+  if (info.resumoComanda) {
+    const resumo = info.resumoComanda;
+    const currency = (valor: number) => "R$ " + valor.toFixed(2).replace(".", ",");
+    let rowY = 46;
+    doc.setFillColor(17, 24, 32);
+    doc.rect(0, 0, 210, 35, "F");
+    doc.setFillColor(245, 188, 46);
+    doc.rect(0, 0, 210, 3, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.text((info.estabelecimento || "Lava-rápido").slice(0, 53), 17, 17);
+    doc.setFontSize(10.5);
+    doc.text("COMANDA COMPLETA #" + info.numero, 17, 26);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(36, 44, 54);
+    doc.setFontSize(9);
+    const titleLine = [
+      "Cliente: " + info.cliente,
+      "Contato: " + info.telefone,
+      "Veículo: " + info.veiculo + " | " + info.placa,
+      "Aberta: " + new Date(info.criadoEm).toLocaleString("pt-BR"),
+      "Situação: " + resumo.status,
+      "Pagamento: " + resumo.pagamento,
+    ];
+    for (const line of titleLine) {
+      for (const fragment of doc.splitTextToSize(line, 175) as string[]) {
+        if (rowY > 268) { doc.addPage(); rowY = 25; }
+        doc.text(fragment, 17, rowY); rowY += 6;
+      }
+    }
+    const section = (name: string) => {
+      if (rowY > 257) { doc.addPage(); rowY = 22; }
+      rowY += 6;
+      doc.setFillColor(240, 243, 246);
+      doc.roundedRect(17, rowY - 5, 176, 9, 1.5, 1.5, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9);
+      doc.setTextColor(23, 33, 43); doc.text(name, 21, rowY + 1);
+      rowY += 12;
+    };
+    const lineItem = (name: string, qty: number, price: number, note = "") => {
+      if (rowY > 263) { doc.addPage(); rowY = 23; }
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.3);
+      const desc = qty + "x " + name.slice(0, 75) + (note ? " " + note : "");
+      const lines = doc.splitTextToSize(desc, 127) as string[];
+      doc.text(lines, 19, rowY);
+      doc.text(currency(qty * price), 191, rowY, { align: "right" });
+      rowY += Math.max(1, lines.length) * 4.5 + 2;
+    };
+    section("SERVIÇOS CONTRATADOS");
+    for (const item of resumo.servicos) lineItem(item.nome, item.quantidade, item.preco);
+    if (!resumo.servicos.length) lineItem("Nenhum serviço", 0, 0);
+    section("BEBIDAS, ALIMENTOS E PRODUTOS");
+    for (const item of resumo.produtos) {
+      lineItem(item.nome, item.quantidade, item.preco, item.devolvido ? "(devolvidos: " + item.devolvido + ")" : "");
+    }
+    if (!resumo.produtos.length) lineItem("Nenhum produto", 0, 0);
+    section("FECHAMENTO");
+    for (const line of [
+      "Desconto registrado: " + currency(resumo.desconto),
+      "TOTAL ATUAL DA COMANDA: " + currency(resumo.total),
+      "Finalizada em: " + (resumo.finalizadoEm ? new Date(resumo.finalizadoEm).toLocaleString("pt-BR") : "Ainda não finalizada"),
+      "Pagamento registrado em: " + (resumo.pagoEm ? new Date(resumo.pagoEm).toLocaleString("pt-BR") : "Ainda não registrado"),
+    ]) {
+      if (rowY > 263) { doc.addPage(); rowY = 23; }
+      doc.setFont("helvetica", line.startsWith("TOTAL") ? "bold" : "normal");
+      doc.setFontSize(line.startsWith("TOTAL") ? 11 : 8.5);
+      doc.text(line.slice(0, 108), 19, rowY);
+      rowY += 7;
+    }
+    const notes = (resumo.observacoes || "").trim();
+    if (notes) {
+      section("OBSERVAÇÕES DA COMANDA");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+      for (const line of doc.splitTextToSize(notes, 167) as string[]) {
+        if (rowY > 268) { doc.addPage(); rowY = 23; }
+        doc.text(line, 19, rowY); rowY += 5;
+      }
+    }
+    doc.addPage();
+  }
+
   const status = (id: VistoriaItemId) => info.vistoria.itens.find((item) => item.id === id);
   const revisados = info.vistoria.itens.filter((i) => i.revisado);
   const avarias = revisados.filter((i) => i.defeito).length;
@@ -217,7 +312,7 @@ export async function gerarPdfVistoria(info: {
     doc.text("Registro visual do estado aparente do veículo. Não substitui laudo técnico.", 17, 289);
     doc.text(p + "/" + pageCount, 192, 289, { align: "right" });
   }
-  return new File([doc.output("blob")], "vistoria-comanda-" + info.numero + ".pdf", { type: "application/pdf" });
+  return new File([doc.output("blob")], (info.resumoComanda ? "comanda-completa-" : "vistoria-comanda-") + info.numero + ".pdf", { type: "application/pdf" });
 }
 
 export function baixarPdfVistoria(file: File) {
