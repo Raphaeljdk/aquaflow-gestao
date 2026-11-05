@@ -234,7 +234,13 @@ export function applyMutation(
       }
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
-      o.comissao = decimal(Math.round((cents(o.total) * f.comissao) / 100));
+      // Comissão de lavagem incide apenas sobre SERVIÇOS, nunca sobre bebidas
+      // ou mercadorias vendidas na mesma comanda.
+      const subtotalServicos = o.itens.reduce(
+        (total, item) => total + cents(item.preco) * item.quantidade, 0,
+      );
+      const baseComissao = Math.max(0, subtotalServicos - cents(o.desconto));
+      o.comissao = decimal(Math.round((baseComissao * f.comissao) / 100));
       o.finalizadoEm = now.toISOString();
       o.pagoEm = now.toISOString();
     }
