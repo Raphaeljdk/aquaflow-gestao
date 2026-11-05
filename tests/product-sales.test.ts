@@ -2,6 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { estoqueLivre, quantidadeReservada, permiteEditarProdutos, subtotalMercadorias } from "../src/lib/product-sales-policy";
+import { makeDemoData } from "../src/lib/demo-data";
+import { applyMutation } from "../src/lib/domain";
+import type { User } from "../src/types";
 
 test("a reserva protege unidades de mais de uma comanda ativa", () => {
   assert.equal(quantidadeReservada([{ quantidade: 2 }, { quantidade: 3 }]), 5);
@@ -34,4 +37,20 @@ test("migração é aditiva, mantém os serviços e cria rastreabilidade de vend
   assert.match(repo, /baixadoEm: null/);
   assert.match(repo, /pg_advisory_xact_lock/);
   assert.match(api, /requestId: input.requestId/);
+});
+
+test("a comissão de lavagem não considera mercadorias vendidas", () => {
+  const now = new Date("2026-11-04T20:00:00.000Z");
+  const actor: User = { id:"adm", name:"Gestor", email:"gestor@example.com", role:"ADMIN" };
+  const d=makeDemoData(now);
+  d.comandas=[];
+  const created=applyMutation(d,{entity:"comandas",method:"POST",
+    data:{clienteId:"c1",veiculoId:"v1",servicoIds:["s1"],funcionarioId:"f1",desconto:0}},actor,now);
+  created.comandas[0].total+=14; // Simula duas latas a R$7, preservando os serviços.
+  const id=created.comandas[0].id;
+  const washing=applyMutation(created,{entity:"comandas",method:"PATCH",id,data:{status:"EM_LAVAGEM"}},actor,now);
+  const finished=applyMutation(washing,{entity:"comandas",method:"PATCH",id,
+    data:{status:"FINALIZADO",formaPagamento:"PIX",pixConfirmadoManualmente:true}},actor,now);
+  assert.equal(finished.comandas[0].total,99);
+  assert.equal(finished.comandas[0].comissao,12.75);
 });
