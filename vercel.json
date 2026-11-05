@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/saas-recover-invites",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/whatsapp-comandas",
+      "schedule": "* * * * *"
     }
   ],
   "ignoreCommand": "sh -c 'if [ \"$VERCEL_ENV\" = \"production\" ] && printf \"%s\" \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -q \"\\[release\\]\"; then exit 1; fi; exit 0'"

@@ -117,6 +117,10 @@ model Comanda {
   updatedAt DateTime @updatedAt
   finalizadoEm DateTime?
   pagoEm DateTime?
+  whatsappAutorizadoEm DateTime?
+  whatsappAutorizacaoPor String @default("")
+  envioWhatsApp WhatsAppEnvio?
+  eventosConsentimentoWhatsapp WhatsAppAutorizacaoEvento[]
   itens ItemComanda[]
   itensProduto ItemProdutoComanda[]
   agendamento Agendamento?
@@ -164,6 +168,9 @@ model Configuracao {
   endereco String @default("")
   telefone String @default("")
   pixChave String @default("")
+  pixRecebimentoChave String @default("")
+  pixRecebimentoAtivo Boolean @default(false)
+  whatsappEnvioAutomatico Boolean @default(false)
   logo String @default("")
   manualVideoUrl String @default("")
   manualPdfUrl String @default("")
@@ -418,4 +425,34 @@ model DevolucaoProduto {
   registradoPorId String
   createdAt DateTime @default(now())
   @@index([itemId, createdAt])
+}
+
+/** Uma comanda = no máximo um envio automático; protege contra duplicação. */
+model WhatsAppEnvio {
+  id String @id @default(cuid())
+  comandaId String @unique
+  comanda Comanda @relation(fields:[comandaId], references:[id], onDelete:Restrict)
+  status String @default("PENDING")
+  tentativas Int @default(0)
+  providerMessageId String? @unique
+  erroCodigo String @default("")
+  solicitadoPorId String @default("")
+  ultimaTentativaEm DateTime?
+  enviadoEm DateTime?
+  entregueEm DateTime?
+  lidoEm DateTime?
+  criadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  @@index([status, criadoEm])
+}
+
+model WhatsAppAutorizacaoEvento {
+  id String @id @default(cuid())
+  comandaId String
+  comanda Comanda @relation(fields: [comandaId], references: [id], onDelete: Restrict)
+  registradoPorId String
+  acao String
+  origem String
+  createdAt DateTime @default(now())
+  @@index([comandaId, createdAt])
 }

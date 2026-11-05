@@ -451,11 +451,14 @@ export function OrderDetail({
     [payment, setPayment] = useState(""),
     [pixConfirmado, setPixConfirmado] = useState(false),
     [washer, setWasher] = useState(""),
-    [cancel, setCancel] = useState(false);
+    [cancel, setCancel] = useState(false),
+    [whatsappConsentChecked,setWhatsappConsentChecked] = useState(false),
+    [whatsappBusy,setWhatsappBusy] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
     setPixConfirmado(false);
+    setWhatsappConsentChecked(false);
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
@@ -517,6 +520,56 @@ export function OrderDetail({
       const arquivo = await documentoVistoria();
       if (arquivo) { baixarPdfVistoria(arquivo); toast.success("PDF da vistoria baixado."); }
     } catch { toast.error("Não foi possível gerar a vistoria em PDF."); }
+  }
+  async function consentimentoWhatsapp(revogar:boolean){
+    if(!o||whatsappBusy)return;
+    setWhatsappBusy(true);
+    try {
+      const response=await fetch("/api/comandas/"+encodeURIComponent(o.id)+"/whatsapp/autorizacao",{
+        method:revogar?"DELETE":"POST",headers:{"Content-Type":"application/json"},
+        body:revogar?undefined:JSON.stringify({confirmado:true}),
+      });
+      const data=await response.json() as {error?:string};
+      if(!response.ok)throw new Error(data.error??"Não foi possível alterar a autorização.");
+      setWhatsappConsentChecked(false);
+      await refresh();
+      toast.success(revogar?"Autorização revogada e envios futuros cancelados.":"Autorização registrada para este atendimento.");
+    }catch(e){toast.error(e instanceof Error?e.message:"Falha ao registrar autorização.");}
+    finally{setWhatsappBusy(false);}
+  }
+  async function arquivoComanda(): Promise<File | null> {
+    if (!o) return null;
+    const response = await fetch("/api/comandas/" + encodeURIComponent(o.id) + "/pdf", { cache: "no-store" });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      throw new Error(body.error ?? "Não foi possível gerar a comanda completa.");
+    }
+    const blob=await response.blob();
+    return new File([blob], "comanda-completa-" + o.numero + ".pdf", {type:"application/pdf"});
+  }
+  async function baixarComanda() {
+    try {
+      const pdf = await arquivoComanda();
+      if (pdf) {baixarPdfVistoria(pdf);toast.success("PDF completo da comanda baixado.");}
+    }catch(e) {toast.error(e instanceof Error ? e.message : "Erro ao gerar comanda.");}
+  }
+  async function compartilharComanda() {
+    try {
+      const pdf = await arquivoComanda();
+      if(!pdf) return;
+      const texto = "Olá, " + (c?.nome ?? "cliente") + "! Segue a comanda #" + o?.numero +
+        " do veículo " + (v?.placa ?? "") + ", no valor registrado de " + money(o?.total ?? 0) + ".";
+      if(navigator.canShare?.({files:[pdf]}) && navigator.share) {
+        try {
+          await navigator.share({files:[pdf],title:"Comanda completa",text:texto});
+          return;
+        }catch(error){if(error instanceof DOMException && error.name==="AbortError") return;}
+      }
+      baixarPdfVistoria(pdf);
+      const url=whatsappLink(c?.telefone,texto);
+      if(url) window.open(url,"_blank","noopener,noreferrer");
+      toast.info(url?"Anexe o PDF baixado na conversa do WhatsApp antes de enviar.":"PDF salvo. Cadastre um número válido para abrir a conversa.");
+    }catch(e){toast.error(e instanceof Error?e.message:"Falha ao compartilhar comanda.");}
   }
   async function compartilharVistoria() {
     try {
@@ -749,7 +802,46 @@ export function OrderDetail({
                  <Button type="button" variant="outline" size="sm" onClick={() => void compartilharVistoria()}>
                    <Share2 size={16}/> Compartilhar pelo WhatsApp
                  </Button>
+                 <Button type="button" variant="outline" size="sm" onClick={() => void baixarComanda()}>
+                   <FileDown size={16}/> PDF completo da comanda
+                 </Button>
+                 <Button type="button" variant="outline" size="sm" onClick={() => void compartilharComanda()}>
+                   <Share2 size={16}/> Compartilhar comanda
+                 </Button>
+                 {o.whatsappEnvioStatus && <p className="w-full text-xs text-muted-foreground">
+                   WhatsApp oficial: {o.whatsappEnvioStatus === "SUBMITTED" ? "aceito para envio pela Meta" :
+                     o.whatsappEnvioStatus === "DELIVERED" ? "entregue" :
+                     o.whatsappEnvioStatus === "READ" ? "lido" :
+                     o.whatsappEnvioStatus === "PENDING" ? "aguardando processamento" :
+                     o.whatsappEnvioStatus === "UNKNOWN" ? "resultado incerto — revisão manual" :
+                     o.whatsappEnvioStatus === "FAILED" ? "falhou — revisão manual" :
+                     o.whatsappEnvioStatus === "CANCELED" ? "cancelado" : o.whatsappEnvioStatus}
+                 </p>}
                </div>
+               {["AGUARDANDO","EM_LAVAGEM"].includes(o.status) &&
+                 <div className="rounded-xl border border-border p-3 space-y-3">
+                   <p className="text-sm font-semibold">Autorização para envio automático pelo WhatsApp</p>
+                   <p className="text-xs text-muted-foreground">
+                     O cliente precisa concordar em receber a comanda em PDF da Ducha Elitte, em nome deste lava-rápido. Apenas cadastrar o telefone não concede autorização.
+                   </p>
+                   {o.whatsappAutorizadoEm ? (
+                     <div className="space-y-2">
+                       <p className="text-xs text-emerald-600">Autorização registrada em {new Date(o.whatsappAutorizadoEm).toLocaleString("pt-BR")}.</p>
+                       <Button variant="outline" size="sm" type="button" disabled={whatsappBusy}
+                         onClick={()=>void consentimentoWhatsapp(true)}>Revogar autorização</Button>
+                     </div>
+                   ) : (
+                     <div className="space-y-2">
+                       <label className="flex items-start gap-2 text-xs">
+                         <input type="checkbox" className="mt-0.5 size-4" checked={whatsappConsentChecked}
+                           onChange={e=>setWhatsappConsentChecked(e.target.checked)}/>
+                         Confirmo que o cliente foi informado e autorizou o recebimento da comanda pelo WhatsApp.
+                       </label>
+                       <Button variant="outline" size="sm" type="button" disabled={!whatsappConsentChecked||whatsappBusy}
+                         onClick={()=>void consentimentoWhatsapp(false)}>Registrar autorização do cliente</Button>
+                     </div>
+                   )}
+                 </div>}
                {["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
                     <Button
                       variant="ghost"

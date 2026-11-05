@@ -93,6 +93,10 @@ export interface Comanda {
   createdAt: string;
   finalizadoEm: string | null;
   pagoEm: string | null;
+  whatsappAutorizadoEm?: string | null;
+  whatsappAutorizacaoPor?: string;
+  whatsappEnvioStatus?: string | null;
+  whatsappEnvioEm?: string | null;
   itens: ItemComanda[];
 }
 export interface Agendamento {
@@ -114,6 +118,7 @@ export interface Configuracao {
   pixChave: string; // legado: jamais usar para pagamentos operacionais
   pixRecebimentoChave?: string;
   pixRecebimentoAtivo?: boolean;
+  whatsappEnvioAutomatico?: boolean;
   logo: string;
   manualVideoUrl: string;
   manualPdfUrl: string;

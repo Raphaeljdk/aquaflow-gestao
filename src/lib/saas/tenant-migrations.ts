@@ -4,8 +4,9 @@ import {PrismaClient} from "@prisma/client";
 import {tenantMigrationsPart1} from "./tenant-migration-data-part1";
 import {tenantMigrationsPart2} from "./tenant-migration-data-part2";
 import {tenantMigrationsPart3} from "./tenant-migration-data-part3";
+import {tenantMigrationsPart4} from "./tenant-migration-data-part4";
 import {splitTenantSql} from "./tenant-sql-parser";
-export const tenantMigrations=[...tenantMigrationsPart1,...tenantMigrationsPart2,...tenantMigrationsPart3] as const;
+export const tenantMigrations=[...tenantMigrationsPart1,...tenantMigrationsPart2,...tenantMigrationsPart3,...tenantMigrationsPart4] as const;
 
 /**
  * New Neon project only. A failed/incomplete migration leaves the tenant unready,

@@ -162,6 +162,7 @@ export const configuracaoSchema = z
         )
       ), "Use CPF, CNPJ, telefone (+55), e-mail, chave aleatória ou QR PNG/JPG/WebP válido.").default(""),
     pixRecebimentoAtivo: z.boolean().default(false),
+    whatsappEnvioAutomatico: z.boolean().default(false),
     logo: text
       .max(500000)
       .refine(

@@ -23,7 +23,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
     db.servico.findMany(),
     db.funcionario.findMany(),
     db.comanda.findMany({
-      include: { itens: true },
+      include: { itens: true, envioWhatsApp: true },
       orderBy: { createdAt: "desc" },
     }),
     db.agendamento.findMany({
@@ -55,6 +55,10 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       createdAt: o.createdAt.toISOString(),
       finalizadoEm: o.finalizadoEm?.toISOString() ?? null,
       pagoEm: o.pagoEm?.toISOString() ?? null,
+      whatsappAutorizadoEm: o.whatsappAutorizadoEm?.toISOString() ?? null,
+      whatsappAutorizacaoPor: o.whatsappAutorizacaoPor,
+      whatsappEnvioStatus: o.envioWhatsApp?.status ?? null,
+      whatsappEnvioEm: o.envioWhatsApp?.enviadoEm?.toISOString() ?? null,
       vistoria: (o.vistoria as unknown as Vistoria | null) ?? null,
       itens: o.itens.map((i) => ({
         servicoId: i.servicoId,
@@ -84,6 +88,7 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       pixChave: "",
       pixRecebimentoChave: "",
       pixRecebimentoAtivo: false,
+      whatsappEnvioAutomatico: false,
       logo: "",
       manualVideoUrl: "",
       manualPdfUrl: "",
@@ -278,7 +283,10 @@ export async function mutate(m: Mutation, actor: User, database: PrismaClient = 
         });
       }
       for (const o of changed(before.comandas, after.comandas)) {
-        const { id, itens, vistoria, ...v } = o;
+        const { id, itens, vistoria, whatsappAutorizadoEm: _waConsent,
+          whatsappAutorizacaoPor: _waAuthor, whatsappEnvioStatus: _waStatus,
+          whatsappEnvioEm: _waSent, ...v } = o;
+        void _waConsent; void _waAuthor; void _waStatus; void _waSent;
         const data = {
           ...v,
           ...(vistoria
@@ -294,6 +302,20 @@ export async function mutate(m: Mutation, actor: User, database: PrismaClient = 
           await tx.comanda.create({
             data: { id, ...data, itens: { create: itens } },
           });
+      }
+      // Enfileirar somente UMA mensagem no mesmo commit da finalização.
+      // Não enviar ao WhatsApp dentro da transação: o cron fará o envio oficial.
+      if (m.entity === "comandas" && m.method === "PATCH" &&
+          m.data?.status === "FINALIZADO" && m.id &&
+          before.configuracao.whatsappEnvioAutomatico === true) {
+        const target = after.comandas.find(o=>o.id===m.id);
+        if (target?.whatsappAutorizadoEm) {
+          await tx.whatsAppEnvio.upsert({
+            where: { comandaId:m.id },
+            create: { comandaId:m.id, status:"PENDING", solicitadoPorId:actor.id },
+            update: {},
+          });
+        }
       }
       for (const a of changed(before.agendamentos, after.agendamentos)) {
         const { id, servicoIds, ...v } = a;
