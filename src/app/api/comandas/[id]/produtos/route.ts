@@ -4,6 +4,7 @@ import { apiError, checkOrigin } from "@/lib/api";
 import { withOperationalDatabase } from "@/lib/saas/operations";
 import { confirmarEstruturaProdutos, exigirOperacaoProdutos, itemProdutoSchema } from "@/lib/produtos";
 import { BusinessError } from "@/lib/domain";
+import { estoqueLivre, permiteEditarProdutos } from "@/lib/product-sales-policy";
 
 type Context = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: Context) {
@@ -40,7 +41,7 @@ export async function POST(request: Request, context: Context) {
           throw new BusinessError("Identificador da operação já utilizado em outra venda.", 409);
         return existente;
       }
-      if (!["AGUARDANDO", "EM_LAVAGEM"].includes(pedido.status))
+      if (!permiteEditarProdutos(pedido.status))
         throw new BusinessError("Produtos só podem ser adicionados antes do fechamento.", 409);
       const produto = await tx.produto.findUnique({ where: { id: input.produtoId } });
       if (!produto || !produto.ativo) throw new BusinessError("Produto indisponível.", 404);
@@ -49,7 +50,7 @@ export async function POST(request: Request, context: Context) {
           comanda: { status: { in: ["AGUARDANDO", "EM_LAVAGEM"] } } },
         select: { quantidade: true },
       });
-      const disponivel = produto.estoque - reservas.reduce((n, x) => n + x.quantidade, 0);
+      const disponivel = estoqueLivre(produto.estoque, reservas);
       if (disponivel < input.quantidade) throw new BusinessError("Estoque insuficiente para esse produto.", 409);
       const novoItem = await tx.itemProdutoComanda.create({
         data: {
