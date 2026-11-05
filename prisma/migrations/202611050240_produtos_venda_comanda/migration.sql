@@ -21,6 +21,7 @@ CREATE TABLE "Produto" (
 CREATE TABLE "ItemProdutoComanda" (
   "id" TEXT NOT NULL,
   "requestId" TEXT NOT NULL,
+  "registradoPorId" TEXT NOT NULL DEFAULT '',
   "produtoId" TEXT NOT NULL,
   "comandaId" TEXT NOT NULL,
   "nome" TEXT NOT NULL,
@@ -34,6 +35,7 @@ CREATE TABLE "ItemProdutoComanda" (
 
 CREATE TABLE "MovimentoProduto" (
   "id" TEXT NOT NULL,
+  "registradoPorId" TEXT NOT NULL DEFAULT '',
   "produtoId" TEXT NOT NULL,
   "comandaId" TEXT,
   "tipo" TEXT NOT NULL,
