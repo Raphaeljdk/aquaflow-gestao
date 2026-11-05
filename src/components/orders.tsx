@@ -7,6 +7,8 @@ import {
   CarFront,
   CheckCircle2,
   MoreHorizontal,
+  PackageCheck,
+  SquareCheckBig,
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { useActions } from "./layout/app-shell";
@@ -34,18 +36,42 @@ import { OrderProductivity } from "@/components/order-productivity";
 import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
 export function Orders() {
-  const { data, user } = useStore(),
+  const { data, user, mutate, busy } = useStore(),
     a = useActions(),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("ATIVAS"),
     [view, setView] = useState("table"),
     [page, setPage] = useState(0),
-    [now, setNow] = useState(0);
+    [now, setNow] = useState(0),
+    [selectionMode, setSelectionMode] = useState(false),
+    [selected, setSelected] = useState<string[]>([]),
+    [delivering, setDelivering] = useState(false);
   useEffect(() => {
     setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  async function deliverSelected() {
+    if (!data || busy || delivering) return;
+    const eligible = data.comandas.filter((o) => selected.includes(o.id) && o.status === "FINALIZADO");
+    if (!eligible.length) return;
+    if (!window.confirm("Confirmar a entrega de " + eligible.length + " veículo(s)? As comandas sairão do painel, mas continuarão no histórico e financeiro.")) return;
+    setDelivering(true);
+    try {
+      const remaining: string[] = [];
+      for (const order of eligible) {
+        const saved = await mutate({
+          entity: "comandas", method: "PATCH", id: order.id,
+          data: { status: "ENTREGUE" },
+        });
+        if (!saved) remaining.push(order.id);
+      }
+      setSelected(remaining);
+      if (!remaining.length) setSelectionMode(false);
+    } finally {
+      setDelivering(false);
+    }
+  }
   if (!data) return null;
   const filtered = data.comandas
     .filter((o) => {
@@ -64,6 +90,11 @@ export function Orders() {
       );
     })
     .sort((a, b) => b.numero - a.numero);
+  const ready = filtered.filter((o) => o.status === "FINALIZADO");
+  const eligibleSelected = selected.filter((id) => ready.some((o) => o.id === id));
+  const toggleSelected = (id: string) => setSelected((prev) =>
+    prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  );
   return (
     <>
       <PageTitle
@@ -115,11 +146,37 @@ export function Orders() {
             </TabsList>
           </Tabs>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
+          <p className="text-xs text-muted-foreground">
+            Ao entregar o veículo, a comanda sai do quadro e permanece no histórico.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectionMode && (
+              <>
+                <Button variant="outline" size="sm" disabled={!ready.length || delivering}
+                  onClick={() => setSelected(ready.map((o) => o.id))}>
+                  Selecionar prontos ({ready.length})
+                </Button>
+                <Button variant="outline" size="sm" disabled={!selected.length || delivering}
+                  onClick={() => setSelected([])}>Limpar seleção</Button>
+                <Button size="sm" disabled={!eligibleSelected.length || busy || delivering}
+                  onClick={() => void deliverSelected()}>
+                  <PackageCheck size={15} /> Confirmar entrega ({eligibleSelected.length})
+                </Button>
+              </>
+            )}
+            <Button variant="outline" size="sm" disabled={delivering}
+              onClick={() => { setSelectionMode((value) => !value); setSelected([]); }}>
+              <SquareCheckBig size={15} /> {selectionMode ? "Cancelar seleção" : "Selecionar comandas"}
+            </Button>
+          </div>
+        </div>
         {view === "table" ? (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
+                  {selectionMode && <TableHead className="w-10">Selecionar</TableHead>}
                   <TableHead className="pl-5">Comanda</TableHead>
                   <TableHead>Veículo</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -136,6 +193,13 @@ export function Orders() {
                     f = data.funcionarios.find((f) => f.id === o.funcionarioId);
                   return (
                     <TableRow key={o.id}>
+                      {selectionMode && <TableCell>
+                        <input type="checkbox" aria-label={"Selecionar comanda " + o.numero}
+                          checked={selected.includes(o.id)}
+                          disabled={o.status !== "FINALIZADO" || delivering}
+                          onChange={() => toggleSelected(o.id)}
+                          className="h-4 w-4 accent-primary" />
+                      </TableCell>}
                       <TableCell className="pl-5">
                         <p className="font-semibold">#{o.numero}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -231,12 +295,18 @@ export function Orders() {
                         return (
                           <button
                             key={o.id}
-                            onClick={() => a.showOrder(o.id)}
-                            className="panel block w-full p-4 text-left hover:border-primary/50 hover:shadow-md"
+                            onClick={() => selectionMode && o.status === "FINALIZADO"
+                              ? toggleSelected(o.id)
+                              : !selectionMode ? a.showOrder(o.id) : undefined}
+                            disabled={selectionMode && o.status !== "FINALIZADO"}
+                            aria-pressed={selectionMode && o.status === "FINALIZADO" ? selected.includes(o.id) : undefined}
+                            className={"panel block w-full p-4 text-left hover:border-primary/50 hover:shadow-md " +
+                              (selectionMode && selected.includes(o.id) ? "ring-2 ring-primary " : "") +
+                              (selectionMode && o.status !== "FINALIZADO" ? "opacity-60" : "")}
                           >
                             <div className="flex justify-between">
                               <span className="text-xs text-muted-foreground">
-                                #{o.numero}
+                                {selectionMode && o.status === "FINALIZADO" ? (selected.includes(o.id) ? "☑ " : "☐ ") : ""}#{o.numero}
                               </span>
                               <span className="plate">{v?.placa}</span>
                             </div>
