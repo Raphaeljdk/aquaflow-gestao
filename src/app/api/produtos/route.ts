@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       const produto = await tx.produto.create({ data: { ...data, estoque: estoqueInicial } });
       if (estoqueInicial)
         await tx.movimentoProduto.create({
-          data: { produtoId: produto.id, quantidade: estoqueInicial, tipo: "ENTRADA",
+          data: { produtoId: produto.id, registradoPorId: user.id, quantidade: estoqueInicial, tipo: "ENTRADA",
             observacao: "Saldo inicial cadastrado pelo administrador" },
         });
       return { ...produto, preco: Number(produto.preco) };
