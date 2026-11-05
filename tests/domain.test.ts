@@ -15,6 +15,9 @@ const now = new Date("2026-09-21T11:00:00Z"),
   };
 function setup() {
   const d = makeDemoData(now);
+  d.configuracao.nome = "Lava Rápido QA";
+  d.configuracao.pixRecebimentoChave = "+5511999999999";
+  d.configuracao.pixRecebimentoAtivo = true;
   d.comandas = [];
   d.agendamentos = [];
   return d;

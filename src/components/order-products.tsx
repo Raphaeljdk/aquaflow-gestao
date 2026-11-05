@@ -6,6 +6,7 @@ import { money } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Status } from "@/types";
+import { OrderProductReturn } from "@/components/order-product-return";
 
 type Produto = {
   id: string; nome: string; preco: number; estoque: number; ativo: boolean;
@@ -13,7 +14,7 @@ type Produto = {
 };
 type Item = {
   id: string; produtoId: string; nome: string; preco: number;
-  quantidade: number; baixadoEm: string | null;
+  quantidade: number; devolvido?: number; baixadoEm: string | null;
 };
 async function getData<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: "no-store" });
@@ -92,9 +93,15 @@ export function OrderProducts({ id, status, onChanged }: {
     {error && <p role="alert" className="mt-2 rounded-lg border border-amber-300 p-2 text-xs text-amber-700">{error}</p>}
     {itens.length>0 && <div className="mt-3 divide-y divide-border rounded-lg border">
       {itens.map(item=><div key={item.id} className="flex items-center justify-between gap-3 p-3 text-sm">
-        <div><p className="font-medium">{item.quantidade}× {item.nome}</p><p className="text-xs text-muted-foreground">{money(item.preco)} cada · {item.baixadoEm?"Vendido":"Reservado"}</p></div>
+        <div><p className="font-medium">{item.quantidade}× {item.nome}</p>
+          <p className="text-xs text-muted-foreground">{money(item.preco)} cada · {item.baixadoEm?"Vendido":"Reservado"}</p>
+          {(item.devolvido ?? 0)>0 && <p className="mt-1 text-xs text-amber-600">{item.devolvido} unidade(s) devolvida(s)</p>}
+        </div>
         <div className="flex items-center gap-2"><strong>{money(item.quantidade*item.preco)}</strong>
           {editavel && <Button size="sm" variant="ghost" disabled={busy} onClick={()=>void remove(item.id)} aria-label={"Remover "+item.nome}><Trash2 size={15}/></Button>}
+          {!editavel && item.baixadoEm && item.quantidade>(item.devolvido ?? 0) &&
+            <OrderProductReturn orderId={id} item={item}
+              onChanged={async () => { await Promise.all([load(),onChanged()]); }} />}
         </div>
       </div>)}
     </div>}

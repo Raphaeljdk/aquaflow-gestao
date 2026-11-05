@@ -384,6 +384,8 @@ model ItemProdutoComanda {
   preco Decimal @db.Decimal(12,2)
   quantidade Int
   baixadoEm DateTime?
+  devolvido Int @default(0)
+  devolucoes DevolucaoProduto[]
   createdAt DateTime @default(now())
   @@index([comandaId])
   @@index([produtoId, baixadoEm])
@@ -401,4 +403,19 @@ model MovimentoProduto {
   createdAt DateTime @default(now())
   @@index([produtoId, createdAt])
   @@index([comandaId])
+}
+
+model DevolucaoProduto {
+  id String @id @default(cuid())
+  requestId String @unique
+  itemId String
+  item ItemProdutoComanda @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantidade Int
+  valor Decimal @db.Decimal(12,2)
+  repostoAoEstoque Boolean @default(false)
+  reembolsoConfirmado Boolean @default(false)
+  motivo String
+  registradoPorId String
+  createdAt DateTime @default(now())
+  @@index([itemId, createdAt])
 }

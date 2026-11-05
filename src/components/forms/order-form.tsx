@@ -460,13 +460,13 @@ export function OrderDetail({
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
     v = data?.veiculos.find((v) => v.id === o?.veiculoId),
-    pixStored = data?.configuracao.pixChave ?? "",
+    pixStored = data?.configuracao.pixRecebimentoAtivo ? (data?.configuracao.pixRecebimentoChave ?? "") : "",
     pixCode =
       o && pixStored && !pixStored.startsWith("data:image/")
         ? pixPayload({
             chave: pixStored,
             valor: o.total,
-            nome: data?.configuracao.nome ?? "Ducha Elitte",
+            nome: data?.configuracao.nome ?? "ESTABELECIMENTO",
             txid: "CMD" + o.numero,
           })
         : "",
@@ -683,7 +683,7 @@ export function OrderDetail({
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Cadastre a chave Pix ou envie o QR Code do estabelecimento em Configurações para liberar esta opção.
+                          O administrador do lava-rápido precisa configurar e habilitar sua própria chave ou QR Code em Configurações. O Pix da assinatura da plataforma não é utilizado.
                         </p>
                       )}
                     </div>

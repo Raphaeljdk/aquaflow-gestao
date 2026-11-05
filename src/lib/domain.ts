@@ -227,6 +227,16 @@ export function applyMutation(
       );
       if (o.formaPagamento === "PIX") {
         need(
+          d.configuracao.pixRecebimentoAtivo && !!d.configuracao.pixRecebimentoChave,
+          "O proprietário deve configurar e habilitar a chave Pix operacional deste lava-rápido.",
+          409,
+        );
+        need(
+          d.configuracao.nome.trim().toLowerCase() !== "ducha elitte",
+          "Cadastre o nome real do seu lava-rápido antes de finalizar Pix.",
+          409,
+        );
+        need(
           v.pixConfirmadoManualmente === true,
           "Confirme manualmente o recebimento do Pix no extrato do banco antes de finalizar.",
           409,

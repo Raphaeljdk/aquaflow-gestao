@@ -111,7 +111,9 @@ export interface Configuracao {
   cnpj: string;
   endereco: string;
   telefone: string;
-  pixChave: string;
+  pixChave: string; // legado: jamais usar para pagamentos operacionais
+  pixRecebimentoChave?: string;
+  pixRecebimentoAtivo?: boolean;
   logo: string;
   manualVideoUrl: string;
   manualPdfUrl: string;

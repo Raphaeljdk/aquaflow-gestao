@@ -46,7 +46,7 @@ export function pixPayload({
     tlv("53", "986") +
     (valor > 0 ? tlv("54", valor.toFixed(2)) : "") +
     tlv("58", "BR") +
-    tlv("59", clean(nome || "DUCHA ELITTE", 25) || "DUCHA ELITTE") +
+    tlv("59", clean(nome || "LAVA RAPIDO", 25) || "LAVA RAPIDO") +
     tlv("60", clean(cidade, 15) || "SAO PAULO") +
     tlv("62", additional) +
     "6304";

@@ -43,6 +43,9 @@ test("a comissão de lavagem não considera mercadorias vendidas", () => {
   const now = new Date("2026-11-04T20:00:00.000Z");
   const actor: User = { id:"adm", name:"Gestor", email:"gestor@example.com", role:"ADMIN" };
   const d=makeDemoData(now);
+  d.configuracao.nome = "Lava Rápido QA";
+  d.configuracao.pixRecebimentoChave = "+5511999999999";
+  d.configuracao.pixRecebimentoAtivo = true;
   d.comandas=[];
   const created=applyMutation(d,{entity:"comandas",method:"POST",
     data:{clienteId:"c1",veiculoId:"v1",servicoIds:["s1"],funcionarioId:"f1",desconto:0}},actor,now);

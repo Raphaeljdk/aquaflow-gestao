@@ -24,5 +24,6 @@
       "path": "/api/cron/saas-recover-invites",
       "schedule": "*/10 * * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "sh -c 'if [ \"$VERCEL_ENV\" = \"production\" ] && printf \"%s\" \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -q \"\\[release\\]\"; then exit 1; fi; exit 0'"
 }
