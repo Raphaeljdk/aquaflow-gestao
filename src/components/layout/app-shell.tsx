@@ -291,6 +291,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ⌘ K
                 </kbd>
               </Button>
+              <Link href="/suporte" aria-label="Abrir chat de suporte"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold hover:bg-muted">
+                <LifeBuoy size={16} /><span className="hidden sm:inline">Chat / Ajuda</span>
+              </Link>
               <div className="hidden h-5 border-l border-border sm:block" />
               <Button
                 variant="ghost"
