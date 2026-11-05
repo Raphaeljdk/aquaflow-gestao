@@ -672,7 +672,7 @@ export function OrderDetail({
                             </Button>
                           )}
                           <p className="text-center text-xs text-muted-foreground">
-                            Confira o valor e confirme o crédito no extrato do banco antes de registrar como pago. O sistema não verifica recebimento automático.
+                            Confirme o recebimento no banco pelo extrato, conferindo o valor antes de registrar como pago. O sistema não verifica recebimento automático.
                           </p>
                           <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background p-3 text-xs">
                             <input type="checkbox" checked={pixConfirmado} onChange={(event) => setPixConfirmado(event.target.checked)} className="mt-0.5 size-4 accent-emerald-600" />
