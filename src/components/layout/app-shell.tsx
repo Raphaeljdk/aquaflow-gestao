@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   Package,
+  ShoppingBasket,
   Sparkles,
   ClipboardList,
   CalendarDays,
