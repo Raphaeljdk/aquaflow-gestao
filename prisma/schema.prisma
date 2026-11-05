@@ -118,6 +118,7 @@ model Comanda {
   finalizadoEm DateTime?
   pagoEm DateTime?
   itens ItemComanda[]
+  itensProduto ItemProdutoComanda[]
   agendamento Agendamento?
   @@index([createdAt])
   @@index([finalizadoEm])
@@ -346,4 +347,55 @@ model MensagemChamado {
   texto String
   createdAt DateTime @default(now())
   @@index([chamadoId, createdAt])
+}
+
+
+enum CategoriaProduto {
+  BEBIDA
+  ALIMENTO
+  OUTROS
+}
+
+model Produto {
+  id String @id @default(cuid())
+  nome String
+  descricao String @default("")
+  categoria CategoriaProduto @default(OUTROS)
+  preco Decimal @db.Decimal(12,2)
+  estoque Int @default(0)
+  estoqueMinimo Int @default(0)
+  ativo Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  itens ItemProdutoComanda[]
+  movimentacoes MovimentoProduto[]
+  @@index([ativo, nome])
+}
+
+model ItemProdutoComanda {
+  id String @id @default(cuid())
+  produtoId String
+  produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  comandaId String
+  comanda Comanda @relation(fields: [comandaId], references: [id], onDelete: Restrict)
+  nome String
+  preco Decimal @db.Decimal(12,2)
+  quantidade Int
+  baixadoEm DateTime?
+  createdAt DateTime @default(now())
+  @@index([comandaId])
+  @@index([produtoId, baixadoEm])
+}
+
+model MovimentoProduto {
+  id String @id @default(cuid())
+  produtoId String
+  produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  comandaId String?
+  tipo String
+  quantidade Int
+  observacao String @default("")
+  createdAt DateTime @default(now())
+  @@index([produtoId, createdAt])
+  @@index([comandaId])
 }
