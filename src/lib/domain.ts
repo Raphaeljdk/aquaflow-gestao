@@ -199,6 +199,18 @@ export function applyMutation(
         (v) => v.id === o.veiculoId && v.clienteId === o.clienteId,
       );
       need(veiculo, "Veículo desta comanda não encontrado.", 404);
+      // No atendimento rápido, o "modelo" é um rótulo genérico
+      // derivado do tipo. Ajustá-lo junto evita "Não informado Motocicleta"
+      // quando a pessoa corrige para carro. Modelos reais permanecem intactos.
+      const modelosGenericos = {
+        CARRO: "Automóvel",
+        MOTO: "Motocicleta",
+        CAMINHONETE: "Caminhonete",
+      } as const;
+      if (
+        veiculo.marca === "Não informado" &&
+        veiculo.modelo === modelosGenericos[veiculo.tipo]
+      ) veiculo.modelo = modelosGenericos[input.tipo as typeof veiculo.tipo];
       veiculo.tipo = input.tipo as typeof veiculo.tipo;
       return d;
     }
