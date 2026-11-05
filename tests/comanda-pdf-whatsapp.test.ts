@@ -35,13 +35,13 @@ test("vistoria antiga continua gerando PDF separado",async()=>{
   assert.equal(pdf.name,"vistoria-comanda-3.pdf");
 });
 test("gateway mantém o envio inativo sem credenciais e template",()=>{
-  assert.equal(whatsappGatewayReady({WHATSAPP_COMANDA_ENABLED:"true"} as NodeJS.ProcessEnv),false);
+  assert.equal(whatsappGatewayReady({WHATSAPP_COMANDA_ENABLED:"true"}),false);
   assert.equal(whatsappGatewayReady({WHATSAPP_COMANDA_ENABLED:"false",WHATSAPP_CLOUD_API_TOKEN:"token",
-    WHATSAPP_PHONE_NUMBER_ID:"123456789012",WHATSAPP_COMANDA_TEMPLATE_NAME:"comanda_documento"} as NodeJS.ProcessEnv),false);
+    WHATSAPP_PHONE_NUMBER_ID:"123456789012",WHATSAPP_COMANDA_TEMPLATE_NAME:"comanda_documento"}),false);
   assert.equal(whatsappGatewayReady({WHATSAPP_COMANDA_ENABLED:"true",WHATSAPP_CLOUD_API_TOKEN:"token",
-    WHATSAPP_PHONE_NUMBER_ID:"123456789012",WHATSAPP_COMANDA_TEMPLATE_NAME:"comanda_documento"} as NodeJS.ProcessEnv),true);
-  assert.equal(versionGraphApi({WHATSAPP_GRAPH_API_VERSION:"v24.0"} as NodeJS.ProcessEnv),"v24.0");
-  assert.throws(()=>versionGraphApi({WHATSAPP_GRAPH_API_VERSION:"javascript:alert(1)"} as NodeJS.ProcessEnv));
+    WHATSAPP_PHONE_NUMBER_ID:"123456789012",WHATSAPP_COMANDA_TEMPLATE_NAME:"comanda_documento"}),true);
+  assert.equal(versionGraphApi({WHATSAPP_GRAPH_API_VERSION:"v24.0"}),"v24.0");
+  assert.throws(()=>versionGraphApi({WHATSAPP_GRAPH_API_VERSION:"javascript:alert(1)"}));
 });
 test("sem consentimento explícito ou finalização não há envio",()=>{
   assert.equal(metadataEnvioComanda("11999999999",null,"FINALIZADO",true).allowed,false);
