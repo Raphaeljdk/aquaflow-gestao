@@ -448,11 +448,13 @@ export function OrderDetail({
 }) {
   const { data, user, mutate, busy } = useStore(),
     [payment, setPayment] = useState(""),
+    [pixConfirmado, setPixConfirmado] = useState(false),
     [washer, setWasher] = useState(""),
     [cancel, setCancel] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
+    setPixConfirmado(false);
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
@@ -479,6 +481,7 @@ export function OrderDetail({
       status,
       funcionarioId: washer || null,
       formaPagamento: payment || null,
+      ...(status === "FINALIZADO" && payment === "PIX" ? { pixConfirmadoManualmente: pixConfirmado } : {}),
     };
     if (
       await mutate({
@@ -661,12 +664,12 @@ export function OrderDetail({
                             />
                           </div>
                           <p className="text-center text-xs text-muted-foreground">
-                            Confirme o recebimento no banco e finalize a comanda para registrar como pago via PIX.
+                            Confira o valor e confirme o crédito no extrato do banco antes de registrar como pago. O sistema não verifica recebimento automático.
                           </p>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Envie o QR Code PIX em Configurações para liberar este pagamento.
+                          Cadastre a chave Pix ou envie o QR Code do estabelecimento em Configurações para liberar esta opção.
                         </p>
                       )}
                     </div>
@@ -705,7 +708,7 @@ export function OrderDetail({
                 )}
                 {o.status === "EM_LAVAGEM" && (
                   <Button
-                    disabled={busy || !payment || (payment === "PIX" && !pixQrSrc)}
+                    disabled={busy || !payment || (payment === "PIX" && (!pixQrSrc || !pixConfirmado))}
                     onClick={() => void transition("FINALIZADO")}
                   >
                     Confirmar pagamento e finalizar
