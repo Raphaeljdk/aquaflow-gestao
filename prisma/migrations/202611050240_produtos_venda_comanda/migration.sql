@@ -20,6 +20,7 @@ CREATE TABLE "Produto" (
 
 CREATE TABLE "ItemProdutoComanda" (
   "id" TEXT NOT NULL,
+  "requestId" TEXT NOT NULL,
   "produtoId" TEXT NOT NULL,
   "comandaId" TEXT NOT NULL,
   "nome" TEXT NOT NULL,
@@ -44,6 +45,7 @@ CREATE TABLE "MovimentoProduto" (
 );
 
 CREATE INDEX "Produto_ativo_nome_idx" ON "Produto"("ativo", "nome");
+CREATE UNIQUE INDEX "ItemProdutoComanda_requestId_key" ON "ItemProdutoComanda"("requestId");
 CREATE INDEX "ItemProdutoComanda_comandaId_idx" ON "ItemProdutoComanda"("comandaId");
 CREATE INDEX "ItemProdutoComanda_produtoId_baixadoEm_idx" ON "ItemProdutoComanda"("produtoId", "baixadoEm");
 CREATE INDEX "MovimentoProduto_produtoId_createdAt_idx" ON "MovimentoProduto"("produtoId", "createdAt");
