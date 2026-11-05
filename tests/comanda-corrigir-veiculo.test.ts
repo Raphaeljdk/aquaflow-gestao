@@ -12,7 +12,7 @@ function comandaAberta(): AppData {
   const data = makeDemoData(now);
   data.comandas = [];
   data.agendamentos = [];
-  data.veiculos.find((v) => v.id === "v1")!.tipo = "MOTO";
+  Object.assign(data.veiculos.find((v) => v.id === "v1")!, { tipo: "MOTO", marca: "Não informado", modelo: "Motocicleta" });
   return applyMutation(data, {
     entity: "comandas",
     method: "POST",
@@ -34,6 +34,7 @@ test("atendente pode corrigir moto para carro numa comanda aguardando sem perder
   const antes = structuredClone(original.comandas[0]);
   const atualizado = corrigir(original, "CARRO");
   assert.equal(atualizado.veiculos.find((v) => v.id === "v1")?.tipo, "CARRO");
+  assert.equal(atualizado.veiculos.find((v) => v.id === "v1")?.modelo, "Automóvel");
   assert.equal(original.veiculos.find((v) => v.id === "v1")?.tipo, "MOTO");
   assert.deepEqual(atualizado.comandas[0], antes);
   assert.equal(atualizado.comandas[0].status, "AGUARDANDO");
@@ -47,8 +48,16 @@ test("correção funciona em lavagem e valida os três tipos possíveis", () => 
   }, funcionario, now);
   const corrigido = corrigir(emLavagem, "CAMINHONETE");
   assert.equal(corrigido.veiculos.find((v) => v.id === "v1")?.tipo, "CAMINHONETE");
+  assert.equal(corrigido.veiculos.find((v) => v.id === "v1")?.modelo, "Caminhonete");
   assert.equal(corrigir(corrigido, "MOTO").veiculos.find((v) => v.id === "v1")?.tipo, "MOTO");
   assert.throws(() => corrigir(corrigido, "ONIBUS"), /tipo de veículo válido/);
+});
+
+test("não sobrescreve modelo de fábrica já informado no cadastro", () => {
+  const data = comandaAberta();
+  Object.assign(data.veiculos.find((v) => v.id === "v1")!, { marca: "Honda", modelo: "CG 160" });
+  const corrigido = corrigir(data, "CARRO");
+  assert.equal(corrigido.veiculos.find((v) => v.id === "v1")?.modelo, "CG 160");
 });
 
 test("não permite modificar o veículo por uma comanda já finalizada ou cancelada", () => {
