@@ -502,6 +502,7 @@ export function OrderDetail({
       cliente: c?.nome ?? "Não informado",
       telefone: c?.telefone ?? "Não informado",
       veiculo: [v?.marca, v?.modelo, v?.cor].filter(Boolean).join(" "),
+      tipo: v?.tipo ?? "CARRO",
       placa: v?.placa ?? "Não informada",
       criadoEm: o.createdAt,
       vistoria: o.vistoria,
@@ -635,8 +636,10 @@ export function OrderDetail({
                     value={payment}
                     onChange={setPayment}
                     options={[
-                      ...(pixQrSrc ? [{ value: "PIX", label: "PIX" }] : []),
-                      { value: "CREDITO", label: "Cartão" },
+                      ...(pixQrSrc ? [{ value: "PIX", label: "Pix" }] : []),
+                      { value: "DEBITO", label: "Cartão de débito" },
+                      { value: "CREDITO", label: "Cartão de crédito" },
+                      { value: "DINHEIRO", label: "Dinheiro" },
                     ]}
                     placeholder="Selecione o pagamento"
                   />
@@ -668,10 +671,10 @@ export function OrderDetail({
                       )}
                     </div>
                   )}
-                  {payment === "CREDITO" && (
+                  {(payment === "CREDITO" || payment === "DEBITO") && (
                     <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">
                       <CreditCard size={17} className="mt-0.5 shrink-0 text-primary" />
-                      Cartão é registrado manualmente no sistema após a aprovação na maquininha.
+                      Cartão de débito ou crédito é registrado manualmente após a aprovação na maquininha. Não há cobrança automática nesta tela.
                     </div>
                   )}
                 </div>
