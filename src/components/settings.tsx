@@ -297,7 +297,13 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               <p className="-mt-3 text-xs text-muted-foreground">Ex.: +55 11 99200-3650. O número será usado na página pública de agendamentos por WhatsApp.</p>
               {input("endereco", "Endereço")}
               <div className="border-t border-border pt-5">
-                <Label>QR Code PIX</Label>
+                <Label>Pix do lava-rápido</Label>
+                <p className="mt-2 text-sm text-muted-foreground">Configure a chave Pix que pertence a este estabelecimento ou envie o QR Code oficial do banco. O dinheiro vai diretamente para a conta cadastrada, nunca para a assinatura da plataforma.</p>
+                <div className="mt-3 space-y-1.5">
+                  <Label htmlFor="pix-key">Chave Pix (CPF, CNPJ, e-mail, telefone ou chave aleatória)</Label>
+                  <Input id="pix-key" placeholder="Digite a chave Pix do estabelecimento" value={values.pixChave?.startsWith("data:image/") ? "" : values.pixChave ?? ""} onChange={(e) => f.setValue("pixChave", e.target.value.trim(), { shouldDirty: true, shouldValidate: true })} autoComplete="off" />
+                  <p className="text-xs text-muted-foreground">Ao informar uma chave, o sistema gera o código Pix copia e cola com o valor da comanda. Confira o titular da conta no aplicativo bancário.</p>
+                </div>
                 <div className="mt-3 flex flex-wrap items-center gap-5">
                   <div className="flex size-40 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-2">
                     {values.pixChave?.startsWith("data:image/") ? (
@@ -308,7 +314,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                       />
                     ) : (
                       <span className="px-4 text-center text-xs text-muted-foreground">
-                        Nenhum QR Code enviado
+                        {values.pixChave ? "Chave Pix configurada: o QR será exibido na comanda." : "Nenhum QR Code enviado"}
                       </span>
                     )}
                   </div>
@@ -330,7 +336,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                       }
                     />
                     <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-                      Envie o QR Code PIX oficial em PNG, JPG ou WebP (até 300 KB). Depois clique em “Salvar alterações” no topo. Teste a leitura com seu banco antes de receber pagamentos. Um QR fixo não confirma o pagamento automaticamente.
+                      Se preferir, envie o QR Code Pix oficial em PNG, JPG ou WebP (até 300 KB). Salve as alterações. Um QR fixo não inclui automaticamente o valor da comanda e nenhum método confirma o pagamento sem conciliação bancária.
                     </p>
                     {values.pixChave && (
                       <Button
@@ -342,7 +348,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                           f.setValue("pixChave", "", { shouldDirty: true })
                         }
                       >
-                        Remover QR Code
+                        Remover configuração Pix
                       </Button>
                     )}
                   </div>

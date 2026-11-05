@@ -54,7 +54,7 @@ test("catálogo é fonte do preço; desconto e comissão usam centavos", () => {
   assert.equal(d.comandas[0].total, 120);
   assert.equal(orderTotal([{ preco: 0.1, quantidade: 3 }], 0.1), 0.2);
   const done = transition(transition(d, "EM_LAVAGEM"), "FINALIZADO", {
-    formaPagamento: "PIX",
+    formaPagamento: "PIX", pixConfirmadoManualmente: true,
   });
   assert.equal(done.comandas[0].comissao, 18);
   assert.equal(done.comandas[0].comissaoPercentual, 15);
@@ -88,7 +88,7 @@ test("impede duplicidade de veículo ativo, inclusive pronto para retirada", () 
   const d = create();
   assert.throws(() => create(d), /já está na fila/);
   const done = transition(transition(d, "EM_LAVAGEM"), "FINALIZADO", {
-    formaPagamento: "PIX",
+    formaPagamento: "PIX", pixConfirmadoManualmente: true,
   });
   assert.throws(() => create(done), /já está na fila/);
   assert.equal(create(transition(done, "ENTREGUE")).comandas.length, 2);
@@ -130,7 +130,7 @@ test("não permite pular etapas nem gerar comissão duas vezes", () => {
     /status/,
   );
   const done = transition(transition(d, "EM_LAVAGEM"), "FINALIZADO", {
-    formaPagamento: "PIX",
+    formaPagamento: "PIX", pixConfirmadoManualmente: true,
   });
   assert.throws(
     () => transition(done, "FINALIZADO", { formaPagamento: "PIX" }),
@@ -164,7 +164,7 @@ test("funcionário opera clientes, comandas e agendamentos", () => {
       data: {
         status: "FINALIZADO",
         funcionarioId: "f2",
-        formaPagamento: "PIX",
+        formaPagamento: "PIX", pixConfirmadoManualmente: true,
       },
     },
     funcionario,
@@ -198,16 +198,18 @@ test("funcionário opera clientes, comandas e agendamentos", () => {
   );
 });
 
-test("pagamento novo aceita somente PIX ou cartão", () => {
+test("pagamento operacional aceita dinheiro, débito e crédito; Pix exige conferência", () => {
   const d = transition(create(), "EM_LAVAGEM");
-  assert.throws(
-    () => transition(d, "FINALIZADO", { formaPagamento: "DINHEIRO" }),
-    /PIX ou Cartão/,
-  );
+  for (const formaPagamento of ["DINHEIRO", "DEBITO", "CREDITO"] as const) {
+    assert.equal(
+      transition(d, "FINALIZADO", { formaPagamento }).comandas[0].formaPagamento,
+      formaPagamento,
+    );
+  }
+  assert.throws(() => transition(d, "FINALIZADO", { formaPagamento: "PIX" }), /Confirme manualmente/);
   assert.equal(
-    transition(d, "FINALIZADO", { formaPagamento: "CREDITO" }).comandas[0]
-      .formaPagamento,
-    "CREDITO",
+    transition(d, "FINALIZADO", { formaPagamento: "PIX", pixConfirmadoManualmente: true }).comandas[0].formaPagamento,
+    "PIX",
   );
 });
 
@@ -332,7 +334,7 @@ test("não exclui cliente com vínculo e desativa serviço sem apagar histórico
 });
 test("relatório considera recebimento e CSV neutraliza fórmulas", () => {
   let d = transition(transition(create(), "EM_LAVAGEM"), "FINALIZADO", {
-    formaPagamento: "PIX",
+    formaPagamento: "PIX", pixConfirmadoManualmente: true,
   });
   d.clientes[0].nome = "=WEBSERVICE(1)";
   const rows = reportRows(d, "2026-09-21", "2026-09-21");
@@ -359,7 +361,7 @@ test("placa é normalizada e telefone validado", () => {
 
 test("pagamento e responsável ficam imutáveis após finalizar", () => {
   const done = transition(transition(create(), "EM_LAVAGEM"), "FINALIZADO", {
-    formaPagamento: "PIX",
+    formaPagamento: "PIX", pixConfirmadoManualmente: true,
   });
   assert.throws(
     () => transition(done, "ENTREGUE", { formaPagamento: "DINHEIRO" }),

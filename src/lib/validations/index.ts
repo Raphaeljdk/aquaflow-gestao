@@ -105,6 +105,7 @@ export const vistoriaSchema = z.object({
   observacoesGerais: text.max(1000).default(""),
 });
 export const statusSchema = z.object({
+  pixConfirmadoManualmente: z.boolean().optional(),
   status: z.enum([
     "AGUARDANDO",
     "EM_LAVAGEM",

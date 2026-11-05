@@ -448,11 +448,13 @@ export function OrderDetail({
 }) {
   const { data, user, mutate, busy } = useStore(),
     [payment, setPayment] = useState(""),
+    [pixConfirmado, setPixConfirmado] = useState(false),
     [washer, setWasher] = useState(""),
     [cancel, setCancel] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
+    setPixConfirmado(false);
     setWasher(o?.funcionarioId ?? "");
   }, [id, o?.formaPagamento, o?.funcionarioId]);
   const c = data?.clientes.find((c) => c.id === o?.clienteId),
@@ -479,6 +481,7 @@ export function OrderDetail({
       status,
       funcionarioId: washer || null,
       formaPagamento: payment || null,
+      ...(status === "FINALIZADO" && payment === "PIX" ? { pixConfirmadoManualmente: pixConfirmado } : {}),
     };
     if (
       await mutate({
@@ -634,7 +637,7 @@ export function OrderDetail({
                   <Label>Forma de pagamento</Label>
                   <Choice
                     value={payment}
-                    onChange={setPayment}
+                    onChange={(value) => { setPayment(value); setPixConfirmado(false); }}
                     options={[
                       ...(pixQrSrc ? [{ value: "PIX", label: "Pix" }] : []),
                       { value: "DEBITO", label: "Cartão de débito" },
@@ -660,13 +663,25 @@ export function OrderDetail({
                               className="object-contain"
                             />
                           </div>
+                          {pixCode && (
+                            <Button type="button" size="sm" variant="outline" className="w-full"
+                              onClick={() => void navigator.clipboard.writeText(pixCode)
+                                .then(() => toast.success("Código Pix copia e cola copiado."))
+                                .catch(() => toast.error("Não foi possível copiar o código Pix."))}>
+                              Copiar Pix copia e cola · {money(o.total)}
+                            </Button>
+                          )}
                           <p className="text-center text-xs text-muted-foreground">
-                            Confirme o recebimento no banco e finalize a comanda para registrar como pago via PIX.
+                            Confirme o recebimento no banco pelo extrato, conferindo o valor antes de registrar como pago. O sistema não verifica recebimento automático.
                           </p>
+                          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background p-3 text-xs">
+                            <input type="checkbox" checked={pixConfirmado} onChange={(event) => setPixConfirmado(event.target.checked)} className="mt-0.5 size-4 accent-emerald-600" />
+                            <span>Confirmo que verifiquei o recebimento deste Pix no extrato bancário do estabelecimento. Esta confirmação é manual.</span>
+                          </label>
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Envie o QR Code PIX em Configurações para liberar este pagamento.
+                          Cadastre a chave Pix ou envie o QR Code do estabelecimento em Configurações para liberar esta opção.
                         </p>
                       )}
                     </div>
@@ -705,7 +720,7 @@ export function OrderDetail({
                 )}
                 {o.status === "EM_LAVAGEM" && (
                   <Button
-                    disabled={busy || !payment || (payment === "PIX" && !pixQrSrc)}
+                    disabled={busy || !payment || (payment === "PIX" && (!pixQrSrc || !pixConfirmado))}
                     onClick={() => void transition("FINALIZADO")}
                   >
                     Confirmar pagamento e finalizar
