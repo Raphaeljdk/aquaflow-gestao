@@ -82,6 +82,8 @@ export async function snapshot(db: DB = prisma): Promise<AppData> {
       endereco: "",
       telefone: "",
       pixChave: "",
+      pixRecebimentoChave: "",
+      pixRecebimentoAtivo: false,
       logo: "",
       manualVideoUrl: "",
       manualPdfUrl: "",
@@ -130,6 +132,40 @@ export async function mutate(m: Mutation, actor: User, database: PrismaClient = 
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(642019)`;
       const before = await snapshot(tx),
         after = applyMutation(before, m, actor);
+
+      // Baixa mercadorias somente quando a comanda é finalizada, no MESMO
+      // commit do pagamento. Bancos antigos sem a migration continuam operando.
+      if (m.entity === "comandas" && m.method === "PATCH" &&
+          m.data?.status === "FINALIZADO" && m.id) {
+        const tables = await tx.$queryRaw<Array<{ nome: string | null }>>`
+          SELECT to_regclass('public."ItemProdutoComanda"')::text AS nome
+        `;
+        if (tables[0]?.nome) {
+          const items = await tx.itemProdutoComanda.findMany({
+            where: { comandaId: m.id, baixadoEm: null },
+          });
+          const numero = after.comandas.find(o => o.id === m.id)?.numero;
+          for (const item of items) {
+            const result = await tx.produto.updateMany({
+              where: { id: item.produtoId, estoque: { gte: item.quantidade } },
+              data: { estoque: { decrement: item.quantidade } },
+            });
+            if (result.count !== 1)
+              throw new BusinessError("Estoque insuficiente para finalizar a venda de " + item.nome + ".", 409);
+            await tx.itemProdutoComanda.update({
+              where: { id: item.id }, data: { baixadoEm: new Date() },
+            });
+            await tx.movimentoProduto.create({
+              data: {
+                produtoId: item.produtoId, comandaId: m.id,
+                registradoPorId: actor.id, tipo: "VENDA",
+                quantidade: -item.quantidade,
+                observacao: "Venda da comanda #" + (numero ?? m.id),
+              },
+            });
+          }
+        }
+      }
       for (const x of before.clientes)
         if (!after.clientes.some((y) => y.id === x.id))
           await tx.cliente.delete({ where: { id: x.id } });

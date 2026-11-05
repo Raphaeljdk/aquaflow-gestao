@@ -227,6 +227,16 @@ export function applyMutation(
       );
       if (o.formaPagamento === "PIX") {
         need(
+          d.configuracao.pixRecebimentoAtivo && !!d.configuracao.pixRecebimentoChave,
+          "O proprietário deve configurar e habilitar a chave Pix operacional deste lava-rápido.",
+          409,
+        );
+        need(
+          d.configuracao.nome.trim().toLowerCase() !== "ducha elitte",
+          "Cadastre o nome real do seu lava-rápido antes de finalizar Pix.",
+          409,
+        );
+        need(
           v.pixConfirmadoManualmente === true,
           "Confirme manualmente o recebimento do Pix no extrato do banco antes de finalizar.",
           409,
@@ -234,7 +244,13 @@ export function applyMutation(
       }
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
-      o.comissao = decimal(Math.round((cents(o.total) * f.comissao) / 100));
+      // Comissão de lavagem incide apenas sobre SERVIÇOS, nunca sobre bebidas
+      // ou mercadorias vendidas na mesma comanda.
+      const subtotalServicos = o.itens.reduce(
+        (total, item) => total + cents(item.preco) * item.quantidade, 0,
+      );
+      const baseComissao = Math.max(0, subtotalServicos - cents(o.desconto));
+      o.comissao = decimal(Math.round((baseComissao * f.comissao) / 100));
       o.finalizadoEm = now.toISOString();
       o.pagoEm = now.toISOString();
     }

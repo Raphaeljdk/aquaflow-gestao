@@ -77,7 +77,7 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
     </div>
   );
   async function uploadImage(
-    field: "logo" | "pixChave",
+    field: "logo" | "pixRecebimentoChave",
     file?: File,
   ) {
     if (!file) return;
@@ -297,24 +297,32 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
               <p className="-mt-3 text-xs text-muted-foreground">Ex.: +55 11 99200-3650. O número será usado na página pública de agendamentos por WhatsApp.</p>
               {input("endereco", "Endereço")}
               <div className="border-t border-border pt-5">
-                <Label>Pix do lava-rápido</Label>
+                <Label>Pix para receber lavagens e produtos</Label>
+                <div className="mt-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                  Esta opção pertence exclusivamente ao dono deste lava-rápido. Não use aqui a conta ou o Pix das assinaturas da Ducha Elitte.
+                </div>
+                {initial.pixChave && !values.pixRecebimentoAtivo && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    A chave antiga foi desconsiderada por segurança. O proprietário deve cadastrar uma nova chave e habilitar os recebimentos.
+                  </p>
+                )}
                 <p className="mt-2 text-sm text-muted-foreground">Configure a chave Pix que pertence a este estabelecimento ou envie o QR Code oficial do banco. O dinheiro vai diretamente para a conta cadastrada, nunca para a assinatura da plataforma.</p>
                 <div className="mt-3 space-y-1.5">
                   <Label htmlFor="pix-key">Chave Pix (CPF, CNPJ, e-mail, telefone ou chave aleatória)</Label>
-                  <Input id="pix-key" placeholder="Digite a chave Pix do estabelecimento" value={values.pixChave?.startsWith("data:image/") ? "" : values.pixChave ?? ""} onChange={(e) => f.setValue("pixChave", e.target.value.trim(), { shouldDirty: true, shouldValidate: true })} autoComplete="off" />
+                  <Input id="pix-key" placeholder="Digite a chave Pix do estabelecimento" value={values.pixRecebimentoChave?.startsWith("data:image/") ? "" : values.pixRecebimentoChave ?? ""} onChange={(e) => f.setValue("pixRecebimentoChave", e.target.value.trim(), { shouldDirty: true, shouldValidate: true })} autoComplete="off" />
                   <p className="text-xs text-muted-foreground">Ao informar uma chave, o sistema gera o código Pix copia e cola com o valor da comanda. Confira o titular da conta no aplicativo bancário.</p>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-5">
                   <div className="flex size-40 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white p-2">
-                    {values.pixChave?.startsWith("data:image/") ? (
+                    {values.pixRecebimentoChave?.startsWith("data:image/") ? (
                       <img
-                        src={values.pixChave}
+                        src={values.pixRecebimentoChave}
                         alt="QR Code PIX"
                         className="size-full object-contain"
                       />
                     ) : (
                       <span className="px-4 text-center text-xs text-muted-foreground">
-                        {values.pixChave ? "Chave Pix configurada: o QR será exibido na comanda." : "Nenhum QR Code enviado"}
+                        {values.pixRecebimentoChave ? "Chave Pix configurada: o QR será exibido na comanda." : "Nenhum QR Code enviado"}
                       </span>
                     )}
                   </div>
@@ -332,20 +340,20 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                       accept="image/png,image/jpeg,image/webp"
                       className="sr-only"
                       onChange={(e) =>
-                        void uploadImage("pixChave", e.target.files?.[0])
+                        void uploadImage("pixRecebimentoChave", e.target.files?.[0])
                       }
                     />
                     <p className="mt-2 max-w-sm text-xs text-muted-foreground">
                       Se preferir, envie o QR Code Pix oficial em PNG, JPG ou WebP (até 300 KB). Salve as alterações. Um QR fixo não inclui automaticamente o valor da comanda e nenhum método confirma o pagamento sem conciliação bancária.
                     </p>
-                    {values.pixChave && (
+                    {values.pixRecebimentoChave && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="mt-1 px-0 text-destructive"
                         onClick={() =>
-                          f.setValue("pixChave", "", { shouldDirty: true })
+                          f.setValue("pixRecebimentoChave", "", { shouldDirty: true })
                         }
                       >
                         Remover configuração Pix
@@ -353,7 +361,11 @@ function SettingsForm({ initial }: { initial: Configuracao }) {
                     )}
                   </div>
                 </div>
-                <ErrorText message={f.formState.errors.pixChave?.message} />
+                <ErrorText message={f.formState.errors.pixRecebimentoChave?.message} />
+                <label className="mt-4 flex cursor-pointer items-start gap-2 rounded-lg border border-border p-3 text-sm">
+                  <input type="checkbox" className="mt-1 size-4 accent-emerald-600" {...f.register("pixRecebimentoAtivo")} />
+                  <span>Sou o administrador deste lava-rápido e confirmo que a chave/QR acima pertence à conta que deve receber as lavagens e os produtos. Habilitar Pix operacional.</span>
+                </label>
               </div>
             </div>
           </section>

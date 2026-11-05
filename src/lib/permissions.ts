@@ -12,6 +12,7 @@ export const allowedPages: Record<Role, string[]> = {
     "clientes",
     "veiculos",
     "servicos",
+    "produtos",
     "comandas",
     "agendamentos",
     "funcionarios",

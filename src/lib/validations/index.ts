@@ -149,6 +149,19 @@ export const configuracaoSchema = z
         "Envie um QR Code PNG, JPG ou WebP válido.",
       )
       .default(""),
+    pixRecebimentoChave: text.max(500000).refine((value) =>
+      !value || (
+        /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value) &&
+        value.length <= 450000
+      ) || (
+        value.length <= 140 && (
+          /^\d{11}$/.test(value) || /^\d{14}$/.test(value) ||
+          /^\+55\d{10,11}$/.test(value) ||
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+        )
+      ), "Use CPF, CNPJ, telefone (+55), e-mail, chave aleatória ou QR PNG/JPG/WebP válido.").default(""),
+    pixRecebimentoAtivo: z.boolean().default(false),
     logo: text
       .max(500000)
       .refine(
@@ -166,6 +179,14 @@ export const configuracaoSchema = z
   .refine((v) => v.abertura < v.fechamento, {
     message: "Fechamento deve ser após a abertura.",
     path: ["fechamento"],
+  })
+  .refine(v => !v.pixRecebimentoAtivo || !!v.pixRecebimentoChave, {
+    path: ["pixRecebimentoChave"],
+    message: "Configure uma chave ou QR Pix do estabelecimento antes de ativar recebimentos.",
+  })
+  .refine(v => !v.pixRecebimentoAtivo || v.nome.trim().toLowerCase() !== "ducha elitte", {
+    path: ["nome"],
+    message: "Informe o nome do seu lava-rápido. O Pix operacional não usa a identificação padrão da plataforma.",
   });
 export const loginSchema = z.object({
   email: z.string().trim().email().toLowerCase(),

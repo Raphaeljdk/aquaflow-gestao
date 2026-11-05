@@ -10,6 +10,9 @@ const now = new Date("2026-11-04T23:00:00Z");
 
 function aguardando() {
   const data = makeDemoData(now);
+  data.configuracao.nome = "Lava Rápido QA";
+  data.configuracao.pixRecebimentoChave = "+5511999999999";
+  data.configuracao.pixRecebimentoAtivo = true;
   data.comandas = [];
   const order = applyMutation(data, {
     entity: "comandas", method: "POST",
@@ -42,4 +45,19 @@ test("Pix copia e cola possui valor e CRC e utiliza somente a chave informada", 
   assert.match(s,/\+5511988887777/);
   assert.match(s,/6304[0-9A-F]{4}$/);
   assert.equal(pixPayload({chave:"",valor:45,nome:"Teste",txid:"CMD1004"}),"");
+});
+
+test("não permite Pix com chave legada ou com a conta desativada", () => {
+  const {id,order}=aguardando();
+  order.configuracao.pixRecebimentoAtivo = false;
+  order.configuracao.pixChave = "PIX_DA_ASSINATURA_NAO_UTILIZAR";
+  assert.throws(() => applyMutation(order, { entity:"comandas",method:"PATCH",id,
+    data:{status:"FINALIZADO",formaPagamento:"PIX",pixConfirmadoManualmente:true}},actor,now),/proprietário deve configurar/);
+});
+
+test("o Pix nunca usa a marca padrão da plataforma como recebedor da comanda",()=>{
+  const {id,order}=aguardando();
+  order.configuracao.nome="Ducha Elitte";
+  assert.throws(()=>applyMutation(order,{entity:"comandas",method:"PATCH",id,
+    data:{status:"FINALIZADO",formaPagamento:"PIX",pixConfirmadoManualmente:true}},actor,now),/nome real do seu lava-rápido/);
 });

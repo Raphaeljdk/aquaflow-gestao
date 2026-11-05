@@ -97,11 +97,11 @@ try {
   }
   if (config.timezone !== "America/Sao_Paulo")
     fail("timezone da empresa diferente de America/Sao_Paulo.");
-  // Sem QR real, o painel é acessível; a interface não deve oferecer PIX até ser configurado.
-  if (!config.pixChave?.trim()) {
-    console.log("[delivery-check] PIX: não configurado — indisponível até cadastrar chave/QR real.");
+  // Pix operacional é exclusivamente do estabelecimento; nunca usar pixChave legada.
+  if (!config.pixRecebimentoAtivo || !config.pixRecebimentoChave?.trim()) {
+    console.log("[delivery-check] Pix das comandas inativo até o dono cadastrar a conta.");
   } else {
-    console.log("[delivery-check] PIX: configuração presente.");
+    console.log("[delivery-check] Pix de recebimento do estabelecimento configurado.");
   }
   console.log("[delivery-check] timezone: America/Sao_Paulo");
 
