@@ -1,6 +1,7 @@
 import { normalizeWhatsappPhone } from "@/lib/whatsapp";
 /** Gateway oficial Meta; nunca usar automação de WhatsApp Web nem expor token no navegador. */
 export type WhatsappEnv = {
+  NODE_ENV?:string;
   WHATSAPP_COMANDA_ENABLED?:string; WHATSAPP_CLOUD_API_TOKEN?:string;
   WHATSAPP_PHONE_NUMBER_ID?:string; WHATSAPP_COMANDA_TEMPLATE_NAME?:string;
   WHATSAPP_GRAPH_API_VERSION?:string;
