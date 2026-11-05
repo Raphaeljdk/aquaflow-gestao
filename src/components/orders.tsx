@@ -30,6 +30,8 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
 import { statusLabels, type Status } from "@/types";
 import { duracaoAtendimento, previsaoServicos } from "@/lib/order-timing";
+import { OrderProductivity } from "@/components/order-productivity";
+import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
 export function Orders() {
   const { data, user } = useStore(),
@@ -70,6 +72,7 @@ export function Orders() {
         action={a.newOrder}
         actionLabel="Nova comanda"
       />
+      {user && canManage(user.role) && <OrderProductivity data={data} now={now} />}
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap justify-between gap-3 border-b border-border p-5">
           <div className="flex flex-1 flex-wrap gap-3">
