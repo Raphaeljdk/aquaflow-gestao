@@ -4,6 +4,7 @@ import { apiError, checkOrigin } from "@/lib/api";
 import { withOperationalDatabase } from "@/lib/saas/operations";
 import { confirmarEstruturaProdutos, exigirAdminProdutos, movimentoProdutoSchema } from "@/lib/produtos";
 import { BusinessError } from "@/lib/domain";
+import { quantidadeReservada } from "@/lib/product-sales-policy";
 
 type Context = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: Context) {
@@ -24,7 +25,7 @@ export async function POST(request: Request, context: Context) {
           comanda: { status: { in: ["AGUARDANDO", "EM_LAVAGEM"] } } },
         select: { quantidade: true },
       });
-      const reservado = reservas.reduce((a, x) => a + x.quantidade, 0);
+      const reservado = quantidadeReservada(reservas);
       const novoSaldo = produto.estoque + input.quantidade;
       if (novoSaldo < 0 || novoSaldo < reservado)
         throw new BusinessError("Saldo insuficiente: existem itens reservados em comandas abertas.", 409);
