@@ -330,6 +330,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 children
               )}
             </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-xs">
+              <span className="font-semibold">Precisa de ajuda?</span>
+              <Link href="/suporte" className="font-semibold text-primary hover:underline">Chat de suporte</Link>
+              <a href="mailto:gestaoduchaelitte@gmail.com?subject=Suporte%20Ducha%20Elitte"
+                className="break-all text-muted-foreground hover:underline">gestaoduchaelitte@gmail.com</a>
+            </div>
             <footer className="mt-8 flex flex-wrap justify-between gap-2 border-t border-border pt-5 text-xs text-muted-foreground">
               <span>
                 © {new Date().getFullYear()} Ducha Elitte · Cada detalhe sob
