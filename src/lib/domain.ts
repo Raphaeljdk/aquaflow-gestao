@@ -222,9 +222,16 @@ export function applyMutation(
       need(washer(o.funcionarioId), "Atribua um lavador antes de iniciar.");
     if (v.status === "FINALIZADO") {
       need(
-        o.formaPagamento === "PIX" || o.formaPagamento === "CREDITO",
-        "Selecione o pagamento via PIX ou Cartão antes de finalizar.",
+        ["PIX", "CREDITO", "DEBITO", "DINHEIRO"].includes(o.formaPagamento ?? ""),
+        "Selecione uma forma de pagamento antes de finalizar.",
       );
+      if (o.formaPagamento === "PIX") {
+        need(
+          v.pixConfirmadoManualmente === true,
+          "Confirme manualmente o recebimento do Pix no extrato do banco antes de finalizar.",
+          409,
+        );
+      }
       const f = washer(o.funcionarioId)!;
       o.comissaoPercentual = f.comissao;
       o.comissao = decimal(Math.round((cents(o.total) * f.comissao) / 100));
