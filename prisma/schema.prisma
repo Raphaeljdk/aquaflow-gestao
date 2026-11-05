@@ -375,6 +375,7 @@ model Produto {
 model ItemProdutoComanda {
   id String @id @default(cuid())
   requestId String @unique
+  registradoPorId String @default("")
   produtoId String
   produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
   comandaId String
@@ -390,6 +391,7 @@ model ItemProdutoComanda {
 
 model MovimentoProduto {
   id String @id @default(cuid())
+  registradoPorId String @default("")
   produtoId String
   produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
   comandaId String?
