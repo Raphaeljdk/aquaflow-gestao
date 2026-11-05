@@ -175,19 +175,36 @@ export async function gerarPdfVistoria(info: {
       lines.slice(0, 16).forEach((line, i) => doc.text(line, 101, y + 15 + i * 4.2));
     }
     y += rowHeight + 2;
+    // Anotações longas continuam nas páginas seguintes; nunca cortar avarias.
+    if (lines.length > 16) {
+      for (const line of lines.slice(16)) {
+        if (y + 5 > 276) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.1);
+        doc.setTextColor(82, 94, 107);
+        doc.text(line, 101, y + 3);
+        y += 4.2;
+      }
+      y += 3;
+    }
   }
 
   y = Math.max(y + 7, doc.getNumberOfPages() === 1 ? 232 : 20);
   const obs = info.vistoria.observacoesGerais.trim() || "Nenhuma observação registrada.";
   const obsLines = doc.splitTextToSize(obs, 172) as string[];
-  addPageIfNeeded(15 + obsLines.length * 4.5);
+  addPageIfNeeded(15);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...ink);
   doc.text("OBSERVAÇÕES GERAIS", 17, y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.4);
-  obsLines.forEach((line, i) => doc.text(line, 17, y + 7 + i * 4.5));
+  y += 7;
+  for (const line of obsLines) {
+    if (y + 4.5 > 276) { doc.addPage(); y = 20; }
+    doc.text(line, 17, y);
+    y += 4.5;
+  }
 
   const pageCount = doc.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
