@@ -51,6 +51,7 @@ import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
+import { OrderProducts } from "@/components/order-products";
 import { pixPayload } from "@/lib/pix";
 import { whatsappLink } from "@/lib/whatsapp";
 import { gerarPdfVistoria, baixarPdfVistoria } from "@/lib/inspection-report";
@@ -446,7 +447,7 @@ export function OrderDetail({
   id: string | null;
   onClose: () => void;
 }) {
-  const { data, user, mutate, busy } = useStore(),
+  const { data, user, mutate, busy, refresh } = useStore(),
     [payment, setPayment] = useState(""),
     [pixConfirmado, setPixConfirmado] = useState(false),
     [washer, setWasher] = useState(""),
@@ -592,7 +593,7 @@ export function OrderDetail({
                   </div>
                 )}
                 <div className="mt-3 flex justify-between border-t border-border pt-4 font-semibold">
-                  <span>Total</span>
+                  <span>Total (serviços + produtos)</span>
                   <span className="text-xl text-primary">{money(o.total)}</span>
                 </div>
               </div>
@@ -604,6 +605,7 @@ export function OrderDetail({
                   </p>
                 </div>
               )}
+              <OrderProducts key={"produtos-" + o.id} id={o.id} status={o.status} onChanged={refresh} />
               <VehicleInspection
                 key={o.id}
                 tipo={v?.tipo ?? "CARRO"}
