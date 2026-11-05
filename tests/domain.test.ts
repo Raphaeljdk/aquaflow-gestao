@@ -198,16 +198,18 @@ test("funcionário opera clientes, comandas e agendamentos", () => {
   );
 });
 
-test("pagamento novo aceita somente PIX ou cartão", () => {
+test("pagamento operacional aceita dinheiro, débito e crédito; Pix exige conferência", () => {
   const d = transition(create(), "EM_LAVAGEM");
-  assert.throws(
-    () => transition(d, "FINALIZADO", { formaPagamento: "DINHEIRO" }),
-    /PIX ou Cartão/,
-  );
+  for (const formaPagamento of ["DINHEIRO", "DEBITO", "CREDITO"] as const) {
+    assert.equal(
+      transition(d, "FINALIZADO", { formaPagamento }).comandas[0].formaPagamento,
+      formaPagamento,
+    );
+  }
+  assert.throws(() => transition(d, "FINALIZADO", { formaPagamento: "PIX" }), /Confirme manualmente/);
   assert.equal(
-    transition(d, "FINALIZADO", { formaPagamento: "CREDITO" }).comandas[0]
-      .formaPagamento,
-    "CREDITO",
+    transition(d, "FINALIZADO", { formaPagamento: "PIX", pixConfirmadoManualmente: true }).comandas[0].formaPagamento,
+    "PIX",
   );
 });
 
