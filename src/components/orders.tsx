@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutGrid,
   List,
@@ -29,6 +29,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Button } from "./ui/button";
 import { statusLabels, type Status } from "@/types";
+import { duracaoAtendimento, previsaoServicos } from "@/lib/order-timing";
+import { OrderProductivity } from "@/components/order-productivity";
+import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
 export function Orders() {
   const { data, user } = useStore(),
@@ -36,7 +39,13 @@ export function Orders() {
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("ATIVAS"),
     [view, setView] = useState("table"),
-    [page, setPage] = useState(0);
+    [page, setPage] = useState(0),
+    [now, setNow] = useState(0);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
   if (!data) return null;
   const filtered = data.comandas
     .filter((o) => {
@@ -63,6 +72,7 @@ export function Orders() {
         action={a.newOrder}
         actionLabel="Nova comanda"
       />
+      {user && canManage(user.role) && <OrderProductivity data={data} now={now} />}
       <div className="panel overflow-hidden">
         <div className="flex flex-wrap justify-between gap-3 border-b border-border p-5">
           <div className="flex flex-1 flex-wrap gap-3">
@@ -141,6 +151,17 @@ export function Orders() {
                       <TableCell className="text-sm">{c?.nome}</TableCell>
                       <TableCell>
                         <StatusBadge status={o.status} />
+                        <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+                          <Clock size={12} aria-hidden="true" />
+                          {duracaoAtendimento(o, now).texto}
+                          {previsaoServicos(o, data.servicos) > 0 && (
+                            <span className={duracaoAtendimento(o, now).segundos >
+                              previsaoServicos(o, data.servicos) * 60 && !["FINALIZADO", "ENTREGUE", "CANCELADO"].includes(o.status)
+                              ? "text-amber-600 dark:text-amber-400" : ""}>
+                              / {previsaoServicos(o, data.servicos)} min previstos
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">
                         {f?.nome ?? "Não atribuído"}
@@ -228,6 +249,17 @@ export function Orders() {
                             <p className="my-4 text-sm">
                               {o.itens.map((i) => i.nome).join(" + ")}
                             </p>
+                            <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+                              <Clock size={13} aria-hidden="true" />
+                              <span>{duracaoAtendimento(o, now).texto}</span>
+                              {previsaoServicos(o, data.servicos) > 0 && (
+                                <span className={duracaoAtendimento(o, now).segundos >
+                                  previsaoServicos(o, data.servicos) * 60 && s !== "FINALIZADO"
+                                  ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+                                  / {previsaoServicos(o, data.servicos)} min previstos
+                                </span>
+                              )}
+                            </div>
                             <div className="flex justify-between border-t border-border pt-3">
                               <span className="text-xs text-muted-foreground">
                                 {dateLabel(o.createdAt, "HH:mm")}
