@@ -182,6 +182,38 @@ export function applyMutation(
     }
     const o = d.comandas.find((o) => o.id === m.id);
     need(o, "Comanda não encontrada.", 404);
+    if (input.action === "corrigirTipoVeiculo") {
+      // Ajustar o cadastro do veículo vinculado sem reabrir a comanda,
+      // mexer em preços, serviços, pagamento ou vistoria.
+      need(
+        ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),
+        "O tipo de veículo só pode ser corrigido durante o atendimento.",
+        409,
+      );
+      need(
+        typeof input.tipo === "string" &&
+          ["CARRO", "MOTO", "CAMINHONETE"].includes(input.tipo),
+        "Selecione um tipo de veículo válido.",
+      );
+      const veiculo = d.veiculos.find(
+        (v) => v.id === o.veiculoId && v.clienteId === o.clienteId,
+      );
+      need(veiculo, "Veículo desta comanda não encontrado.", 404);
+      // No atendimento rápido, o "modelo" é um rótulo genérico
+      // derivado do tipo. Ajustá-lo junto evita "Não informado Motocicleta"
+      // quando a pessoa corrige para carro. Modelos reais permanecem intactos.
+      const modelosGenericos = {
+        CARRO: "Automóvel",
+        MOTO: "Motocicleta",
+        CAMINHONETE: "Caminhonete",
+      } as const;
+      if (
+        veiculo.marca === "Não informado" &&
+        veiculo.modelo === modelosGenericos[veiculo.tipo]
+      ) veiculo.modelo = modelosGenericos[input.tipo as typeof veiculo.tipo];
+      veiculo.tipo = input.tipo as typeof veiculo.tipo;
+      return d;
+    }
     if (input.action === "vistoria") {
       need(
         ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status),

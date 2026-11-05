@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CarFront,
+  Pencil,
   Check,
   Clock,
   AlertCircle,
@@ -49,7 +50,7 @@ import { comandaSchema } from "@/lib/validations";
 import { useStore } from "@/hooks/use-store";
 import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
-import { paymentLabels, type Status } from "@/types";
+import { paymentLabels, type Status, type Veiculo } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
 import { OrderProducts } from "@/components/order-products";
 import { pixPayload } from "@/lib/pix";
@@ -452,6 +453,8 @@ export function OrderDetail({
     [pixConfirmado, setPixConfirmado] = useState(false),
     [washer, setWasher] = useState(""),
     [cancel, setCancel] = useState(false),
+    [editingVehicle, setEditingVehicle] = useState(false),
+    [vehicleType, setVehicleType] = useState<Veiculo["tipo"]>("CARRO"),
     [whatsappConsentChecked,setWhatsappConsentChecked] = useState(false),
     [whatsappBusy,setWhatsappBusy] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
@@ -479,6 +482,29 @@ export function OrderDetail({
         ? "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
           encodeURIComponent(pixCode)
         : "";
+  useEffect(() => {
+    setEditingVehicle(false);
+    setVehicleType(v?.tipo ?? "CARRO");
+  }, [id, v?.tipo]);
+
+  async function corrigirTipoVeiculo() {
+    if (!o || !v || !["AGUARDANDO", "EM_LAVAGEM"].includes(o.status)) return;
+    if (vehicleType === v.tipo) {
+      setEditingVehicle(false);
+      return;
+    }
+    const saved = await mutate({
+      entity: "comandas",
+      method: "PATCH",
+      id: o.id,
+      data: { action: "corrigirTipoVeiculo", tipo: vehicleType },
+    });
+    if (saved) {
+      setEditingVehicle(false);
+      toast.success("Tipo de veículo corrigido com sucesso.");
+    }
+  }
+
   const transition = async (status: Status) => {
     if (!o) return;
     const payload: Record<string, unknown> = {
@@ -621,6 +647,39 @@ export function OrderDetail({
                     </p>
                   </div>
                 </div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    Tipo: {v?.tipo === "MOTO" ? "Moto" : v?.tipo === "CAMINHONETE" ? "Caminhonete" : "Carro"}
+                  </p>
+                  {v && ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && !editingVehicle && (
+                    <Button type="button" variant="outline" size="sm" disabled={busy}
+                      onClick={() => { setVehicleType(v.tipo); setEditingVehicle(true); }}>
+                      <Pencil size={14} /> Corrigir tipo
+                    </Button>
+                  )}
+                </div>
+                {v && editingVehicle && ["AGUARDANDO", "EM_LAVAGEM"].includes(o.status) && (
+                  <div className="mb-3 space-y-3 rounded-lg border border-border bg-background p-3">
+                    <Label htmlFor={"tipo-veiculo-comanda-" + o.id}>Tipo correto do veículo</Label>
+                    <select id={"tipo-veiculo-comanda-" + o.id} value={vehicleType} disabled={busy}
+                      onChange={(event) => setVehicleType(event.target.value as Veiculo["tipo"])}
+                      className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                      <option value="CARRO">Carro</option>
+                      <option value="MOTO">Moto</option>
+                      <option value="CAMINHONETE">Caminhonete</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      A correção atualiza o cadastro deste veículo. Serviços, valores e tempo da comanda não mudam.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" disabled={busy} onClick={() => void corrigirTipoVeiculo()}>
+                        {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Salvar alteração
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" disabled={busy}
+                        onClick={() => setEditingVehicle(false)}>Voltar</Button>
+                    </div>
+                  </div>
+                )}
                 <span className="plate">{v?.placa}</span>
                 <p className="mt-4 border-t border-border pt-3 text-sm">
                   {c?.nome}
