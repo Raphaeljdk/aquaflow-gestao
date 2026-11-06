@@ -216,6 +216,13 @@ export function Login() {
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">Sem cartão para solicitar o teste. O prazo começa após a liberação de acesso individual.</p>
           </div>
+          <div className="mt-6 rounded-xl border border-border bg-card p-4 text-center">
+            <p className="text-sm font-semibold">Fale com a equipe Ducha Elitte</p>
+            <p className="mt-1 text-xs text-muted-foreground">Dúvidas sobre planos, implantação ou acesso? Nosso canal oficial é:</p>
+            <a className="mt-2 inline-block break-all text-sm font-semibold text-primary underline underline-offset-4"
+              href="mailto:gestaoduchaelitte@gmail.com?subject=Contato%20-%20Ducha%20Elitte">gestaoduchaelitte@gmail.com</a>
+            <p className="mt-2 text-xs text-muted-foreground">Já é cliente? Entre no sistema e use o chat de suporte em Suporte / Chamados.</p>
+          </div>
           <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">{companyName} · Tecnologia para uma operação melhor.</p>
         </div>
       </section>

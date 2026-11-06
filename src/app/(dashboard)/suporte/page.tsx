@@ -77,7 +77,7 @@ export default function SuportePage() {
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div className="space-y-2">
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary"><LifeBuoy size={16}/> Central de suporte</p>
-        <h1 className="text-3xl font-black tracking-tight">Suporte e chamados</h1>
+        <h1 className="text-3xl font-black tracking-tight">Chat de suporte e chamados</h1>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
           Precisa de ajuda com o ERP? Abra um chamado para a gestão da plataforma e acompanhe a resposta.
         </p>
@@ -88,6 +88,19 @@ export default function SuportePage() {
       </button>
     </header>
 
+    <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold">Contato oficial Ducha Elitte</p>
+          <p className="mt-1 text-xs text-muted-foreground">Converse com a equipe por e-mail ou abra um chamado para trocar mensagens dentro do ERP.</p>
+        </div>
+        <a href="mailto:gestaoduchaelitte@gmail.com?subject=Suporte%20Ducha%20Elitte"
+          className="inline-flex min-h-10 items-center rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted">
+          gestaoduchaelitte@gmail.com
+        </a>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">O chat de chamados é assíncrono: as respostas aparecem aqui quando a equipe atender. Não é atendimento instantâneo.</p>
+    </section>
     {DEMO&&<p className="rounded-xl border border-border bg-muted p-4 text-sm">Abertura de chamados indisponível no modo demonstração. Entre com um login real.</p>}
     {error&&<p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"><AlertCircle size={17} className="shrink-0"/>{error}</p>}
     {notice&&<p role="status" className="flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm"><CheckCircle2 size={17} className="shrink-0 text-emerald-500"/>{notice}</p>}
