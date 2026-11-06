@@ -53,6 +53,7 @@ import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status, type Veiculo } from "@/types";
 import { VehicleInspection } from "@/components/vehicle-inspection";
 import { OrderProducts } from "@/components/order-products";
+import { OrderTimingDetail } from "@/components/order-timing-detail";
 import { pixPayload } from "@/lib/pix";
 import { whatsappLink } from "@/lib/whatsapp";
 import { gerarPdfVistoria, baixarPdfVistoria } from "@/lib/inspection-report";
@@ -635,6 +636,7 @@ export function OrderDetail({
           {o && data && (
             <div className="min-w-0 space-y-6 p-4 sm:p-6">
               <StatusBadge status={o.status} />
+              <OrderTimingDetail key={o.id} comanda={o} servicos={data.servicos} />
               <div className="rounded-xl bg-muted p-4">
                 <div className="mb-3 flex items-center gap-3">
                   <CarFront size={30} className="text-primary" />
