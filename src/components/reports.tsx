@@ -37,11 +37,13 @@ import {
 import { dayKey, dateLabel, money } from "@/lib/format";
 import { reportRows, csvReport, pdfReport } from "@/lib/reports";
 import { canManage } from "@/lib/permissions";
+import { OrderProductivity } from "@/components/order-productivity";
 export function Reports() {
   const { data, user } = useStore(),
     [start, setStart] = useState(dateLabel(new Date(), "yyyy-MM") + "-01"),
     [end, setEnd] = useState(dayKey(new Date())),
-    [exporting, setExporting] = useState(false);
+    [exporting, setExporting] = useState(false),
+    [agoraRelatorio] = useState(() => Date.now());
   if (!data || !user) return null;
   if (!canManage(user.role))
     return (
@@ -136,6 +138,7 @@ export function Reports() {
           Exportar PDF
         </Button>
       </PageTitle>
+      <OrderProductivity data={data} now={agoraRelatorio} />
       <div className="panel mb-6 flex flex-wrap items-end gap-4 p-5">
         <div className="space-y-2">
           <Label htmlFor="start">Data inicial</Label>
