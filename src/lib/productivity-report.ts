@@ -1,9 +1,13 @@
-import type { AppData, Comanda } from "@/types";
+import type { AppData } from "@/types";
+import { formatarDuracaoHms } from "./order-timing";
 
 export type PeriodoProdutividade = 7 | 30 | 90;
 export interface LinhaProdutividade {
   numero: number;
   placa: string;
+  cliente: string;
+  veiculo: string;
+  servicos: string;
   tipo: "CARRO" | "MOTO" | "CAMINHONETE" | "DESCONHECIDO";
   funcionario: string;
   aberturaEm: string;
@@ -28,7 +32,7 @@ export interface RelatorioProdutividade {
  * Período móvel: últimos N dias contados do instante atual.
  */
 export function relatorioProdutividade(
-  data: Pick<AppData, "comandas" | "veiculos" | "funcionarios">,
+  data: Pick<AppData, "comandas" | "veiculos" | "funcionarios"> & Partial<Pick<AppData, "clientes">>,
   periodoDias: PeriodoProdutividade,
   agora: number,
 ): RelatorioProdutividade {
@@ -42,9 +46,13 @@ export function relatorioProdutividade(
       pronto < inicio || pronto > agora) continue;
     const v = data.veiculos.find((v) => v.id === comanda.veiculoId);
     const f = data.funcionarios.find((f) => f.id === comanda.funcionarioId);
+    const c = data.clientes?.find((c) => c.id === comanda.clienteId);
     linhas.push({
       numero: comanda.numero,
       placa: v?.placa || "Não informada",
+      cliente: c?.nome || "Não informado",
+      veiculo: [v?.marca, v?.modelo].filter(Boolean).join(" ") || "Não informado",
+      servicos: comanda.itens?.map((item) => item.quantidade + "× " + item.nome).join(" + ") || "Não informados",
       tipo: v?.tipo || "DESCONHECIDO",
       funcionario: f?.nome || "Não atribuído",
       aberturaEm: comanda.createdAt,
@@ -80,10 +88,11 @@ function celulaCsv(valor: string | number): string {
   return '"' + texto.replace(/"/g, '""') + '"';
 }
 export function produtividadeCsv(relatorio: RelatorioProdutividade): string {
-  const header = ["Comanda", "Placa", "Tipo", "Funcionário", "Abertura", "Pronto", "Minutos", "Total (R$)"];
+  const header = ["Comanda", "Placa", "Veículo", "Cliente", "Tipo", "Serviços", "Funcionário", "Abertura", "Pronto", "Duração (HH:MM:SS)", "Minutos", "Total (R$)"];
   const linhas = relatorio.linhas.map((linha) => [
-    linha.numero, linha.placa, linha.tipo, linha.funcionario,
-    linha.aberturaEm, linha.finalizadoEm, (linha.segundos / 60).toFixed(1),
+    linha.numero, linha.placa, linha.veiculo, linha.cliente, linha.tipo, linha.servicos, linha.funcionario,
+    linha.aberturaEm, linha.finalizadoEm, formatarDuracaoHms(linha.segundos),
+    (linha.segundos / 60).toFixed(1),
     linha.total.toFixed(2),
   ]);
   return "\ufeff" + [header, ...linhas].map((row) => row.map(celulaCsv).join(";")).join("\r\n");
