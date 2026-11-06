@@ -35,6 +35,7 @@ import { duracaoAtendimento, previsaoServicos } from "@/lib/order-timing";
 import { OrderProductivity } from "@/components/order-productivity";
 import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
+import { apareceNaFilaOperacional, estadosFilaOperacional } from "@/lib/order-visibility";
 export function Orders() {
   const { data, user, mutate, busy } = useStore(),
     a = useActions(),
@@ -79,10 +80,8 @@ export function Orders() {
         v = data.veiculos.find((v) => v.id === o.veiculoId),
         q = search.toLowerCase();
       return (
-        (status === "TODAS" || status === "ATIVAS"
-          ? status === "TODAS" ||
-            ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"].includes(o.status)
-          : o.status === status) &&
+        (status === "TODAS" || (status === "ATIVAS" && apareceNaFilaOperacional(o.status)) ||
+          o.status === status) &&
         (!q ||
           [c?.nome, v?.placa, v?.modelo, String(o.numero)].some((x) =>
             x?.toLowerCase().includes(q),
@@ -99,7 +98,7 @@ export function Orders() {
     <>
       <PageTitle
         title="Comandas"
-        description="Organize a fila e acompanhe cada atendimento."
+        description="Acompanhe apenas os atendimentos em andamento. Finalizadas saem automaticamente da fila e continuam no histórico."
         action={a.newOrder}
         actionLabel="Nova comanda"
       />
@@ -148,9 +147,15 @@ export function Orders() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
           <p className="text-xs text-muted-foreground">
-            Ao entregar o veículo, a comanda sai do quadro e permanece no histórico.
+            Finalizou a lavagem? A comanda sai automaticamente desta fila. Consulte em Todas as comandas ou no filtro Pronto para retirada.
           </p>
           <div className="flex flex-wrap items-center gap-2">
+            {status === "ATIVAS" && (
+              <Button type="button" variant="outline" size="sm"
+                onClick={() => { setStatus("FINALIZADO"); setView("table"); setPage(0); setSelectionMode(false); setSelected([]); }}>
+                Ver finalizadas
+              </Button>
+            )}
             {selectionMode && (
               <>
                 <Button variant="outline" size="sm" disabled={!ready.length || delivering}
@@ -165,10 +170,12 @@ export function Orders() {
                 </Button>
               </>
             )}
-            <Button variant="outline" size="sm" disabled={delivering}
-              onClick={() => { setSelectionMode((value) => !value); setSelected([]); }}>
-              <SquareCheckBig size={15} /> {selectionMode ? "Cancelar seleção" : "Selecionar comandas"}
-            </Button>
+            {(selectionMode || ready.length > 0) && (
+              <Button variant="outline" size="sm" disabled={delivering}
+                onClick={() => { setSelectionMode((value) => !value); setSelected([]); }}>
+                <SquareCheckBig size={15} /> {selectionMode ? "Cancelar seleção" : "Selecionar comandas"}
+              </Button>
+            )}
           </div>
         </div>
         {view === "table" ? (
@@ -274,8 +281,10 @@ export function Orders() {
             </div>
           </>
         ) : (
-          <div className="grid gap-4 bg-background p-5 lg:grid-cols-3">
-            {(["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"] as Status[]).map(
+          <div className="grid gap-4 bg-background p-5 lg:grid-cols-2">
+            {(status === "ATIVAS" ? estadosFilaOperacional :
+              status === "TODAS" ? (Object.keys(statusLabels) as Status[]) :
+              [status as Status]).map(
               (s) => (
                 <div key={s} className="min-w-0">
                   <div className="mb-4 flex items-center justify-between">
