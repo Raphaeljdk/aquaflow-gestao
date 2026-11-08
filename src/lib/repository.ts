@@ -5,6 +5,7 @@ import type { AppData, Mutation, User, Vistoria } from "@/types";
 import { applyMutation, BusinessError } from "./domain";
 import { funcionarioSchema, configuracaoSchema } from "./validations";
 import { canWrite } from "./permissions";
+import { dadosComandaParaPrisma } from "./comanda-persistence";
 type DB = Prisma.TransactionClient;
 export async function snapshot(db: DB = prisma): Promise<AppData> {
   const [
@@ -283,24 +284,14 @@ export async function mutate(m: Mutation, actor: User, database: PrismaClient = 
         });
       }
       for (const o of changed(before.comandas, after.comandas)) {
-        const { id, itens, vistoria, whatsappAutorizadoEm: _waConsent,
-          whatsappAutorizacaoPor: _waAuthor, whatsappEnvioStatus: _waStatus,
-          whatsappEnvioEm: _waSent, ...v } = o;
-        void _waConsent; void _waAuthor; void _waStatus; void _waSent;
-        const data = {
-          ...v,
-          ...(vistoria
-            ? { vistoria: vistoria as unknown as Prisma.InputJsonValue }
-            : {}),
-          createdAt: new Date(v.createdAt),
-          finalizadoEm: v.finalizadoEm ? new Date(v.finalizadoEm) : null,
-          pagoEm: v.pagoEm ? new Date(v.pagoEm) : null,
-        };
-        if (before.comandas.some((x) => x.id === id))
-          await tx.comanda.update({ where: { id }, data });
+        // Nunca espalhar o snapshot inteiro no Prisma: inclui relações de leitura
+        // (ex.: envioWhatsApp), que tornam o PATCH inválido ao finalizar.
+        const data = dadosComandaParaPrisma(o);
+        if (before.comandas.some((x) => x.id === o.id))
+          await tx.comanda.update({ where: { id: o.id }, data });
         else
           await tx.comanda.create({
-            data: { id, ...data, itens: { create: itens } },
+            data: { id: o.id, ...data, itens: { create: o.itens } },
           });
       }
       // Enfileirar somente UMA mensagem no mesmo commit da finalização.
