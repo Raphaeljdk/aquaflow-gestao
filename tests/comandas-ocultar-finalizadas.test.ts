@@ -21,21 +21,22 @@ function mudarStatus(data: ReturnType<typeof iniciarComanda>, status: "EM_LAVAGE
     method: "PATCH", data: { status, ...(status === "FINALIZADO" ? { formaPagamento: "DINHEIRO" } : {}) } }, actor, now);
 }
 
-test("fila operacional exibe só aguardando ou em lavagem", () => {
-  assert.deepEqual(estadosFilaOperacional, ["AGUARDANDO", "EM_LAVAGEM"]);
+test("fila operacional mantém aguardando, em lavagem e finalizadas", () => {
+  assert.deepEqual(estadosFilaOperacional, ["AGUARDANDO", "EM_LAVAGEM", "FINALIZADO"]);
   assert.equal(apareceNaFilaOperacional("AGUARDANDO"), true);
   assert.equal(apareceNaFilaOperacional("EM_LAVAGEM"), true);
-  for (const status of ["FINALIZADO", "ENTREGUE", "CANCELADO"] as const)
+  assert.equal(apareceNaFilaOperacional("FINALIZADO"), true);
+  for (const status of ["ENTREGUE", "CANCELADO"] as const)
     assert.equal(apareceNaFilaOperacional(status), false);
 });
 
-test("ao finalizar comanda ela desaparece da fila sem perder histórico, pagamento e itens", () => {
+test("ao finalizar comanda ela permanece no quadro; só retirada manual altera para entregue", () => {
   const aguardando = iniciarComanda();
   assert.equal(apareceNaFilaOperacional(aguardando.comandas[0].status), true);
   const lavando = mudarStatus(aguardando, "EM_LAVAGEM");
   assert.equal(apareceNaFilaOperacional(lavando.comandas[0].status), true);
   const finalizada = mudarStatus(lavando, "FINALIZADO");
-  assert.equal(apareceNaFilaOperacional(finalizada.comandas[0].status), false);
+  assert.equal(apareceNaFilaOperacional(finalizada.comandas[0].status), true);
   assert.equal(finalizada.comandas.length, 1);
   assert.equal(finalizada.comandas[0].formaPagamento, "DINHEIRO");
   assert.equal(finalizada.comandas[0].total, aguardando.comandas[0].total);
@@ -46,10 +47,14 @@ test("ao finalizar comanda ela desaparece da fila sem perder histórico, pagamen
   assert.equal(entregue.comandas.length, 1);
 });
 
-test("interface conserva histórico e acesso às finalizadas enquanto painel padrão não as exibe", () => {
+test("interface conserva histórico e exige menu de três pontinhos para excluir da fila", () => {
   const source = readFileSync("src/components/orders.tsx", "utf8");
   assert.match(source, /status === "ATIVAS" && apareceNaFilaOperacional\(o\.status\)/);
   assert.match(source, /status === "TODAS"/);
-  assert.match(source, /Ver finalizadas/);
+  assert.match(source, /<MoreHorizontal size=\{18\}/);
+  assert.match(source, /Ver histórico/);
+  assert.match(source, /Excluir/);
+  assert.match(source, /await mutate\(\{ entity: "comandas", method: "PATCH", id: o.id,/);
+  assert.doesNotMatch(source, /setStatus\("FINALIZADO"\); setView\("table"\)/);
   assert.match(source, /\[status as Status\]/);
 });
