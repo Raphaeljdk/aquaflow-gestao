@@ -35,6 +35,36 @@ import { OrderProductivity } from "@/components/order-productivity";
 import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
 import { apareceNaFilaOperacional, estadosFilaOperacional } from "@/lib/order-visibility";
+function MenuComanda({ comanda, disabled, onView, onRemove }: {
+  comanda: Comanda;
+  disabled: boolean;
+  onView: (id: string) => void;
+  onRemove: (comanda: Comanda) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" size="icon" variant="ghost"
+          className="size-8 shrink-0" aria-label={"Ações da comanda #" + comanda.numero}
+          disabled={disabled}>
+          <MoreHorizontal size={18} aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onView(comanda.id)}>
+          <History size={15} /> Ver histórico
+        </DropdownMenuItem>
+        {comanda.status === "FINALIZADO" && (
+          <DropdownMenuItem variant="destructive"
+            onSelect={() => onRemove(comanda)}>
+            <Trash2 size={15} /> Excluir
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Orders() {
   const { data, user, mutate, busy } = useStore(),
     a = useActions(),
@@ -65,28 +95,6 @@ export function Orders() {
       setRemoving(null);
     }
   }
-  const MenuComanda = ({ comanda }: { comanda: Comanda }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" size="icon" variant="ghost"
-          className="size-8 shrink-0" aria-label={"Ações da comanda #" + comanda.numero}
-          disabled={busy || removing !== null}>
-          <MoreHorizontal size={18} aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => a.showOrder(comanda.id)}>
-          <History size={15} /> Ver histórico
-        </DropdownMenuItem>
-        {comanda.status === "FINALIZADO" && (
-          <DropdownMenuItem variant="destructive"
-            onSelect={() => void excluirDoPainel(comanda)}>
-            <Trash2 size={15} /> Excluir
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
   if (!data) return null;
   const filtered = data.comandas
     .filter((o) => {
@@ -219,7 +227,8 @@ export function Orders() {
                           <Button variant="ghost" size="sm" onClick={() => a.showOrder(o.id)}>
                             Detalhes
                           </Button>
-                          <MenuComanda comanda={o} />
+                          <MenuComanda comanda={o} disabled={busy || removing !== null}
+                            onView={a.showOrder} onRemove={(o) => void excluirDoPainel(o)} />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -281,7 +290,8 @@ export function Orders() {
                               <span className="text-xs text-muted-foreground">#{o.numero}</span>
                               <div className="flex items-center gap-2">
                                 <span className="plate">{v?.placa}</span>
-                                <MenuComanda comanda={o} />
+                                <MenuComanda comanda={o} disabled={busy || removing !== null}
+                            onView={a.showOrder} onRemove={(o) => void excluirDoPainel(o)} />
                               </div>
                             </div>
                             <button type="button" className="mt-3 block w-full text-left"
