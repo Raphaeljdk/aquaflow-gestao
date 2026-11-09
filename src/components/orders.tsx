@@ -4,11 +4,9 @@ import {
   LayoutGrid,
   List,
   Clock,
-  CarFront,
-  CheckCircle2,
   MoreHorizontal,
-  PackageCheck,
-  SquareCheckBig,
+  History,
+  Trash2,
 } from "lucide-react";
 import { useStore } from "@/hooks/use-store";
 import { useActions } from "./layout/app-shell";
@@ -29,13 +27,44 @@ import {
   TableRow,
 } from "./ui/table";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { statusLabels, type Status } from "@/types";
+import { statusLabels, type Status, type Comanda } from "@/types";
 import { duracaoAtendimento, previsaoServicos } from "@/lib/order-timing";
 import { OrderProductivity } from "@/components/order-productivity";
 import { canManage } from "@/lib/permissions";
 import { money, dateLabel } from "@/lib/format";
 import { apareceNaFilaOperacional, estadosFilaOperacional } from "@/lib/order-visibility";
+function MenuComanda({ comanda, disabled, onView, onRemove }: {
+  comanda: Comanda;
+  disabled: boolean;
+  onView: (id: string) => void;
+  onRemove: (comanda: Comanda) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" size="icon" variant="ghost"
+          className="size-8 shrink-0" aria-label={"Ações da comanda #" + comanda.numero}
+          disabled={disabled}>
+          <MoreHorizontal size={18} aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onView(comanda.id)}>
+          <History size={15} /> Ver histórico
+        </DropdownMenuItem>
+        {comanda.status === "FINALIZADO" && (
+          <DropdownMenuItem variant="destructive"
+            onSelect={() => onRemove(comanda)}>
+            <Trash2 size={15} /> Excluir
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Orders() {
   const { data, user, mutate, busy } = useStore(),
     a = useActions(),
@@ -44,33 +73,26 @@ export function Orders() {
     [view, setView] = useState("table"),
     [page, setPage] = useState(0),
     [now, setNow] = useState(0),
-    [selectionMode, setSelectionMode] = useState(false),
-    [selected, setSelected] = useState<string[]>([]),
-    [delivering, setDelivering] = useState(false);
+    [removing, setRemoving] = useState<string | null>(null);
   useEffect(() => {
     setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  async function deliverSelected() {
-    if (!data || busy || delivering) return;
-    const eligible = data.comandas.filter((o) => selected.includes(o.id) && o.status === "FINALIZADO");
-    if (!eligible.length) return;
-    if (!window.confirm("Confirmar a entrega de " + eligible.length + " veículo(s)? As comandas sairão do painel, mas continuarão no histórico e financeiro.")) return;
-    setDelivering(true);
+  // Remoção somente manual. Não excluir dados financeiros nem a vistoria.
+  async function excluirDoPainel(o: Comanda) {
+    if (o.status !== "FINALIZADO" || busy || removing) return;
+    if (!window.confirm(
+      "Excluir a comanda #" + o.numero + " do quadro de atendimento? " +
+      "Ela será marcada como entregue. Os serviços, pagamento, PDF e vistoria " +
+      "permanecerão disponíveis no histórico. Esta ação não apaga o registro."
+    )) return;
+    setRemoving(o.id);
     try {
-      const remaining: string[] = [];
-      for (const order of eligible) {
-        const saved = await mutate({
-          entity: "comandas", method: "PATCH", id: order.id,
-          data: { status: "ENTREGUE" },
-        });
-        if (!saved) remaining.push(order.id);
-      }
-      setSelected(remaining);
-      if (!remaining.length) setSelectionMode(false);
+      await mutate({ entity: "comandas", method: "PATCH", id: o.id,
+        data: { status: "ENTREGUE" } });
     } finally {
-      setDelivering(false);
+      setRemoving(null);
     }
   }
   if (!data) return null;
@@ -89,16 +111,11 @@ export function Orders() {
       );
     })
     .sort((a, b) => b.numero - a.numero);
-  const ready = filtered.filter((o) => o.status === "FINALIZADO");
-  const eligibleSelected = selected.filter((id) => ready.some((o) => o.id === id));
-  const toggleSelected = (id: string) => setSelected((prev) =>
-    prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-  );
   return (
     <>
       <PageTitle
         title="Comandas"
-        description="Acompanhe apenas os atendimentos em andamento. Finalizadas saem automaticamente da fila e continuam no histórico."
+        description="As comandas finalizadas permanecem no quadro até a retirada manual pelo menu de três pontos."
         action={a.newOrder}
         actionLabel="Nova comanda"
       />
@@ -147,43 +164,15 @@ export function Orders() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
           <p className="text-xs text-muted-foreground">
-            Finalizou a lavagem? A comanda sai automaticamente desta fila. Consulte em Todas as comandas ou no filtro Pronto para retirada.
+            Finalizou a lavagem? A comanda continua visível. Use os três pontinhos (•••) para
+            ver o histórico ou excluir manualmente do quadro. Nenhum registro é apagado.
           </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {status === "ATIVAS" && (
-              <Button type="button" variant="outline" size="sm"
-                onClick={() => { setStatus("FINALIZADO"); setView("table"); setPage(0); setSelectionMode(false); setSelected([]); }}>
-                Ver finalizadas
-              </Button>
-            )}
-            {selectionMode && (
-              <>
-                <Button variant="outline" size="sm" disabled={!ready.length || delivering}
-                  onClick={() => setSelected(ready.map((o) => o.id))}>
-                  Selecionar prontos ({ready.length})
-                </Button>
-                <Button variant="outline" size="sm" disabled={!selected.length || delivering}
-                  onClick={() => setSelected([])}>Limpar seleção</Button>
-                <Button size="sm" disabled={!eligibleSelected.length || busy || delivering}
-                  onClick={() => void deliverSelected()}>
-                  <PackageCheck size={15} /> Confirmar entrega ({eligibleSelected.length})
-                </Button>
-              </>
-            )}
-            {(selectionMode || ready.length > 0) && (
-              <Button variant="outline" size="sm" disabled={delivering}
-                onClick={() => { setSelectionMode((value) => !value); setSelected([]); }}>
-                <SquareCheckBig size={15} /> {selectionMode ? "Cancelar seleção" : "Selecionar comandas"}
-              </Button>
-            )}
-          </div>
         </div>
         {view === "table" ? (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
-                  {selectionMode && <TableHead className="w-10">Selecionar</TableHead>}
                   <TableHead className="pl-5">Comanda</TableHead>
                   <TableHead>Veículo</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -200,13 +189,6 @@ export function Orders() {
                     f = data.funcionarios.find((f) => f.id === o.funcionarioId);
                   return (
                     <TableRow key={o.id}>
-                      {selectionMode && <TableCell>
-                        <input type="checkbox" aria-label={"Selecionar comanda " + o.numero}
-                          checked={selected.includes(o.id)}
-                          disabled={o.status !== "FINALIZADO" || delivering}
-                          onChange={() => toggleSelected(o.id)}
-                          className="h-4 w-4 accent-primary" />
-                      </TableCell>}
                       <TableCell className="pl-5">
                         <p className="font-semibold">#{o.numero}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -241,13 +223,13 @@ export function Orders() {
                         {money(o.total)}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => a.showOrder(o.id)}
-                        >
-                          Detalhes
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => a.showOrder(o.id)}>
+                            Detalhes
+                          </Button>
+                          <MenuComanda comanda={o} disabled={busy || removing !== null}
+                            onView={a.showOrder} onRemove={(o) => void excluirDoPainel(o)} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -281,7 +263,7 @@ export function Orders() {
             </div>
           </>
         ) : (
-          <div className="grid gap-4 bg-background p-5 lg:grid-cols-2">
+          <div className="grid gap-4 bg-background p-5 lg:grid-cols-3">
             {(status === "ATIVAS" ? estadosFilaOperacional :
               status === "TODAS" ? (Object.keys(statusLabels) as Status[]) :
               [status as Status]).map(
@@ -302,52 +284,40 @@ export function Orders() {
                           ),
                           c = data.clientes.find((c) => c.id === o.clienteId);
                         return (
-                          <button
-                            key={o.id}
-                            onClick={() => selectionMode && o.status === "FINALIZADO"
-                              ? toggleSelected(o.id)
-                              : !selectionMode ? a.showOrder(o.id) : undefined}
-                            disabled={selectionMode && o.status !== "FINALIZADO"}
-                            aria-pressed={selectionMode && o.status === "FINALIZADO" ? selected.includes(o.id) : undefined}
-                            className={"panel block w-full p-4 text-left hover:border-primary/50 hover:shadow-md " +
-                              (selectionMode && selected.includes(o.id) ? "ring-2 ring-primary " : "") +
-                              (selectionMode && o.status !== "FINALIZADO" ? "opacity-60" : "")}
-                          >
-                            <div className="flex justify-between">
-                              <span className="text-xs text-muted-foreground">
-                                {selectionMode && o.status === "FINALIZADO" ? (selected.includes(o.id) ? "☑ " : "☐ ") : ""}#{o.numero}
-                              </span>
-                              <span className="plate">{v?.placa}</span>
+                          <article key={o.id}
+                            className="panel min-w-0 p-4 transition hover:border-primary/50 hover:shadow-md">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-muted-foreground">#{o.numero}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="plate">{v?.placa}</span>
+                                <MenuComanda comanda={o} disabled={busy || removing !== null}
+                            onView={a.showOrder} onRemove={(o) => void excluirDoPainel(o)} />
+                              </div>
                             </div>
-                            <p className="mt-4 font-semibold">
-                              {v?.marca} {v?.modelo}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {c?.nome}
-                            </p>
-                            <p className="my-4 text-sm">
-                              {o.itens.map((i) => i.nome).join(" + ")}
-                            </p>
-                            <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-                              <Clock size={13} aria-hidden="true" />
-                              <span>{duracaoAtendimento(o, now).texto}</span>
-                              {previsaoServicos(o, data.servicos) > 0 && (
-                                <span className={duracaoAtendimento(o, now).segundos >
-                                  previsaoServicos(o, data.servicos) * 60 && s !== "FINALIZADO"
-                                  ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
-                                  / {previsaoServicos(o, data.servicos)} min previstos
+                            <button type="button" className="mt-3 block w-full text-left"
+                              onClick={() => a.showOrder(o.id)}>
+                              <p className="font-semibold">{v?.marca} {v?.modelo}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{c?.nome}</p>
+                              <p className="my-4 text-sm">{o.itens.map((i) => i.nome).join(" + ")}</p>
+                              <div className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+                                <Clock size={13} aria-hidden="true" />
+                                <span>{duracaoAtendimento(o, now).texto}</span>
+                                {previsaoServicos(o, data.servicos) > 0 && (
+                                  <span className={duracaoAtendimento(o, now).segundos >
+                                    previsaoServicos(o, data.servicos) * 60 && s !== "FINALIZADO"
+                                    ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+                                    / {previsaoServicos(o, data.servicos)} min previstos
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex justify-between border-t border-border pt-3">
+                                <span className="text-xs text-muted-foreground">
+                                  {dateLabel(o.createdAt, "HH:mm")}
                                 </span>
-                              )}
-                            </div>
-                            <div className="flex justify-between border-t border-border pt-3">
-                              <span className="text-xs text-muted-foreground">
-                                {dateLabel(o.createdAt, "HH:mm")}
-                              </span>
-                              <strong className="text-sm">
-                                {money(o.total)}
-                              </strong>
-                            </div>
-                          </button>
+                                <strong className="text-sm">{money(o.total)}</strong>
+                              </div>
+                            </button>
+                          </article>
                         );
                       })}
                   </div>
