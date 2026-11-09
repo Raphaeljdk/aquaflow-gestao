@@ -35,12 +35,14 @@ test("não permite retirar veículo antes de finalizar nem retirar duas vezes", 
   const done = status(status(status(d, "EM_LAVAGEM"), "FINALIZADO", { formaPagamento: "DINHEIRO" }), "ENTREGUE");
   assert.throws(() => status(done, "ENTREGUE"), /status/);
 });
-test("seleção no quadro só habilita comandas prontas e preserva histórico pesquisável", () => {
+test("menu manual de três pontinhos permite ver histórico e excluir sem apagar", () => {
   const screen = readFileSync("src/components/orders.tsx", "utf8");
-  assert.match(screen, /Selecionar comandas/);
-  assert.match(screen, /Selecionar prontos/);
-  assert.match(screen, /Confirmar entrega/);
-  assert.match(screen, /o\.status === "FINALIZADO"/);
+  assert.match(screen, /MoreHorizontal/);
+  assert.match(screen, /Ver histórico/);
+  assert.match(screen, /Excluir/);
+  assert.match(screen, /comanda\.status === "FINALIZADO"/);
   assert.match(screen, /status: "ENTREGUE"/);
   assert.match(screen, /status === "TODAS"/);
+  assert.match(screen, /window\.confirm\(/);
+  assert.doesNotMatch(screen, /Selecionar prontos/);
 });
