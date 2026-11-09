@@ -523,6 +523,9 @@ export function OrderDetail({
       })
     ) {
       if (status === "CANCELADO") setCancel(false);
+      // Fechar a gaveta apenas após o servidor confirmar a transição.
+      // Falhas de rede, pagamento ou validação mantêm a comanda aberta.
+      if (status === "EM_LAVAGEM" || status === "FINALIZADO") onClose();
     }
   };
   async function documentoVistoria() {
