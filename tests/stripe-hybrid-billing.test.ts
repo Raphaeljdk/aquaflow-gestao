@@ -34,7 +34,7 @@ test("Stripe nunca opera em produção sem chave live e webhook assinado",()=>{
  ]){
   const env={...secure,[key]:val};
   assert.equal(stripeBillingReadiness(env).liveConfigurationReady,false,key);
-  assert.throws(()=>resolveStripeMode(env),undefined,key);
+  assert.throws(()=>resolveStripeMode(env),/Segredo de webhook|ambiente inconsistente/,key);
  }
 });
 test("checkout gestor só é permitido para empresa READY, dono confirmado e domínio oficial",()=>{
