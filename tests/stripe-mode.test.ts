@@ -24,3 +24,18 @@ test("eventos e sessões não atravessam ambientes",()=>{
  assert.equal(expectedStripeCheckoutPrefix("live"),"cs_live_");
  assert.equal(expectedStripeCheckoutPrefix("test"),"cs_test_");
 });
+
+
+test("cobrança híbrida live é liberada somente por opt-in separado e mantém login legado",()=>{
+ const env={...base,STRIPE_SECRET_KEY:"sk_live_secret",VERCEL_ENV:"production",
+  CONTROL_DATABASE_URL:"postgresql://placeholder",SAAS_PRODUCTION_MODE:"false",
+  SAAS_BILLING_HYBRID_ENABLED:"true",NEXT_PUBLIC_DEMO:"false"};
+ assert.equal(resolveStripeMode(env),"live");
+ assert.throws(()=>resolveStripeMode({...env,SAAS_BILLING_HYBRID_ENABLED:"false"}),/ambiente inconsistente/);
+ assert.throws(()=>resolveStripeMode({...env,SAAS_QA_MODE:"true"}),/ambiente inconsistente/);
+ assert.throws(()=>resolveStripeMode({...env,VERCEL_ENV:"preview"}),/ambiente inconsistente/);
+ assert.throws(()=>resolveStripeMode({...env,NEXT_PUBLIC_DEMO:"true"}),/ambiente inconsistente/);
+ assert.throws(()=>resolveStripeMode({...env,STRIPE_SECRET_KEY:"sk_test_secret"}),/ambiente inconsistente/);
+ assert.throws(()=>resolveStripeMode({...env,STRIPE_WEBHOOK_SECRET:"missing"}),/Segredo de webhook/);
+ assert.equal(resolveStripeMode({...env,STRIPE_BILLING_ENABLED:"false"}),null);
+});
