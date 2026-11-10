@@ -103,6 +103,8 @@ export const vistoriaSchema = z.object({
     )
     .length(8, "Revise todos os pontos da vistoria."),
   observacoesGerais: text.max(1000).default(""),
+  fotos: z.array(z.string().max(100000).regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/))
+    .max(3).optional(),
 });
 export const statusSchema = z.object({
   pixConfirmadoManualmente: z.boolean().optional(),
