@@ -74,6 +74,7 @@ export interface ItemVistoria {
 export interface Vistoria {
   itens: ItemVistoria[];
   observacoesGerais: string;
+  fotos?: string[];
   atualizadoEm: string;
 }
 export interface Comanda {
