@@ -78,6 +78,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
  const [lastRefresh,setLastRefresh]=useState<Date|null>(null);
  const [busyTenant,setBusyTenant]=useState<string|null>(null);
  const [actionMessage,setActionMessage]=useState("");
+ const [paymentLink,setPaymentLink]=useState<{tenantId:string;url:string}|null>(null);
  const load=useCallback(async()=>{
    setUpdating(true);setError("");
    try{
@@ -132,6 +133,26 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     setSelected(null);
     await load();
   }catch(e){setError(e instanceof Error?e.message:"Exclusão não autorizada.");}
+  finally{setBusyTenant(null);}
+ }
+ async function gerarCobranca(t:Tenant,plan:"MENSAL"|"ANUAL_MENSAL"|"ANUAL_AVISTA",method:"CARD"|"PIX"){
+  if(busyTenant)return;
+  const label=plan==="MENSAL"?"R$ 80/mês":plan==="ANUAL_MENSAL"?"12 mensalidades de R$ 80":"R$ 790 à vista";
+  if(!window.confirm("Gerar link Stripe REAL para "+t.name+" ("+label+", "+(method==="PIX"?"Pix":"cartão")+")? O pagamento só ocorrerá após a ação do proprietário."))return;
+  setBusyTenant(t.id);setError("");setActionMessage("");setPaymentLink(null);
+  try{
+    const response=await fetch("/api/plataforma/saas/pilotos/"+encodeURIComponent(t.id)+"/checkout",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({plan,method})
+    });
+    const result=await response.json() as {url?:string;error?:string};
+    if(!response.ok||!result.url)throw new Error(result.error??"Checkout Stripe indisponível.");
+    if(!/^https:\/\/checkout\.stripe\.com\//.test(result.url))
+      throw new Error("A Stripe retornou uma URL inesperada.");
+    setPaymentLink({tenantId:t.id,url:result.url});
+    setActionMessage("Link Stripe gerado para "+t.name+". Copie ou abra o endereço para compartilhar exclusivamente com o proprietário.");
+    await load();
+  }catch(e){setError(e instanceof Error?e.message:"Falha ao iniciar cobrança.");}
   finally{setBusyTenant(null);}
  }
  async function archive(t:Tenant){
@@ -311,6 +332,40 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
              <Archive size={16}/> Arquivar cadastro incompleto
            </button>
            <span className="text-xs text-muted-foreground">Projetos Neon e histórico são preservados; empresas com proprietário, teste ou cobrança são bloqueadas.</span>
+          </div>}
+        {data.billingReadiness.liveConfigurationReady && t.state==="READY" && t.dbReady && t.ownerActive &&
+          t.license!=="ACTIVE" && t.license!=="SUSPENDED" &&
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+           <h4 className="flex items-center gap-2 text-sm font-bold"><CreditCard size={16}/> Cobrar assinatura via Stripe</h4>
+           <p className="mt-1 text-xs text-muted-foreground">Pagamento do sistema Ducha Elitte; não é o Pix das lavagens. O cliente só paga ao confirmar o checkout.</p>
+           <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={busyTenant!==null}
+             onClick={()=>void gerarCobranca(t,"MENSAL","CARD")}
+             className="rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40">
+             Mensal R$ 80 · cartão
+            </button>
+            <button type="button" disabled={busyTenant!==null}
+             onClick={()=>void gerarCobranca(t,"ANUAL_MENSAL","CARD")}
+             className="rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40">
+             Anual 12 × R$ 80 · cartão
+            </button>
+            <button type="button" disabled={busyTenant!==null}
+             onClick={()=>void gerarCobranca(t,"ANUAL_AVISTA","CARD")}
+             className="rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40">
+             Anual R$ 790 · cartão
+            </button>
+            {data.billingReadiness.pixFlagEnabled&&<button type="button" disabled={busyTenant!==null}
+             onClick={()=>void gerarCobranca(t,"ANUAL_AVISTA","PIX")}
+             className="rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-40">
+             Anual R$ 790 · Pix
+            </button>}
+           </div>
+           {paymentLink?.tenantId===t.id&&<div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs">
+            <a href={paymentLink.url} target="_blank" rel="noopener noreferrer"
+             className="rounded-lg border border-primary/50 px-3 py-2 font-semibold text-primary">Abrir checkout Stripe</a>
+            <button type="button" onClick={()=>void navigator.clipboard.writeText(paymentLink.url)}
+             className="rounded-lg border border-border px-3 py-2 font-semibold">Copiar link</button>
+           </div>}
           </div>}
         <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
          <ShieldCheck size={17}/>
