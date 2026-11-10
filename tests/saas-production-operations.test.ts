@@ -8,7 +8,7 @@ test("operações SaaS são restritas a gestor e modo correto",()=>{
  for(const p of ["checkout","aprovar","convidar","ativar-teste"]){
   const route=readFileSync("src/app/api/plataforma/saas/pilotos/[id]/"+p+"/route.ts","utf8");
   assert.match(route,/requirePlatformAdmin/);
-  assert.match(route,/assertSaasManagementEnabled/);
+  assert.match(route,p==="checkout"?/assertCheckoutManagementEnabled/:/assertSaasManagementEnabled/);
   assert.match(route,/checkOrigin/);
  }
  const checkout=readFileSync("src/app/api/plataforma/saas/pilotos/[id]/checkout/route.ts","utf8");
