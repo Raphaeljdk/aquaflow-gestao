@@ -3,7 +3,7 @@ import {useCallback,useEffect,useState} from "react";
 import {
   Activity,AlertCircle,Building2,CheckCircle2,Database,
   Filter,Loader2,Mail,RefreshCw,Search,ShieldCheck,ChevronDown,
-  ServerCrash,ClipboardList,Archive,ShieldAlert,CreditCard
+  ServerCrash,ClipboardList,Archive,ShieldAlert,CreditCard,Trash2
 } from "lucide-react";
 
 type Tenant={
@@ -14,7 +14,7 @@ type Tenant={
 };
 type Account={
  id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
- tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
+ tenantName:string|null;tenantSlug:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
 type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number;archived:number};adminOnboardingEnabled:boolean;billingReadiness:{liveConfigurationReady:boolean;pixFlagEnabled:boolean;blockers:string[];checksStillRequired:string[]}};
@@ -108,6 +108,30 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
    setActionMessage(body.detail??"Ação registrada; atualize a implantação.");
    await load();
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível concluir.");}
+  finally{setBusyTenant(null);}
+ }
+ async function excluirCadastro(t:Pick<Tenant,"id"|"slug"|"name">){
+  if(busyTenant)return;
+  const resposta=window.prompt(
+    "Excluir definitivamente o cadastro de "+t.name+"?\n"+
+    "Somente cadastros sem banco, usuário, testes ou cobrança podem ser removidos.\n"+
+    "Digite o código exato da empresa ("+t.slug+") para confirmar:"
+  );
+  if(resposta===null)return;
+  if(resposta.trim()!==t.slug){setError("O código informado não confere. Nenhum cadastro foi excluído.");return;}
+  if(!window.confirm("Confirmar EXCLUSÃO DEFINITIVA de "+t.name+"? Convites de acesso pendentes serão invalidados."))return;
+  setBusyTenant(t.id);setError("");setActionMessage("");
+  try{
+    const response=await fetch("/api/plataforma/saas/tenants/"+encodeURIComponent(t.id)+"/excluir",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({confirmation:"EXCLUIR CADASTRO",slug:t.slug})
+    });
+    const body=await response.json() as {deleted?:boolean;error?:string};
+    if(!response.ok||!body.deleted)throw new Error(body.error??"Cadastro não pôde ser excluído.");
+    setActionMessage("Cadastro "+t.name+" excluído. Os registros operacionais de outros lava-rápidos foram preservados.");
+    setSelected(null);
+    await load();
+  }catch(e){setError(e instanceof Error?e.message:"Exclusão não autorizada.");}
   finally{setBusyTenant(null);}
  }
  async function archive(t:Tenant){
@@ -227,10 +251,22 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
          <div className="rounded-xl bg-muted/60 px-3 py-2"><span className="block text-muted-foreground">Proprietário</span><strong className="mt-1 block">{t.ownerActive?"Ativo":"Sem acesso"}</strong></div>
          <div className="col-span-2 rounded-xl bg-muted/60 px-3 py-2 sm:col-span-1"><span className="block text-muted-foreground">Plano</span><strong className="mt-1 block">{t.license??"Pendente"}</strong></div>
         </div>
-        <button type="button" onClick={()=>setSelected(open?null:t.id)} aria-expanded={open}
-         className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl border border-border px-4 text-sm font-semibold hover:bg-muted lg:self-auto">
-         {open?"Ocultar detalhes":"Ver implantação"}<ChevronDown size={16} className={open?"rotate-180":""}/>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+         <button type="button" onClick={()=>setSelected(open?null:t.id)} aria-expanded={open}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold hover:bg-muted">
+          {open?"Ocultar detalhes":"Ver implantação"}<ChevronDown size={16} className={open?"rotate-180":""}/>
+         </button>
+         <button type="button"
+          disabled={busyTenant!==null || t.dbReady || t.members>0 ||
+            t.license!=="PENDING" || (t.jobAttempts??0)>0 ||
+            !["PENDING","PROVISIONING","SUSPENDED","ERROR"].includes(t.state)}
+          title="Só é possível excluir cadastros sem banco, acesso, teste ou cobrança."
+          aria-label={"Excluir cadastro "+t.name}
+          onClick={()=>void excluirCadastro(t)}
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-red-500/35 px-3 text-sm font-semibold text-red-600 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40">
+          <Trash2 size={15}/> Excluir cadastro
+         </button>
+        </div>
        </div>
        {open&&<div className="space-y-5 border-t border-border bg-muted/20 p-4 sm:p-5">
         <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
@@ -290,7 +326,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
      <table className="w-full min-w-[650px] text-left text-sm">
       <thead className="bg-muted/70 text-xs text-muted-foreground"><tr>
-       <th className="p-4">Usuário</th><th className="p-4">Empresa</th><th className="p-4">Perfil</th><th className="p-4">Situação</th>
+       <th className="p-4">Usuário</th><th className="p-4">Empresa</th><th className="p-4">Perfil</th><th className="p-4">Situação</th><th className="p-4">Ações</th>
       </tr></thead>
       <tbody>{members.map(a=><tr key={a.id+":"+a.tenantId} className="border-t border-border">
        <td className="p-4"><p className="font-semibold">{a.name}</p><p className="mt-1 break-all text-xs text-muted-foreground">{a.email}</p></td>
@@ -302,6 +338,13 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
         const label=a.source==="PENDING"?"Aguardando ativação":canAccess?"Acesso liberado":a.enabled?"Ambiente ou licença pendente":"Desativado";
         return <span className={"inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold "+(canAccess?"border-emerald-600/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400":"border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-300")}>{label}</span>;
        })()}</td>
+       <td className="p-4">{a.source==="PENDING" && a.tenantId && a.tenantSlug ? (
+        <button type="button" disabled={busyTenant!==null}
+         className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-40"
+         onClick={()=>void excluirCadastro({id:a.tenantId!,slug:a.tenantSlug!,name:a.tenantName??a.name})}>
+         <Trash2 size={14}/> Excluir cadastro
+        </button>
+       ):<span className="text-xs text-muted-foreground">Acesso protegido</span>}</td>
       </tr>)}</tbody>
      </table>
     </div>

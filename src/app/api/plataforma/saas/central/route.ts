@@ -126,7 +126,7 @@ export async function GET(request:NextRequest){
     FROM (
       SELECT i.id::text AS id,i.full_name AS name,i.email,
         m.role,(i.enabled AND m.enabled) AS enabled,m.tenant_id::text AS "tenantId",
-        t.display_name AS "tenantName",t.state AS "tenantState",e.state AS license,
+        t.display_name AS "tenantName",t.slug AS "tenantSlug",t.state AS "tenantState",e.state AS license,
         'TENANT'::text AS source
       FROM platform_memberships m JOIN platform_identities i ON i.id=m.identity_id
       JOIN platform_tenants t ON t.id=m.tenant_id
@@ -134,13 +134,13 @@ export async function GET(request:NextRequest){
       UNION ALL
       SELECT i.id::text AS id,i.full_name AS name,i.email,
         'PLATFORM'::text AS role,(i.enabled AND p.enabled) AS enabled,
-        NULL::text AS "tenantId",NULL::text AS "tenantName",
+        NULL::text AS "tenantId",NULL::text AS "tenantName",NULL::text AS "tenantSlug",
         NULL::text AS "tenantState",NULL::text AS license,'PLATFORM'::text AS source
       FROM platform_operators p JOIN platform_identities i ON i.id=p.identity_id
       UNION ALL
       SELECT t.id::text AS id,t.display_name AS name,t.owner_email AS email,
         'PENDING_OWNER'::text AS role,false AS enabled,t.id::text AS "tenantId",
-        t.display_name AS "tenantName",t.state AS "tenantState",e.state AS license,
+        t.display_name AS "tenantName",t.slug AS "tenantSlug",t.state AS "tenantState",e.state AS license,
         'PENDING'::text AS source
       FROM platform_tenants t LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
       WHERE NOT EXISTS(SELECT 1 FROM platform_memberships m
@@ -155,7 +155,7 @@ export async function GET(request:NextRequest){
       `SELECT count(*)::integer AS quantity ${accountSource}`,search);
    const accounts=await db.$queryRawUnsafe<Array<{
       id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
-      tenantName:string|null;tenantState:string|null;license:string|null;source:string;
+      tenantName:string|null;tenantSlug:string|null;tenantState:string|null;license:string|null;source:string;
    }>>(`SELECT a.* ${accountSource} ORDER BY a.name,a.id LIMIT $2::integer OFFSET $3::integer`,
       search,PAGE_SIZE,offset);
    return {tenants:[],accounts,events:[],totalMatched:matched[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
