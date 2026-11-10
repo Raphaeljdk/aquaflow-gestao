@@ -14,7 +14,7 @@ type Tenant={
 };
 type Account={
  id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
- tenantName:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
+ tenantName:string|null;tenantSlug:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
 type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number;archived:number};adminOnboardingEnabled:boolean;billingReadiness:{liveConfigurationReady:boolean;pixFlagEnabled:boolean;blockers:string[];checksStillRequired:string[]}};
@@ -110,7 +110,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
   }catch(e){setError(e instanceof Error?e.message:"Não foi possível concluir.");}
   finally{setBusyTenant(null);}
  }
- async function excluirCadastro(t:Tenant){
+ async function excluirCadastro(t:Pick<Tenant,"id"|"slug"|"name">){
   if(busyTenant)return;
   const resposta=window.prompt(
     "Excluir definitivamente o cadastro de "+t.name+"?\n"+
@@ -326,7 +326,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
      <table className="w-full min-w-[650px] text-left text-sm">
       <thead className="bg-muted/70 text-xs text-muted-foreground"><tr>
-       <th className="p-4">Usuário</th><th className="p-4">Empresa</th><th className="p-4">Perfil</th><th className="p-4">Situação</th>
+       <th className="p-4">Usuário</th><th className="p-4">Empresa</th><th className="p-4">Perfil</th><th className="p-4">Situação</th><th className="p-4">Ações</th>
       </tr></thead>
       <tbody>{members.map(a=><tr key={a.id+":"+a.tenantId} className="border-t border-border">
        <td className="p-4"><p className="font-semibold">{a.name}</p><p className="mt-1 break-all text-xs text-muted-foreground">{a.email}</p></td>
@@ -338,6 +338,13 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
         const label=a.source==="PENDING"?"Aguardando ativação":canAccess?"Acesso liberado":a.enabled?"Ambiente ou licença pendente":"Desativado";
         return <span className={"inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold "+(canAccess?"border-emerald-600/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400":"border-amber-600/25 bg-amber-500/10 text-amber-700 dark:text-amber-300")}>{label}</span>;
        })()}</td>
+       <td className="p-4">{a.source==="PENDING" && a.tenantId && a.tenantSlug ? (
+        <button type="button" disabled={busyTenant!==null}
+         className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-40"
+         onClick={()=>void excluirCadastro({id:a.tenantId!,slug:a.tenantSlug!,name:a.tenantName??a.name})}>
+         <Trash2 size={14}/> Excluir cadastro
+        </button>
+       ):<span className="text-xs text-muted-foreground">Acesso protegido</span>}</td>
       </tr>)}</tbody>
      </table>
     </div>
