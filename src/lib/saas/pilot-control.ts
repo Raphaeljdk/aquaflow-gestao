@@ -1,5 +1,6 @@
 import "server-only";
 import type { PrismaClient } from "@prisma/client";
+import { productionBillingMode } from "./billing-mode";
 
 /** Central management never publishes a license for an unprovisioned tenant. */
 export type PilotStatus = {
@@ -14,6 +15,13 @@ export function assertSaasManagementEnabled(){
     process.env.SAAS_QA_MODE!=="true" && process.env.VERCEL_ENV==="production")return;
  throw new Error("Gestão SaaS não habilitada neste ambiente.");
 }
+/** Payment checkout can operate in a protected hybrid rollout without changing legacy login. */
+export function assertCheckoutManagementEnabled(){
+ if(process.env.SAAS_QA_MODE==="true" && process.env.VERCEL_ENV!=="production")return;
+ if(productionBillingMode(process.env))return;
+ throw new Error("Cobrança SaaS indisponível neste ambiente.");
+}
+
 export function assertPilotQaEnabled() {
   if (process.env.SAAS_QA_MODE !== "true")
     throw new Error("Ambiente de homologação SaaS não habilitado.");
