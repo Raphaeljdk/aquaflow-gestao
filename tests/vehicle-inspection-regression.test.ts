@@ -10,11 +10,11 @@ test("vistoria conserva oito pontos e as mesmas chaves persistidas", () => {
     assert.match(source, new RegExp('id: "' + name + '"'));
 });
 
-test("tocar no diagrama navega em vez de registrar avaria sem confirmação", () => {
+test("tocar no diagrama navega e área selecionada exige confirmação", () => {
   assert.match(source, /onClick=\{\(\) => escolher\(p\.id\)\}/);
-  assert.match(source, /marcar\(p\.id, "ok"\)/);
-  assert.match(source, /marcar\(p\.id, "defeito"\)/);
-  assert.match(source, /marcar\(p\.id, "pendente"\)/);
+  assert.match(source, /marcar\(selected\.id,"ok"\)/);
+  assert.match(source, /marcar\(selected\.id,"defeito"\)/);
+  assert.match(source, /marcar\(selected\.id,"pendente"\)/);
 });
 
 test("vistoria não sobrescreve rascunho ao receber novo snapshot", () => {
@@ -25,8 +25,8 @@ test("vistoria não sobrescreve rascunho ao receber novo snapshot", () => {
 });
 
 test("salvamento somente após revisar todos os pontos e confirmar mutação", () => {
-  assert.match(source, /disabled=\{busy \|\| !concluida \|\| !dirty\}/);
-  assert.match(source, /await onSave\(\{ itens, observacoesGerais \}\)/);
+  assert.match(source, /disabled=\{busy \|\| !concluida \|\| !dirty \|\| uploading\}/);
+  assert.match(source, /await onSave\(\{ itens, observacoesGerais, fotos \}\)/);
   assert.match(source, /maxLength=\{300\}/);
   assert.match(source, /maxLength=\{1000\}/);
 });
@@ -34,4 +34,14 @@ test("salvamento somente após revisar todos os pontos e confirmar mutação", (
 test("comanda usa gaveta ampla para vistoria no desktop e largura integral no celular", () => {
   assert.match(detail, /w-screen max-w-full/);
   assert.match(detail, /sm:max-w-\[880px\]/);
+});
+
+test("layout premium mantém histórico e fotos compactadas", () => {
+  assert.match(source, /Mapa de avarias/);
+  assert.match(source, /Pontos de inspeção/);
+  assert.match(source, /Fotos de apoio/);
+  assert.match(source, /createImageBitmap\(file\)/);
+  assert.match(source, /fotos\.length >= 3/);
+  assert.match(source, /Marcar tudo OK/);
+  assert.match(source, /Vistoria de avarias/);
 });
