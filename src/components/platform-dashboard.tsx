@@ -5,6 +5,7 @@ import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, 
 import { PartnersManager } from "@/components/partners-manager";
 import { CentralPlatformPanel } from "@/components/platform-central-panel";
 import { PlatformTickets } from "@/components/platform-tickets";
+import { PlatformTestCleanup } from "@/components/platform-test-cleanup";
 import { formatPlatformPrice } from "@/lib/platform-billing";
 import { getTrialState } from "@/lib/platform-trial";
 type Status = "PENDENTE" | "EM_ANALISE" | "APROVADO" | "REJEITADO";
@@ -123,6 +124,7 @@ export function PlatformDashboard() {
       {error&&<p role="alert" className="mb-5 rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{error}</p>}
       {loading&&<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={17} className="animate-spin"/> Carregando solicitações...</p>}
       {!loading&&visibleRequests.length===0&&<p className="rounded-2xl border border-border bg-card p-12 text-center text-sm text-muted-foreground">Não há solicitações antigas neste filtro. Os novos cadastros estão na aba Empresas e implantação.</p>}
+      {tab==="testes" && <PlatformTestCleanup onDone={() => void load()} />}
       {tab==="testes" && <p className="mb-5 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
         Os 7 dias começam somente depois de o estabelecimento receber acesso isolado e confirmado. Aprovar uma solicitação não ativa a licença, não cria usuário e não inicia a contagem.
       </p>}
