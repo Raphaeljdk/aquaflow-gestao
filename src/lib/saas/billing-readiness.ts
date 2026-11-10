@@ -1,11 +1,13 @@
+import {productionBillingMode} from "./billing-mode";
+
 /** Descriptive, read-only billing gate. Never exposes secret values or initiates a charge. */
 export function stripeBillingReadiness(env:Record<string,string|undefined>){
  const blockers:string[]=[];
  if(env.VERCEL_ENV!=="production")blockers.push("Ambiente de produção");
- if(env.SAAS_PRODUCTION_MODE!=="true")blockers.push("Migração e isolamento SaaS ainda não liberados");
+ if(!productionBillingMode(env))blockers.push("Modo SaaS de produção ou cobrança híbrida não habilitado");
  if(env.STRIPE_BILLING_ENABLED!=="true")blockers.push("STRIPE_BILLING_ENABLED não habilitado");
- if(!env.STRIPE_SECRET_KEY?.startsWith("sk_live_"))blockers.push("Chave Stripe live não validada");
- if(!env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_"))blockers.push("Assinatura do webhook não configurada");
+ if(!env.STRIPE_SECRET_KEY?.startsWith("sk_live_"))blockers.push("STRIPE_SECRET_KEY: falta chave sk_live_ válida da conta Stripe");
+ if(!env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_"))blockers.push("STRIPE_WEBHOOK_SECRET: falta segredo whsec_ do webhook live");
  if(!env.CONTROL_DATABASE_URL)blockers.push("Banco central não configurado");
  if(env.NEXT_PUBLIC_DEMO==="true")blockers.push("Modo demonstração ativo");
  return {
