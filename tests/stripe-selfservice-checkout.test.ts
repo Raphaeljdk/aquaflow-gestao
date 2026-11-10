@@ -124,3 +124,22 @@ test("proxy permite somente endpoints de assinatura e não libera API geral ou l
  assert.match(identity,/validateAccess\(row/);
  assert.match(identity,/\["TRIAL","ACTIVE","GRACE"\]/);
 });
+
+
+test("cobrança híbrida conserva proteções do checkout e não publica migração global",()=>{
+ const gate=src("src/lib/saas/billing-mode.ts");
+ const mode=src("src/lib/saas/stripe-mode.ts");
+ const adminCheckout=src("src/app/api/plataforma/saas/pilotos/[id]/checkout/route.ts");
+ const panel=src("src/components/platform-central-panel.tsx");
+ assert.match(gate,/SAAS_BILLING_HYBRID_ENABLED==="true"/);
+ assert.match(gate,/SAAS_QA_MODE!=="true"/);
+ assert.match(mode,/productionBillingMode\(env\)/);
+ assert.match(adminCheckout,/assertCheckoutManagementEnabled/);
+ assert.match(adminCheckout,/requirePlatformAdmin/);
+ assert.match(adminCheckout,/r\.owners<1/);
+ assert.match(adminCheckout,/https:\/\/www\.duchaelitte\.com\.br/);
+ assert.match(panel,/Cobrar assinatura via Stripe/);
+ assert.match(panel,/gerarCobranca\(t,"ANUAL_AVISTA","PIX"\)/);
+ assert.match(panel,/paymentLink\?\.tenantId===t\.id/);
+ assert.doesNotMatch(gate,/return true;/);
+});
