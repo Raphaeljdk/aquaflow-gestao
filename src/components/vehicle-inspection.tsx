@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, CheckCircle2, ClipboardCheck, Eye, RotateCcw, Save, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ClipboardCheck, Eye, RotateCcw, Save, ShieldCheck, Camera, X, Shield, CarFront, ImagePlus, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ItemVistoria, Vistoria, VistoriaItemId } from "@/types";
@@ -41,6 +41,8 @@ export function VehicleInspection({
 }) {
   const [itens, setItens] = useState<ItemVistoria[]>(() => checklist(value));
   const [observacoesGerais, setObservacoesGerais] = useState(value?.observacoesGerais ?? "");
+  const [fotos, setFotos] = useState<string[]>(value?.fotos ?? []);
+  const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<VistoriaItemId>("PARACHOQUES");
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -61,6 +63,7 @@ export function VehicleInspection({
     lastVersion.current = version;
     setItens(checklist(value));
     setObservacoesGerais(value?.observacoesGerais ?? "");
+    setFotos(value?.fotos ?? []);
     setDirty(false);
     dirtyRef.current = false;
     setSaved(false);
@@ -71,6 +74,8 @@ export function VehicleInspection({
   const defeitos = itens.filter((i) => i.revisado && i.defeito).length;
   const concluida = revisados === pontos.length;
   const faltantes = pontos.length - revisados;
+  const selected = pontos.find((p) => p.id === selectedId)!;
+  const selectedItem = itens.find((i) => i.id === selectedId)!;
   const byId = useMemo(() => new Map(itens.map((i) => [i.id, i])), [itens]);
 
   function changed() {
@@ -104,7 +109,7 @@ export function VehicleInspection({
     if (!concluida || busy || readOnly) return;
     setError("");
     try {
-      const ok = await onSave({ itens, observacoesGerais });
+      const ok = await onSave({ itens, observacoesGerais, fotos });
       if (!ok) { setError("Não foi possível salvar. Tente novamente."); return; }
       dirtyRef.current = false;
       setDirty(false);
@@ -116,44 +121,88 @@ export function VehicleInspection({
     }
   }
 
-  return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm" aria-label="Vistoria de entrada">
-      <div className="border-b border-border bg-[#111820] px-4 py-5 text-white sm:px-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-[#101820]">
-              <ClipboardCheck size={22} aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-base font-bold tracking-tight sm:text-lg">Vistoria de entrada</h3>
-              <p className="mt-1 max-w-md text-xs leading-5 text-white/70">
-                Confira o estado do veículo antes da lavagem. Toque no desenho ou escolha um item da lista.
-              </p>
-            </div>
-          </div>
-          <div className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold tabular-nums">
-            {revisados} de {pontos.length} revisados
-          </div>
-        </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15"
-          role="progressbar" aria-label="Progresso da vistoria" aria-valuemin={0} aria-valuemax={pontos.length} aria-valuenow={revisados}>
-          <div className="h-full rounded-full bg-yellow-400 transition-[width] duration-200"
-            style={{ width: (revisados / pontos.length * 100) + "%" }} />
-        </div>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
-          <span className="flex items-center gap-1.5 text-emerald-300"><CheckCircle2 size={14} /> {revisados - defeitos} sem avaria</span>
-          <span className="flex items-center gap-1.5 text-yellow-300"><AlertTriangle size={14} /> {defeitos} com avaria</span>
-          <span className="text-white/65">{faltantes} pendente{faltantes === 1 ? "" : "s"}</span>
-        </div>
-      </div>
 
-      <div className="grid min-w-0 items-start gap-4 p-3 sm:p-5 md:grid-cols-[224px_minmax(0,1fr)]">
-        <div className="min-w-0 rounded-2xl border border-slate-700/70 bg-[#17212b] p-4 md:sticky md:top-3">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/65">Mapa: {tipo === "MOTO" ? "moto" : tipo === "CAMINHONETE" ? "caminhonete" : "carro"}</span>
-            <Eye size={15} className="text-yellow-300" aria-hidden="true" />
+  async function adicionarFoto(file?: File) {
+    if (!file || busy || readOnly || uploading || fotos.length >= 3) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 8_000_000) {
+      setError("Escolha uma foto JPG, PNG ou WebP de até 8 MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const imagem = await createImageBitmap(file);
+      const max = 960;
+      const scale = Math.min(1, max / Math.max(imagem.width, imagem.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.floor(imagem.width * scale));
+      canvas.height = Math.max(1, Math.floor(imagem.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw Error("Não foi possível processar a foto.");
+      context.drawImage(imagem, 0, 0, canvas.width, canvas.height);
+      imagem.close();
+      let arquivo = "";
+      for (const quality of [0.73, 0.57, 0.42, 0.30]) {
+        arquivo = canvas.toDataURL("image/jpeg", quality);
+        if (arquivo.length <= 100000) break;
+      }
+      if (arquivo.length > 100000) throw Error("Foto muito detalhada. Escolha outra imagem.");
+      setFotos(current => current.length < 3 ? [...current, arquivo] : current);
+      changed();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível adicionar a imagem.");
+    } finally {
+      setUploading(false);
+    }
+  }
+  function marcarTodosOk() {
+    if (readOnly || busy) return;
+    if (itens.some(i => i.revisado && i.defeito) &&
+      !window.confirm("Marcar tudo como OK também removerá as avarias já apontadas. Continuar?")) return;
+    setItens(items => items.map(i => ({...i, revisado: true, defeito: false, observacao: ""})));
+    changed();
+  }
+  function limparTudo() {
+    if (readOnly || busy || !window.confirm("Limpar marcações desta vistoria? As fotos serão mantidas até você removê-las.")) return;
+    setItens(checklist(null));
+    changed();
+  }
+  return (
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-[#334454] bg-[#101924] text-slate-100 shadow-sm" aria-label="Vistoria de entrada">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-500/10 text-cyan-300">
+            <CarFront size={22} aria-hidden="true"/>
+          </span>
+          <div>
+            <h3 className="text-base font-bold tracking-tight">Vistoria de avarias</h3>
+            <p className="mt-0.5 text-xs text-slate-400">Inspeção visual do veículo · registro de entrada</p>
           </div>
-          <div className="relative mx-auto h-[304px] w-[174px] max-w-full select-none">
+        </div>
+        <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-200">
+          {readOnly ? "Vistoria encerrada" : concluida ? "Revisão completa" : "Em andamento"}
+        </div>
+      </header>
+      <div className="grid grid-cols-2 gap-2 border-b border-white/10 px-4 py-3 text-center sm:grid-cols-4 sm:px-5">
+        {[
+          {label:"Pontos revisados",value:revisados + " / 8",color:"text-slate-50"},
+          {label:"Sem avaria",value:String(revisados-defeitos),color:"text-emerald-300"},
+          {label:"Com avaria",value:String(defeitos),color:"text-amber-300"},
+          {label:"Pendentes",value:String(faltantes),color:"text-slate-300"}
+        ].map(k => (
+          <div key={k.label} className="rounded-lg border border-white/5 bg-white/[.035] px-2 py-2">
+            <p className="text-[10px] text-slate-400">{k.label}</p>
+            <p className={"mt-0.5 text-lg font-bold tabular-nums " + k.color}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid min-w-0 gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="min-w-0 space-y-3">
+          <div className="rounded-xl border border-white/10 bg-[#182633] p-3">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="flex items-center gap-2 font-semibold"><Eye size={15} className="text-cyan-300"/> Mapa de avarias</span>
+              <span className="text-slate-400">{tipo === "MOTO" ? "Moto" : tipo === "CAMINHONETE" ? "Caminhonete" : "Carro"} · Vista superior</span>
+            </div>
+            <div className="relative mx-auto mt-2 h-[285px] w-[164px] max-w-full select-none">
             <svg viewBox="0 0 174 304" className="h-full w-full" role="img" aria-label={"Vista superior de " + (tipo === "MOTO" ? "uma moto" : "um carro") + " com oito pontos de vistoria"}>
               {tipo === "MOTO" ? (
                 <g fill="none" strokeLinejoin="round">
@@ -191,154 +240,138 @@ export function VehicleInspection({
               <path d="M87 5 V13 M87 291 V299" stroke="#fde047" strokeOpacity=".75" strokeDasharray="2 2" />
               </>}
             </svg>
-            {pontos.map((p, index) => {
-              const item = byId.get(p.id);
-              const status = !item?.revisado ? "pendente" : item.defeito ? "avaria" : "ok";
-              const selected = selectedId === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-label={p.label + ": " + (status === "avaria" ? "com avaria" : status === "ok" ? "sem avaria" : "pendente") + ". Abrir item."}
-                  aria-pressed={selected}
-                  title={p.label}
-                  onClick={() => escolher(p.id)}
-                  style={{ left: p.x + "%", top: p.y + "%" }}
-                  className={"absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white " +
-                    (status === "avaria" ? "border-yellow-200 bg-yellow-400 text-slate-950"
-                      : status === "ok" ? "border-emerald-200 bg-emerald-500 text-white"
-                      : "border-slate-400 bg-[#1b2935] text-white") +
-                    (selected ? " ring-2 ring-white ring-offset-2 ring-offset-[#17212b] scale-110" : "")}
-                >
-                  {status === "avaria" ? "!" : status === "ok" ? <Check size={16} /> : index + 1}
-                </button>
-              );
-            })}
+              {pontos.map((p, index) => {
+                const item = byId.get(p.id);
+                const estado = !item?.revisado ? "pendente" : item.defeito ? "avaria" : "ok";
+                return (
+                  <button key={p.id} type="button"
+                    title={p.label}
+                    aria-label={p.label + ": " + estado + ". Selecionar área"}
+                    aria-pressed={selectedId===p.id}
+                    onClick={() => escolher(p.id)}
+                    style={{ left:p.x + "%", top:p.y + "%" }}
+                    className={"absolute flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-xs font-bold shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 " +
+                      (estado==="avaria"?"border-amber-200 bg-amber-400 text-slate-950":estado==="ok"?"border-emerald-200 bg-emerald-500 text-white":"border-slate-400 bg-[#1b2935] text-white") +
+                      (selectedId===p.id?" ring-2 ring-cyan-300 ring-offset-2 ring-offset-[#182633]":"")}>
+                    {estado==="avaria"?"!":estado==="ok"?<Check size={15}/>:index+1}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex flex-wrap justify-center gap-3 border-t border-white/10 pt-3 text-[11px] text-slate-300">
+              <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-slate-400"/> Pendente</span>
+              <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-emerald-400"/> OK</span>
+              <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-amber-400"/> Avaria</span>
+            </div>
           </div>
-          <div className="mt-3 flex flex-wrap justify-center gap-3 border-t border-white/10 pt-3 text-[11px] text-white/75">
-            <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-slate-400" /> Pendente</span>
-            <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-emerald-500" /> OK</span>
-            <span className="flex items-center gap-1"><i className="size-2.5 rounded-full bg-yellow-400" /> Avaria</span>
+          <div className="rounded-xl border border-white/10 bg-[#182633] p-3">
+            <p className="mb-2 text-xs font-semibold">Pontos de inspeção</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {pontos.map((p,index)=>{
+                const item=byId.get(p.id);
+                return <button id={"vistoria-"+p.id} key={p.id} type="button"
+                  onClick={()=>escolher(p.id)} aria-pressed={selectedId===p.id}
+                  className={"flex min-w-0 items-center gap-1.5 rounded-lg border px-2 py-2 text-left text-[11px] transition-colors " +
+                    (selectedId===p.id?"border-cyan-300/60 bg-cyan-400/10":"border-white/10 bg-white/[.025]")}>
+                    <span className={"flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold "+
+                      (!item?.revisado?"bg-slate-700 text-slate-200":item.defeito?"bg-amber-400 text-slate-950":"bg-emerald-500 text-white")}>
+                      {item?.revisado && !item.defeito?<Check size={11}/>:index+1}
+                    </span>
+                    <span className="truncate text-slate-200">{p.label}</span>
+                  </button>;
+              })}
+            </div>
           </div>
-          <p className="mt-3 text-center text-[11px] leading-4 text-white/60">
-            Os números mostram os pontos. Toque para localizar e avaliar cada item.
-          </p>
         </div>
-
         <div className="min-w-0 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h4 className="text-sm font-bold">Checklist do veículo</h4>
-            <span className="text-xs text-muted-foreground">8 pontos</span>
-          </div>
-          {pontos.map((p, index) => {
-            const item = byId.get(p.id)!;
-            const selected = selectedId === p.id;
-            const state = !item.revisado ? "Pendente" : item.defeito ? "Com avaria" : "Sem avaria";
-            return (
-              <div id={"vistoria-" + p.id} key={p.id}
-                className={"min-w-0 scroll-mt-5 rounded-xl border p-3 transition-colors sm:p-4 " +
-                  (selected ? "border-primary/70 bg-primary/5" : "border-border bg-background/50")}>
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className={"flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold " +
-                    (selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">{p.label}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{p.detalhe}</p>
-                  </div>
-                  <span className={"shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold " +
-                    (!item.revisado ? "bg-muted text-muted-foreground"
-                      : item.defeito ? "bg-yellow-400/15 text-yellow-600 dark:text-yellow-300"
-                      : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300")}>
-                    {state}
-                  </span>
-                </div>
-                {!readOnly && (
-                  <div className="mt-3 flex flex-wrap gap-2 sm:ml-11">
-                    <Button type="button" size="sm"
-                      variant={item.revisado && !item.defeito ? "default" : "outline"}
-                      aria-pressed={item.revisado && !item.defeito}
-                      disabled={busy} onClick={() => { setSelectedId(p.id); marcar(p.id, "ok"); }}
-                      className="min-h-10 flex-1 gap-1.5 px-3 sm:flex-none">
-                      <Check size={15} /> Sem avaria
-                    </Button>
-                    <Button type="button" size="sm"
-                      variant={item.revisado && item.defeito ? "default" : "outline"}
-                      aria-pressed={item.revisado && item.defeito}
-                      disabled={busy} onClick={() => { setSelectedId(p.id); marcar(p.id, "defeito"); }}
-                      className="min-h-10 flex-1 gap-1.5 px-3 sm:flex-none">
-                      <AlertTriangle size={15} /> Com avaria
-                    </Button>
-                    {item.revisado && (
-                      <button type="button" aria-label={"Limpar avaliação de " + p.label}
-                        disabled={busy} onClick={() => marcar(p.id, "pendente")}
-                        className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
-                        title="Marcar como pendente">
-                        <RotateCcw size={15} />
-                      </button>
-                    )}
-                  </div>
-                )}
-                {item.revisado && item.defeito && (
-                  <div className="mt-3 space-y-1.5 sm:ml-11">
-                    <label htmlFor={"vistoria-obs-" + p.id} className="text-xs font-semibold">Descreva a avaria (opcional)</label>
-                    <Textarea id={"vistoria-obs-" + p.id} maxLength={300} rows={2}
-                      value={item.observacao}
-                      disabled={readOnly || busy}
-                      onChange={(event) => {
-                        setItens((current) => current.map((x) => x.id === p.id ? { ...x, observacao: event.target.value } : x));
-                        changed();
-                      }}
-                      placeholder="Ex.: risco na porta direita, próximo à maçaneta"
-                      className="min-h-16 resize-y text-base" />
-                    <p className="text-right text-[11px] text-muted-foreground">{item.observacao.length}/300</p>
-                  </div>
-                )}
+          <div className="rounded-xl border border-cyan-400/20 bg-[#182633] p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300">Área selecionada</p>
+                <h4 className="mt-1 text-sm font-bold">{selected.label}</h4>
+                <p className="mt-1 text-xs text-slate-400">{selected.detalhe}</p>
               </div>
-            );
-          })}
-          <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
-            <label htmlFor="vistoria-obs-gerais" className="block text-sm font-semibold">Observações gerais</label>
-            <Textarea id="vistoria-obs-gerais" maxLength={1000} rows={3}
-              value={observacoesGerais} disabled={readOnly || busy}
-              onChange={(event) => { setObservacoesGerais(event.target.value); changed(); }}
-              placeholder="Ex.: objetos deixados no veículo, cuidados especiais ou orientações do cliente."
-              className="min-h-20 resize-y text-base" />
-            <p className="text-right text-[11px] text-muted-foreground">{observacoesGerais.length}/1000</p>
+              <span className="rounded-full bg-white/5 px-2 py-1 text-[11px] text-slate-300">
+                {!selectedItem.revisado?"Pendente":selectedItem.defeito?"Com avaria":"Sem avaria"}
+              </span>
+            </div>
+            {!readOnly && <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" type="button" disabled={busy}
+                variant={selectedItem.revisado && !selectedItem.defeito?"default":"outline"}
+                aria-pressed={selectedItem.revisado && !selectedItem.defeito}
+                className="min-h-9 flex-1"
+                onClick={()=>marcar(selected.id,"ok")}><Check size={14}/> Sem avaria</Button>
+              <Button size="sm" type="button" disabled={busy}
+                variant={selectedItem.revisado && selectedItem.defeito?"default":"outline"}
+                aria-pressed={selectedItem.revisado && selectedItem.defeito}
+                className="min-h-9 flex-1"
+                onClick={()=>marcar(selected.id,"defeito")}><AlertTriangle size={14}/> Com avaria</Button>
+              <Button size="icon" type="button" variant="outline" disabled={busy}
+                aria-label={"Limpar avaliação de "+selected.label}
+                onClick={()=>marcar(selected.id,"pendente")}><RotateCcw size={14}/></Button>
+            </div>}
+            {selectedItem.revisado && selectedItem.defeito && <div className="mt-3">
+              <label htmlFor={"vistoria-obs-"+selected.id} className="text-xs text-slate-300">Detalhes da avaria</label>
+              <Textarea id={"vistoria-obs-"+selected.id} maxLength={300} rows={2}
+                value={selectedItem.observacao} disabled={readOnly||busy}
+                onChange={(event)=>{setItens(current=>current.map(x=>x.id===selected.id?{...x,observacao:event.target.value}:x));changed();}}
+                placeholder="Ex.: risco leve na porta direita" className="mt-1 min-h-16 border-white/15 bg-[#111d29] text-sm text-slate-50 placeholder:text-slate-500"/>
+            </div>}
           </div>
+          <div className="rounded-xl border border-white/10 bg-[#182633] p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-2 text-xs font-semibold"><Camera size={15} className="text-cyan-300"/> Fotos de apoio</p>
+              <span className="text-[11px] text-slate-400">{fotos.length} / 3</span>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {fotos.map((foto,index)=><div key={index} className="relative aspect-square overflow-hidden rounded-lg border border-white/15">
+                <img src={foto} alt={"Foto de vistoria "+(index+1)} className="size-full object-cover"/>
+                {!readOnly && <button type="button" aria-label={"Remover foto "+(index+1)}
+                  disabled={busy} className="absolute right-1 top-1 rounded-full bg-black/75 p-1 text-white"
+                  onClick={()=>{setFotos(current=>current.filter((_,i)=>i!==index));changed();}}>
+                  <X size={14}/>
+                </button>}
+              </div>)}
+              {!readOnly && fotos.length < 3 && <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-cyan-400/35 bg-cyan-400/5 px-1 text-center text-[10px] text-cyan-200">
+                <ImagePlus size={20}/><span>{uploading?"Preparando...":"Adicionar foto"}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
+                  disabled={busy||uploading}
+                  onChange={e=>{void adicionarFoto(e.target.files?.[0]);e.currentTarget.value="";}}/>
+              </label>}
+            </div>
+            <p className="mt-2 text-[10px] leading-4 text-slate-400">Até 3 fotos comprimidas, salvas junto da vistoria.</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#182633] p-3 sm:p-4">
+            <label htmlFor="vistoria-obs-gerais" className="block text-xs font-semibold">Observações gerais</label>
+            <Textarea id="vistoria-obs-gerais" maxLength={1000} rows={2}
+              value={observacoesGerais} disabled={readOnly||busy}
+              onChange={e=>{setObservacoesGerais(e.target.value);changed();}}
+              placeholder="Observações sobre o veículo ou objetos encontrados"
+              className="mt-2 min-h-20 border-white/15 bg-[#111d29] text-sm text-slate-50 placeholder:text-slate-500"/>
+          </div>
+          {!readOnly && <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={busy||uploading}
+              onClick={marcarTodosOk} className="flex-1"><ShieldCheck size={14}/> Marcar tudo OK</Button>
+            <Button type="button" size="sm" variant="outline" disabled={busy||uploading}
+              onClick={limparTudo}><RotateCcw size={14}/> Limpar</Button>
+          </div>}
         </div>
       </div>
-
-      <div className="space-y-3 border-t border-border bg-muted/30 p-4 sm:p-5">
-        {externalChange && (
-          <p role="status" className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs">
-            A vistoria foi atualizada em outra sessão. Seu preenchimento foi mantido para você revisar antes de salvar.
+      <footer className="space-y-3 border-t border-white/10 bg-[#0c151e] px-4 py-4 sm:px-5">
+        {externalChange && <p role="status" className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-xs text-amber-100">A vistoria foi atualizada em outra sessão. As alterações ainda não salvas foram preservadas para revisão.</p>}
+        {error && <p role="alert" className="rounded-lg border border-red-400/40 bg-red-400/10 p-3 text-xs text-red-200">{error}</p>}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-start gap-2 text-xs text-slate-300" role="status" aria-live="polite">
+            <Info size={16} className="shrink-0 text-cyan-300"/>
+            <span>{readOnly?"Vistoria encerrada: somente consulta.":!concluida?"Revise os "+faltantes+" pontos restantes antes de salvar.":dirty?"Pronta para salvar. Alterações pendentes.":saved?"Vistoria salva.":"Todos os pontos revisados."}</span>
           </p>
-        )}
-        {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">{error}</p>}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-start gap-2 text-xs leading-5 text-muted-foreground" role="status" aria-live="polite">
-            {readOnly
-              ? <ShieldCheck size={17} className="mt-0.5 shrink-0 text-primary" />
-              : concluida ? <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-500" />
-                : <AlertTriangle size={17} className="mt-0.5 shrink-0 text-primary" />}
-            <span>
-              {readOnly ? "Vistoria encerrada. Registro disponível somente para consulta."
-                : !concluida ? "Faltam " + faltantes + " ponto(s) para liberar o salvamento."
-                : saved && !dirty ? "Vistoria salva com sucesso."
-                : dirty ? "Pronta para salvar. Alterações ainda não registradas."
-                : "Todos os pontos revisados. Nenhuma alteração pendente."}
-            </span>
-          </div>
-          {!readOnly && (
-            <Button type="button" disabled={busy || !concluida || !dirty}
-              onClick={() => void salvar()} className="h-11 w-full shrink-0 gap-2 sm:w-auto sm:min-w-[165px]">
-              <Save size={17} /> {busy ? "Salvando..." : dirty ? "Salvar vistoria" : "Vistoria salva"}
-            </Button>
-          )}
+          {!readOnly && <Button type="button" disabled={busy || !concluida || !dirty || uploading}
+            onClick={()=>void salvar()} className="min-h-11 w-full gap-2 sm:w-auto">
+            <Save size={16}/>{busy?"Salvando...":"Salvar vistoria"}
+          </Button>}
         </div>
-      </div>
+        <p className="text-[10px] text-slate-500">Mapa ilustrativo de inspeção · o registro de avarias é preservado no histórico da comanda.</p>
+      </footer>
     </section>
   );
 }
