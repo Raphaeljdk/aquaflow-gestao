@@ -89,3 +89,12 @@ test("Stripe nunca parece ativo só porque existem nomes de variáveis",()=>{
  assert.equal(live.pixFlagEnabled,false);
  assert.match(read("src/components/platform-central-panel.tsx"),/Pagamentos Stripe/);
 });
+
+test("email de fim do teste usa o contato oficial, nunca a conta do gestor",()=>{
+ const template=read("src/lib/saas/notification-providers.ts");
+ assert.match(template,/trial_to_paid_offer/);
+ assert.match(template,/mailto:gestaoduchaelitte@gmail\.com/);
+ assert.match(template,/Em caso de dúvidas, entre em contato com gestaoduchaelitte@gmail\.com/);
+ assert.doesNotMatch(template,/plataforma@duchaelitte\.com\.br/);
+ assert.match(template,/from:sender/); // remetente verificado continua separado do contato
+});
