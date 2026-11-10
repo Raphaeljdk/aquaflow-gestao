@@ -301,6 +301,39 @@ export async function gerarPdfVistoria(info: {
     y += 4.5;
   }
 
+  // Fotos de apoio são páginas adicionais do mesmo PDF de vistoria/comanda.
+  // Base64 previamente validado e limitado no servidor (até três imagens).
+  if (info.vistoria.fotos?.length) {
+    doc.addPage();
+    doc.setTextColor(...ink);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("REGISTRO FOTOGRÁFICO DA VISTORIA", 17, 21);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("Comanda #" + info.numero + " · Placa " + (info.placa || "não informada"), 17, 28);
+    for (const [i, foto] of info.vistoria.fotos.entries()) {
+      if (i > 0 && i % 2 === 0) {
+        doc.addPage();
+        doc.setTextColor(...ink);
+      }
+      const yFoto = i % 2 === 0 ? 39 : 153;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Foto " + (i + 1), 18, yFoto);
+      try {
+        const props = doc.getImageProperties(foto);
+        const maxW = 170, maxH = 98;
+        const factor = Math.min(maxW / props.width, maxH / props.height);
+        const w = props.width * factor, h = props.height * factor;
+        doc.addImage(foto, "JPEG", 18, yFoto + 4, w, h);
+      } catch {
+        doc.setFont("helvetica", "normal");
+        doc.text("Imagem indisponível para visualização.", 18, yFoto + 10);
+      }
+    }
+  }
+
   const pageCount = doc.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
