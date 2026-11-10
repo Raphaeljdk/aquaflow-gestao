@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
-import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, ShieldCheck, X, Trash2 } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
 import { CentralPlatformPanel } from "@/components/platform-central-panel";
 import { PlatformTickets } from "@/components/platform-tickets";
@@ -57,6 +57,27 @@ export function PlatformDashboard() {
       await load();
       if(status==="APROVADO")setTab("aprovadas");
     }catch(e){setError(e instanceof Error?e.message:"Não foi possível salvar.");}
+    finally{setBusy(null);}
+  }
+  async function excluirSolicitacao(item:Request) {
+    const resposta=window.prompt("Excluir a solicitação de teste "+item.nomeEmpresa+
+      "?\nDigite o e-mail cadastrado ("+item.email+") para confirmar:");
+    if(resposta===null)return;
+    if(resposta.trim().toLowerCase()!==item.email.toLowerCase()) {
+      setError("E-mail incorreto. Nenhum cadastro foi excluído.");return;
+    }
+    if(!window.confirm("Excluir definitivamente esta solicitação de teste não aprovada?"))return;
+    setBusy(item.id);setError("");
+    try {
+      const response=await fetch("/api/plataforma/solicitacoes/"+encodeURIComponent(item.id),{
+        method:"DELETE",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({confirmacao:"EXCLUIR CADASTRO",email:item.email})
+      });
+      const body=await response.json() as {deleted?:boolean;error?:string};
+      if(!response.ok||!body.deleted)throw new Error(body.error||"Não foi possível excluir cadastro.");
+      await load();
+      setCentralRefresh(v=>v+1);
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao excluir cadastro.");}
     finally{setBusy(null);}
   }
   function prepare(item:Request){
@@ -185,6 +206,14 @@ export function PlatformDashboard() {
               <button disabled={busy===item.id} onClick={()=>void change(item,"APROVADO")} className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"><Check size={14}/> Aprovar análise</button>
               <button disabled={busy===item.id} onClick={()=>void change(item,"REJEITADO")} className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-50"><X size={14}/> Rejeitar</button>
             </>}
+            {item.modalidadeCadastro==="TESTE_7_DIAS" &&
+              ["PENDENTE","REJEITADO"].includes(item.status) &&
+              !item.testeIniciadoEm && !item.testeExpiraEm &&
+              <button type="button" disabled={busy!==null} onClick={()=>void excluirSolicitacao(item)}
+                aria-label={"Excluir cadastro "+item.nomeEmpresa}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/40 px-3 py-2 text-xs font-semibold text-red-600 disabled:opacity-40">
+                <Trash2 size={14}/> Excluir cadastro
+              </button>}
           </div>
         </article>)}
       </div>
