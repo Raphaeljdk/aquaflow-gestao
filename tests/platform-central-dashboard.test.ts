@@ -31,14 +31,17 @@ test("painel destaca cadastros novos sem confundi-los com usuários do ERP antig
  assert.match(central,/jobAttempts/);
  assert.match(central,/invitation/);
 });
-test("painel não cria bancos, altera licenças nem dispara cobrança",()=>{
+test("painel não cria bancos ou altera licenças; cobrança exige ação explícita e credenciais validadas",()=>{
  const route=file("src/app/api/plataforma/saas/central/route.ts");
  const ui=file("src/components/platform-central-panel.tsx");
  assert.doesNotMatch(route,/export async function POST|export async function PATCH|UPDATE platform_tenants|DELETE FROM/);
  // The inventory stays read-only; activation is a separate guarded administrative endpoint.
  assert.match(ui,/method:"POST"/);
  assert.match(ui,/adminOnboardingEnabled/);
- assert.doesNotMatch(ui,/createNeonTenantProject|checkout/);
+ assert.doesNotMatch(ui,/createNeonTenantProject/);
+ assert.match(ui,/data.billingReadiness.liveConfigurationReady/);
+ assert.match(ui,/gerarCobranca/);
+ assert.match(ui,/window.confirm/);
  assert.match(ui,/billingReadiness/);
  assert.match(ui,/somente leitura/);
  const activation=file("src/app/api/plataforma/saas/tenants/[id]/ativar/route.ts");
