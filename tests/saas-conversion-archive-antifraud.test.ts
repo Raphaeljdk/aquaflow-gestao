@@ -78,7 +78,7 @@ test("Stripe nunca parece ativo só porque existem nomes de variáveis",()=>{
   STRIPE_WEBHOOK_SECRET:"whsec_example",CONTROL_DATABASE_URL:"postgres://example"
  });
  assert.equal(ready.liveConfigurationReady,false);
- assert.ok(ready.blockers.some(x=>x.includes("Migração")));
+ assert.ok(ready.blockers.some(x=>x.includes("Modo SaaS de produção ou cobrança híbrida")));
  assert.ok(ready.checksStillRequired.some(x=>x.includes("Webhook")));
  const live=stripeBillingReadiness({
   VERCEL_ENV:"production",SAAS_PRODUCTION_MODE:"true",STRIPE_BILLING_ENABLED:"true",
