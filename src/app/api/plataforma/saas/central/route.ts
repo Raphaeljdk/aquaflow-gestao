@@ -48,6 +48,14 @@ export async function GET(request:NextRequest){
               WHERE o.tenant_id=t.id AND o.template_key='owner_invite'
               ORDER BY o.created_at DESC,o.id DESC LIMIT 1)='ERROR'))::int AS action
     FROM platform_tenants t LEFT JOIN platform_entitlements e ON e.tenant_id=t.id`;
+   // Evidence of a real Stripe-hosted Checkout Session already created in live mode.
+   // This approves link generation only; it never claims payment settlement.
+   const checkoutEvidence=await db.$queryRaw<Array<{checkoutValidated:boolean}>>`
+     SELECT EXISTS (
+       SELECT 1 FROM platform_billing_charges
+       WHERE provider='STRIPE' AND stripe_checkout_session_id LIKE 'cs_live_%'
+     ) AS "checkoutValidated"`;
+   const checkoutValidated=checkoutEvidence[0]?.checkoutValidated===true;
    if(mode==="companies"){
     const where=`
       WHERE ($1::text='' OR lower(t.display_name) LIKE '%'||$1||'%'
@@ -120,7 +128,7 @@ export async function GET(request:NextRequest){
         'self_service_trial_started_after_db_ready','trial_activated_qa',
         'notification_send_failed','tenant_provisioning_failed','tenant_archived')
       ORDER BY a.created_at DESC LIMIT 250`,ids):[];
-    return {tenants,accounts:[],events,totalMatched:found[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
+    return {tenants,accounts:[],events,totalMatched:found[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE,checkoutValidated};
    }
    const accountSource=`
     FROM (
@@ -158,10 +166,11 @@ export async function GET(request:NextRequest){
       tenantName:string|null;tenantSlug:string|null;tenantState:string|null;license:string|null;source:string;
    }>>(`SELECT a.* ${accountSource} ORDER BY a.name,a.id LIMIT $2::integer OFFSET $3::integer`,
       search,PAGE_SIZE,offset);
-   return {tenants:[],accounts,events:[],totalMatched:matched[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE};
+   return {tenants:[],accounts,events:[],totalMatched:matched[0]?.quantity??0,counts:stats[0],page,pageSize:PAGE_SIZE,checkoutValidated};
   });
-  return NextResponse.json({...result,adminOnboardingEnabled:adminOnboardingMode(process.env),
-    billingReadiness:stripeBillingReadiness(process.env)},
+  const {checkoutValidated,...inventory}=result;
+  return NextResponse.json({...inventory,adminOnboardingEnabled:adminOnboardingMode(process.env),
+    billingReadiness:{...stripeBillingReadiness(process.env),checkoutValidated}},
     {headers:{"Cache-Control":"private,no-store"}});
  }catch(error){return apiError(error);}
 }

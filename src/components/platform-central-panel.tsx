@@ -17,7 +17,7 @@ type Account={
  tenantName:string|null;tenantSlug:string|null;tenantState:string|null;license:string|null;source:"TENANT"|"PLATFORM"|"PENDING";
 };
 type Event={tenantId:string;action:string;createdAt:string};
-type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number;archived:number};adminOnboardingEnabled:boolean;billingReadiness:{liveConfigurationReady:boolean;pixFlagEnabled:boolean;blockers:string[];checksStillRequired:string[]}};
+type Result={tenants:Tenant[];accounts:Account[];events:Event[];page:number;pageSize:number;totalMatched:number;counts:{total:number;ready:number;live:number;action:number;archived:number};adminOnboardingEnabled:boolean;billingReadiness:{liveConfigurationReady:boolean;pixFlagEnabled:boolean;checkoutValidated:boolean;blockers:string[];checksStillRequired:string[]}};
 type FilterValue="all"|"attention"|"provisioning"|"ready"|"active"|"archived";
 
 const date=(value:string|null)=>value?
@@ -210,20 +210,26 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
      <div>
       <h3 className="flex items-center gap-2 font-bold"><CreditCard size={18}/> Pagamentos Stripe</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-       {data.billingReadiness.liveConfigurationReady?
-        "Configuração de produção presente; ainda é necessário homologar o webhook e a conciliação antes da primeira cobrança.":
-        "Cobrança em produção ainda bloqueada. Nenhuma assinatura é iniciada automaticamente ao terminar o teste."}
+       {!data.billingReadiness.liveConfigurationReady?
+        "Cobrança em produção ainda bloqueada. Nenhuma assinatura é iniciada automaticamente ao terminar o teste.":
+        data.billingReadiness.checkoutValidated?
+        "A geração do checkout oficial da Stripe em produção foi validada. O pagamento, o webhook de confirmação e a conciliação ainda precisam de homologação de ponta a ponta.":
+        "Configuração de produção presente; a geração do checkout ainda precisa de validação."}
       </p>
      </div>
-     <span className={"rounded-full border px-3 py-1 text-xs font-bold "+(data.billingReadiness.liveConfigurationReady?
-       "border-amber-500/30 text-amber-700 dark:text-amber-300":"border-red-500/30 text-red-700 dark:text-red-300")}>
-       {data.billingReadiness.liveConfigurationReady?"Aguardando homologação":"Não liberado"}
+     <span className={"rounded-full border px-3 py-1 text-xs font-bold "+(!data.billingReadiness.liveConfigurationReady?
+       "border-red-500/30 text-red-700 dark:text-red-300":data.billingReadiness.checkoutValidated?
+       "border-green-600/30 text-green-700 dark:text-green-300":"border-amber-500/30 text-amber-700 dark:text-amber-300")}>
+       {!data.billingReadiness.liveConfigurationReady?"Não liberado":data.billingReadiness.checkoutValidated?"Checkout aprovado":"Aguardando homologação"}
      </span>
     </div>
     {!data.billingReadiness.liveConfigurationReady && <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
       <ShieldAlert size={17} className="mt-0.5 shrink-0"/>
       <p>Verificar: {data.billingReadiness.blockers.join(" · ")}</p>
     </div>}
+    {data.billingReadiness.liveConfigurationReady && data.billingReadiness.checkoutValidated && <p className="mt-2 text-xs text-muted-foreground">
+      Aprovação restrita à geração do checkout. Nenhum cliente é marcado como pago nem tem a assinatura ativada sem liquidação comprovada.
+    </p>}
     <p className="mt-2 text-xs text-muted-foreground">Pix pela Stripe: {data.billingReadiness.pixFlagEnabled?"flag habilitada — confirmar aprovação na conta":"ainda não habilitado"}.</p>
    </section>}
   <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
