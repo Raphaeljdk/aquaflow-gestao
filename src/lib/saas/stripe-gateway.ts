@@ -2,6 +2,8 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { resolveStripeMode, expectedStripeCheckoutPrefix, assertStripeEventMode } from "./stripe-mode";
 import {twelfthCycleEnd} from "./stripe-contract-term";
+import {BusinessError} from "@/lib/domain";
+import {safeStripeDiagnostic,stripeFailureDescription} from "./stripe-error-diagnostics";
 
 export type StripePlan = "MENSAL" | "ANUAL_MENSAL" | "ANUAL_AVISTA";
 export type StripeMethod = "CARD" | "PIX";
@@ -29,7 +31,21 @@ async function stripeApi<T>(path:string,body?:URLSearchParams,idempotencyKey?:st
    ...(body?{"Content-Type":"application/x-www-form-urlencoded"}:{})},
   body:body?.toString(),cache:"no-store",signal:AbortSignal.timeout(12000)
  });
- if(!response.ok)throw new Error("Stripe indisponível ou configuração inválida: "+response.status);
+ if(!response.ok){
+  // Stripe error messages may contain account details. Log safe provider identifiers only.
+  const parsed=await response.json().catch(()=>null) as {error?:{type?:unknown;code?:unknown;param?:unknown}}|null;
+  const status=response.status;
+  const code=safeStripeDiagnostic(parsed?.error?.code);
+  const type=safeStripeDiagnostic(parsed?.error?.type);
+  const param=safeStripeDiagnostic(parsed?.error?.param);
+  const requestId=safeStripeDiagnostic(response.headers.get("request-id"));
+  console.error("[stripe-api] Falha segura na API",{
+    status,code:code??"não informado",type:type??"não informado",
+    param:param??"não informado",requestId:requestId??"não informado",
+    operation:path==="/v1/checkout/sessions"?"create_checkout":"provider_operation"
+  });
+  throw new BusinessError(stripeFailureDescription(status,code,param),503);
+ }
  return response.json() as Promise<T>;
 }
 export async function createStripeCheckout(info:{
