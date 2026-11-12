@@ -2,7 +2,7 @@
  * Only provider status, parameter name, error code and request ID are reported.
  * Never log or return provider messages, request bodies, emails or API credentials.
  */
-export function safeStripeDiagnostic(input:unknown, allowed:/^(?:code|type|param|request_id)$/= /^(?:code|type|param|request_id)$/):string|undefined {
+export function safeStripeDiagnostic(input:unknown):string|undefined {
  if(typeof input!=="string")return undefined;
  const value=input.trim();
  return value.length<=120 && /^[a-zA-Z0-9_.\[\]/-]+$/.test(value) ? value : undefined;
