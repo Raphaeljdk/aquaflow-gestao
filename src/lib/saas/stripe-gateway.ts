@@ -61,7 +61,9 @@ export async function createStripeCheckout(info:{
  p.set("mode",upFront?"payment":"subscription");
  p.set("customer_email",info.ownerEmail);
  p.set("client_reference_id",info.tenantId);
- p.set("payment_method_types[0]",info.method==="PIX"?"pix":"card");
+ // Stripe API 2026-09-30.endive+ rejects payment_method_types on Checkout Sessions.
+ // allowed_payment_method_types preserves the requested CARD / PIX restriction.
+ p.set("allowed_payment_method_types[0]",info.method==="PIX"?"pix":"card");
  p.set("line_items[0][quantity]","1");
  p.set("line_items[0][price_data][currency]","brl");
  p.set("line_items[0][price_data][unit_amount]",upFront?"79000":"8000");
