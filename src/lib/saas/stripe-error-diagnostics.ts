@@ -5,6 +5,7 @@
 export function safeStripeDiagnostic(input:unknown):string|undefined {
  if(typeof input!=="string")return undefined;
  const value=input.trim();
+ if(/(?:sk_(?:live|test)_|rk_(?:live|test)_|pk_(?:live|test)_|whsec_)/i.test(value))return undefined;
  return value.length<=120 && /^[a-zA-Z0-9_.\[\]/-]+$/.test(value) ? value : undefined;
 }
 export function stripeFailureDescription(status:number, code?:string, param?:string):string {
