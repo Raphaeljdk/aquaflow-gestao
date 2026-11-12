@@ -13,6 +13,8 @@ test("erros Stripe distinguem autenticação, permissões e argumentos inválido
 test("não imprime mensagens ou credenciais de provedores Stripe",()=>{
  const secret="sk_live_do_not_log";
  assert.equal(safeStripeDiagnostic(secret+": chave inválida"),undefined);
+ assert.equal(safeStripeDiagnostic(secret),undefined);
+ assert.equal(safeStripeDiagnostic("whsec_nope"),undefined);
  assert.equal(safeStripeDiagnostic("customer_email=private@domain.com"),undefined);
  assert.equal(safeStripeDiagnostic({secret}),undefined);
  assert.equal(safeStripeDiagnostic("payment_method_unactivated"),"payment_method_unactivated");
