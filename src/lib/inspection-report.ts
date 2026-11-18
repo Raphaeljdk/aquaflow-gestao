@@ -134,8 +134,9 @@ export async function gerarPdfVistoria(info: {
   }
 
   const status = (id: VistoriaItemId) => info.vistoria.itens.find((item) => item.id === id);
-  const revisados = info.vistoria.itens.filter((i) => i.revisado);
-  const avarias = revisados.filter((i) => i.defeito).length;
+  // Contar uma única vez cada área do mapa; nunca confundir revisão concluída com ausência de avarias.
+  const revisados = pontos.filter((p) => status(p.id)?.revisado);
+  const avarias = revisados.filter((p) => status(p.id)?.defeito).length;
   const corretos = revisados.length - avarias;
   const pendentes = pontos.length - revisados.length;
   const tipo = info.tipo ?? "CARRO";
@@ -177,9 +178,9 @@ export async function gerarPdfVistoria(info: {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.3);
   doc.setTextColor(...ink);
-  doc.text(corretos + " sem avaria", 25, 79);
-  doc.text(avarias + " com avaria", 83, 79);
-  doc.text(pendentes + " pendentes", 144, 79);
+  doc.text("Revisados: " + revisados.length + "/" + pontos.length, 22, 79);
+  doc.text("Avarias: " + avarias, 95, 79);
+  doc.text("Sem avaria: " + corretos, 143, 79);
 
   // Cartão do mapa: desenho vetorial (não captura rasterizada da tela).
   const mx = 17, my = 91, mw = 75, mh = 132;
