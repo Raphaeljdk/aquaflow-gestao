@@ -46,6 +46,7 @@ export function VehicleInspection({
   const [fotos, setFotos] = useState<string[]>(value?.fotos ?? []);
   const [uploading, setUploading] = useState(false);
   const [selectedId, setSelectedId] = useState<VistoriaItemId>("PARACHOQUES");
+  const detailsRef = useRef<HTMLTextAreaElement>(null);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -99,6 +100,9 @@ export function VehicleInspection({
         }
       : item));
     changed();
+    if (estado === "defeito") {
+      window.requestAnimationFrame(() => detailsRef.current?.focus({ preventScroll: true }));
+    }
   }
 
   function escolher(id: VistoriaItemId) {
@@ -330,12 +334,13 @@ export function VehicleInspection({
                 aria-label={"Limpar avaliação de "+selected.label}
                 onClick={()=>marcar(selected.id,"pendente")}><RotateCcw size={14}/></Button>
             </div>}
-            {selectedItem.revisado && selectedItem.defeito && <div className="mt-3">
-              <label htmlFor={"vistoria-obs-"+selected.id} className="text-xs text-slate-300">Detalhes da avaria</label>
-              <Textarea id={"vistoria-obs-"+selected.id} maxLength={300} rows={2}
+            {selectedItem.revisado && selectedItem.defeito && <div className="mt-3 rounded-lg border border-amber-400/30 bg-amber-400/5 p-3">
+              <label htmlFor={"vistoria-obs-"+selected.id} className="block text-sm font-semibold text-amber-200">Descreva a avaria — {selected.label}</label>
+              <p className="mt-1 text-xs text-slate-300">Informe o dano e onde ele está localizado. A descrição aparecerá no PDF.</p>
+              <Textarea ref={detailsRef} id={"vistoria-obs-"+selected.id} maxLength={300} rows={3}
                 value={selectedItem.observacao} disabled={readOnly||busy}
                 onChange={(event)=>{setItens(current=>current.map(x=>x.id===selected.id?{...x,observacao:event.target.value}:x));changed();}}
-                placeholder="Ex.: risco leve na porta direita" className="mt-1 min-h-16 border-white/15 bg-[#111d29] text-sm text-slate-50 placeholder:text-slate-500"/>
+                placeholder="Ex.: risco de 5 cm na porta dianteira direita" className="mt-2 min-h-24 w-full border-amber-300/40 bg-[#0b1520] text-base text-white placeholder:text-slate-400 focus-visible:ring-amber-300"/>
             </div>}
           </div>
           <div className="rounded-xl border border-white/10 bg-[#182633] p-3 sm:p-4">
@@ -352,12 +357,22 @@ export function VehicleInspection({
                   <X size={14}/>
                 </button>}
               </div>)}
-              {!readOnly && fotos.length < 3 && <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-cyan-400/35 bg-cyan-400/5 px-1 text-center text-[10px] text-cyan-200">
-                <ImagePlus size={20}/><span>{uploading?"Preparando...":"Adicionar foto"}</span>
-                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
-                  disabled={busy||uploading}
-                  onChange={e=>{void adicionarFoto(e.target.files?.[0]);e.currentTarget.value="";}}/>
-              </label>}
+              {!readOnly && fotos.length < 3 && <div className="col-span-3 grid grid-cols-2 gap-2">
+                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-400/40 bg-cyan-400/10 px-2 text-center text-xs font-semibold text-cyan-100">
+                  <Camera size={17}/> Tirar foto
+                  <input type="file" accept="image/*" capture="environment" className="sr-only"
+                    aria-label="Tirar foto com a câmera traseira"
+                    disabled={busy||uploading}
+                    onChange={e=>{void adicionarFoto(e.target.files?.[0]);e.currentTarget.value="";}}/>
+                </label>
+                <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-2 text-center text-xs font-semibold text-slate-100">
+                  <ImagePlus size={17}/> Galeria
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only"
+                    aria-label="Selecionar foto da galeria"
+                    disabled={busy||uploading}
+                    onChange={e=>{void adicionarFoto(e.target.files?.[0]);e.currentTarget.value="";}}/>
+                </label>
+              </div>}
             </div>
             <p className="mt-2 text-[10px] leading-4 text-slate-400">Até 3 fotos comprimidas, salvas junto da vistoria.</p>
           </div>
