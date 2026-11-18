@@ -60,6 +60,9 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     await tx.$executeRaw`DELETE FROM platform_notification_outbox WHERE tenant_id=${id}::uuid`;
     await tx.$executeRaw`DELETE FROM platform_invitations WHERE tenant_id=${id}::uuid`;
     await tx.$executeRaw`DELETE FROM platform_provisioning_jobs WHERE tenant_id=${id}::uuid`;
+    // Somente para cadastro que passou por todas as checagens acima: remove a
+    // referência comercial antes do tenant. A trilha de cadastro permanece na auditoria.
+    await tx.$executeRaw`DELETE FROM platform_sales_referrals WHERE tenant_id=${id}::uuid`;
     // Auditoria histórica permanece, mas sem FK para o cadastro eliminado.
     await tx.$executeRaw`UPDATE platform_audit_events SET tenant_id=NULL WHERE tenant_id=${id}::uuid`;
     await tx.$executeRaw`DELETE FROM platform_entitlements WHERE tenant_id=${id}::uuid`;
