@@ -4,6 +4,7 @@ import { signOut } from "next-auth/react";
 import { ArrowRight, Check, Clock3, Database, ExternalLink, Loader2, RefreshCw, ShieldCheck, X, Trash2 } from "lucide-react";
 import { PartnersManager } from "@/components/partners-manager";
 import { CentralPlatformPanel } from "@/components/platform-central-panel";
+import {SalesReferralManager} from "@/components/sales-referral-manager";
 import { PlatformTickets } from "@/components/platform-tickets";
 import { PlatformTestCleanup } from "@/components/platform-test-cleanup";
 import { formatPlatformPrice } from "@/lib/platform-billing";
@@ -133,7 +134,7 @@ export function PlatformDashboard() {
           </button>
         ))}
       </nav>
-      {tab==="empresas" && <CentralPlatformPanel mode="companies" refreshKey={centralRefresh}/>}
+      {tab==="empresas" && <><SalesReferralManager/><CentralPlatformPanel mode="companies" refreshKey={centralRefresh}/></>}
       {tab==="parceiros" && <PartnersManager />}
       {tab==="chamados" && <PlatformTickets />}
       {(tab==="solicitacoes" || tab==="testes" || tab==="aprovadas") && <>
