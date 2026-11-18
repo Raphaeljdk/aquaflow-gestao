@@ -8,13 +8,15 @@ import { gerarPdfComandaOperacional } from "@/lib/comanda-documento";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
-export async function GET(_request: Request, context: Context) {
+export async function GET(request: Request, context: Context) {
   try {
     const user=await currentUser();
     if (!allowedPages[user.role].includes("comandas")) throw new BusinessError("Sem permissão.",403);
     const {id}=await context.params;
     if (!id || id.length>120) throw new BusinessError("Comanda inválida.",400);
-    const pdf=await withOperationalDatabase(user, db=>gerarPdfComandaOperacional(db,id));
+    const tipo=new URL(request.url).searchParams.get("tipo");
+    if (tipo && tipo !== "vistoria") throw new BusinessError("Documento inválido.",400);
+    const pdf=await withOperationalDatabase(user, db=>gerarPdfComandaOperacional(db,id,tipo==="vistoria"));
     return new NextResponse(await pdf.arrayBuffer(), {
       headers:{
         "Content-Type":"application/pdf",
