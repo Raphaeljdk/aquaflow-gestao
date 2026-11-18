@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Choice, Picker, StatusBadge } from "@/components/common";
 import { comandaSchema } from "@/lib/validations";
-import { useStore } from "@/hooks/use-store";
+import { DEMO, useStore } from "@/hooks/use-store";
 import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status, type Veiculo } from "@/types";
@@ -56,7 +56,7 @@ import { OrderProducts } from "@/components/order-products";
 import { OrderTimingDetail } from "@/components/order-timing-detail";
 import { pixPayload } from "@/lib/pix";
 import { whatsappLink } from "@/lib/whatsapp";
-import { baixarPdfVistoria } from "@/lib/inspection-report";
+import { gerarPdfVistoria, baixarPdfVistoria } from "@/lib/inspection-report";
 import { toast } from "sonner";
 type OrderValues = {
   clienteId: string;
@@ -530,7 +530,23 @@ export function OrderDetail({
   };
   async function documentoVistoria(): Promise<File | null> {
     if (!o) return null;
-    // O PDF deve ler a vistoria recém-salva do banco, nunca um snapshot antigo da tela.
+    if (DEMO) {
+      if (!o.vistoria || o.vistoria.itens.length !== 8 || o.vistoria.itens.some(i => !i.revisado)) {
+        throw new Error("Conclua a vistoria antes de gerar o PDF de demonstração.");
+      }
+      return gerarPdfVistoria({
+        numero: o.numero,
+        estabelecimento: data?.configuracao.nome ?? "Ducha Elitte",
+        cliente: c?.nome ?? "Não informado",
+        telefone: c?.telefone ?? "Não informado",
+        veiculo: [v?.marca, v?.modelo, v?.cor].filter(Boolean).join(" "),
+        tipo: v?.tipo ?? "CARRO",
+        placa: v?.placa ?? "Não informada",
+        criadoEm: o.createdAt,
+        vistoria: o.vistoria,
+      });
+    }
+    // Em produção, lê a vistoria recém-salva do banco, nunca um snapshot antigo da tela.
     const response = await fetch("/api/comandas/" + encodeURIComponent(o.id) + "/pdf?tipo=vistoria", {
       cache: "no-store",
     });
