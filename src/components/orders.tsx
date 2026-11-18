@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import {
   LayoutGrid,
-  List,
   Clock,
   MoreHorizontal,
   History,
@@ -26,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { statusLabels, type Status, type Comanda } from "@/types";
@@ -70,7 +69,7 @@ export function Orders() {
     a = useActions(),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("ATIVAS"),
-    [view, setView] = useState("table"),
+    [view] = useState("board"),
     [page, setPage] = useState(0),
     [now, setNow] = useState(0),
     [removing, setRemoving] = useState<string | null>(null);
@@ -151,16 +150,9 @@ export function Orders() {
               />
             </div>
           </div>
-          <Tabs value={view} onValueChange={setView}>
-            <TabsList>
-              <TabsTrigger value="table" aria-label="Visualização em tabela">
-                <List size={17} />
-              </TabsTrigger>
-              <TabsTrigger value="board" aria-label="Visualização em quadro">
-                <LayoutGrid size={17} />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <span className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted-foreground">
+            <LayoutGrid size={16} aria-hidden="true" /> Visualização em cards
+          </span>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
           <p className="text-xs text-muted-foreground">
