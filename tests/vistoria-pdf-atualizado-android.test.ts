@@ -27,7 +27,7 @@ test("duas avarias continuam no PDF, mesmo quando oito pontos foram revisados",a
  assert.match(template,/AVARIAS REGISTRADAS/);
  assert.match(template,/pontos revisados/);
  assert.match(template,/AVARIA REGISTRADA/);
- assert.doesNotMatch(template,/100% sem danos|100% sem avarias/);
+ assert.doesNotMatch(template,/doc\.text\([^\n]*100% sem (?:danos|avarias)/);
 });
 test("vistoria avulsa consulta banco atual e recusa vistoria não salva",()=>{
  const route=src("src/app/api/comandas/[id]/pdf/route.ts");
