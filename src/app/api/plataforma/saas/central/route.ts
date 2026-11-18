@@ -90,6 +90,7 @@ export async function GET(request:NextRequest){
       dbReady:boolean;license:string|null;trialEndsAt:Date|null;
       ownerActive:boolean;members:number;jobState:string|null;jobAttempts:number|null;
       inviteStatus:string|null;inviteAt:Date|null;signupType:string|null;
+      salesPartnerName:string|null;salesPartnerCode:string|null;
     }>>(`
      SELECT t.id::text AS id,t.display_name AS name,t.owner_email AS email,
        t.slug,t.state,t.created_at AS "createdAt",
@@ -113,8 +114,11 @@ export async function GET(request:NextRequest){
          ORDER BY o.created_at DESC,o.id DESC LIMIT 1) AS "inviteAt",
        (SELECT a.metadata->>'kind' FROM platform_audit_events a
          WHERE a.tenant_id=t.id AND a.action='saas_signup_requested'
-         ORDER BY a.created_at DESC LIMIT 1) AS "signupType"
+         ORDER BY a.created_at DESC LIMIT 1) AS "signupType",
+       sp.name AS "salesPartnerName",sp.code AS "salesPartnerCode"
      FROM platform_tenants t LEFT JOIN platform_entitlements e ON e.tenant_id=t.id
+     LEFT JOIN platform_sales_referrals sr ON sr.tenant_id=t.id
+     LEFT JOIN platform_sales_partners sp ON sp.id=sr.partner_id
      ${where} ORDER BY t.created_at DESC,t.id DESC
      LIMIT $3::integer OFFSET $4::integer`,search,filter,PAGE_SIZE,offset);
     const ids=tenants.map(t=>t.id);
