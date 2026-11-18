@@ -173,16 +173,24 @@ export async function gerarPdfVistoria(info: {
   doc.setTextColor(...ink);
   meta.forEach((line, i) => doc.text(line.slice(0, 95), i % 2 ? 111 : 17, 44 + Math.floor(i / 2) * 8));
   doc.setFillColor(240, 243, 246);
-  doc.roundedRect(17, 71, 176, 12, 3, 3, "F");
+  doc.roundedRect(17, 71, 176, 18, 3, 3, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.3);
+  doc.setFontSize(9.4);
+  doc.setTextColor(...(avarias > 0 ? [166, 95, 0] as Rgb : ink));
+  // A vistoria pode estar 100% REVISADA e ainda assim registrar avarias.
+  // Nunca representar a conclusão da inspeção como "veículo 100% sem danos".
+  doc.text(avarias > 0
+    ? "ATENÇÃO: " + avarias + (avarias === 1 ? " AVARIA REGISTRADA" : " AVARIAS REGISTRADAS")
+    : pendentes > 0 ? "VISTORIA AINDA NÃO CONCLUÍDA" : "SEM AVARIAS REGISTRADAS", 25, 79);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(...ink);
-  doc.text(corretos + " sem avaria", 25, 79);
-  doc.text(avarias + " com avaria", 83, 79);
-  doc.text(pendentes + " pendentes", 144, 79);
+  doc.setFontSize(7.6);
+  doc.text(revisados.length + " / " + pontos.length + " pontos revisados", 25, 85);
+  doc.text(corretos + " sem avaria", 83, 85);
+  doc.text(pendentes + " pendentes", 144, 85);
 
   // Cartão do mapa: desenho vetorial (não captura rasterizada da tela).
-  const mx = 17, my = 91, mw = 75, mh = 132;
+  const mx = 17, my = 96, mw = 75, mh = 132;
   doc.setFillColor(...dark);
   doc.roundedRect(mx, my, mw, mh, 4, 4, "F");
   doc.setFontSize(8.7);
@@ -285,7 +293,7 @@ export async function gerarPdfVistoria(info: {
   }
 
   y = Math.max(y + 7, doc.getNumberOfPages() === 1 ? 232 : 20);
-  const obs = info.vistoria.observacoesGerais.trim() || "Nenhuma observação registrada.";
+  const obs = info.vistoria.observacoesGerais?.trim() || "Nenhuma observação registrada.";
   const obsLines = doc.splitTextToSize(obs, 172) as string[];
   addPageIfNeeded(15);
   doc.setFont("helvetica", "bold");
@@ -326,7 +334,7 @@ export async function gerarPdfVistoria(info: {
         const maxW = 170, maxH = 98;
         const factor = Math.min(maxW / props.width, maxH / props.height);
         const w = props.width * factor, h = props.height * factor;
-        doc.addImage(foto, "JPEG", 18, yFoto + 4, w, h);
+        doc.addImage(foto, props.fileType === "PNG" ? "PNG" : "JPEG", 18, yFoto + 4, w, h);
       } catch {
         doc.setFont("helvetica", "normal");
         doc.text("Imagem indisponível para visualização.", 18, yFoto + 10);
@@ -356,5 +364,7 @@ export function baixarPdfVistoria(file: File) {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // Android/Chrome pode precisar do blob após o clique para abrir o leitor de PDF.
+  // Revogação imediata (1 s) cancela a visualização das imagens em alguns aparelhos.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
