@@ -388,7 +388,7 @@ export function VehicleInspection({
             <p className="text-xs text-slate-300">
               As áreas já avaliadas, avarias, descrições e fotos não serão apagadas. Para corrigir uma área, selecione-a no mapa.
             </p>
-          </div>
+          </div>}
         </div>
       </div>
       <footer className="space-y-3 border-t border-white/10 bg-[#0c151e] px-4 py-4 sm:px-5">
