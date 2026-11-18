@@ -32,12 +32,14 @@ export function VehicleInspection({
   tipo = "CARRO",
   readOnly = false,
   onSave,
+  onDirtyChange,
 }: {
   value: Vistoria | null;
   busy: boolean;
   tipo?: "CARRO" | "MOTO" | "CAMINHONETE";
   readOnly?: boolean;
   onSave: (vistoria: Omit<Vistoria, "atualizadoEm">) => Promise<boolean>;
+  onDirtyChange?: (dirty:boolean)=>void;
 }) {
   const [itens, setItens] = useState<ItemVistoria[]>(() => checklist(value));
   const [observacoesGerais, setObservacoesGerais] = useState(value?.observacoesGerais ?? "");
@@ -81,6 +83,7 @@ export function VehicleInspection({
   function changed() {
     dirtyRef.current = true;
     setDirty(true);
+    onDirtyChange?.(true);
     setSaved(false);
     setError("");
   }
@@ -113,6 +116,7 @@ export function VehicleInspection({
       if (!ok) { setError("Não foi possível salvar. Tente novamente."); return; }
       dirtyRef.current = false;
       setDirty(false);
+      onDirtyChange?.(false);
       setSaved(true);
       setExternalChange(false);
       lastVersion.current = value?.atualizadoEm ?? "__nova__";
