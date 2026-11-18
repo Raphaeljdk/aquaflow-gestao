@@ -11,6 +11,7 @@ type Tenant={
  dbReady:boolean;license:string|null;trialEndsAt:string|null;
  ownerActive:boolean;members:number;jobState:string|null;jobAttempts:number|null;
  inviteStatus:string|null;inviteAt:string|null;signupType:string|null;
+ salesPartnerName:string|null;salesPartnerCode:string|null;
 };
 type Account={
  id:string;name:string;email:string;role:string;enabled:boolean;tenantId:string|null;
@@ -272,6 +273,7 @@ export function CentralPlatformPanel({mode,refreshKey=0}:{mode:"companies"|"acco
         <div className="min-w-0 flex-1">
          <div className="flex flex-wrap items-center gap-2"><h3 className="break-words text-base font-bold sm:text-lg">{t.name}</h3><Status value={s}/></div>
          <p className="mt-1 break-all text-sm text-muted-foreground">{t.email}</p>
+         {t.salesPartnerName&&<p className="mt-1 text-xs font-semibold text-primary">Indicado por: {t.salesPartnerName} · {t.salesPartnerCode}</p>}
          <p className="mt-1 text-xs text-muted-foreground">Código: <span className="font-mono">{t.slug}</span> · Cadastro: {date(t.createdAt)}</p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:min-w-[310px]">
