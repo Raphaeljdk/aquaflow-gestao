@@ -323,12 +323,12 @@ export function VehicleInspection({
               <Button size="sm" type="button" disabled={busy}
                 variant={selectedItem.revisado && !selectedItem.defeito?"default":"outline"}
                 aria-pressed={selectedItem.revisado && !selectedItem.defeito}
-                className="min-h-9 flex-1"
+                className={"min-h-11 flex-1 border font-semibold " + (selectedItem.revisado && !selectedItem.defeito ? "border-emerald-400 bg-emerald-700 text-white hover:bg-emerald-600" : "border-slate-500 bg-[#0b1520] text-white hover:bg-[#263849]")}
                 onClick={()=>marcar(selected.id,"ok")}><Check size={14}/> Sem avaria</Button>
               <Button size="sm" type="button" disabled={busy}
                 variant={selectedItem.revisado && selectedItem.defeito?"default":"outline"}
                 aria-pressed={selectedItem.revisado && selectedItem.defeito}
-                className="min-h-9 flex-1"
+                className={"min-h-11 flex-1 border font-semibold " + (selectedItem.revisado && selectedItem.defeito ? "border-amber-400 bg-amber-600 text-slate-950 hover:bg-amber-500" : "border-slate-500 bg-[#0b1520] text-white hover:bg-[#263849]")}
                 onClick={()=>marcar(selected.id,"defeito")}><AlertTriangle size={14}/> Com avaria</Button>
               <Button size="icon" type="button" variant="outline" disabled={busy}
                 aria-label={"Limpar avaliação de "+selected.label}
