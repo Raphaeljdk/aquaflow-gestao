@@ -30,7 +30,7 @@ test("PDF de vistoria diferencia oito pontos revisados de duas avarias", async (
     },
   });
   const rawPdf = Buffer.from(await pdf.arrayBuffer()).toString("latin1");
-  assert.match(rawPdf, /Revisados: 8\\/8/);
+  assert.match(rawPdf, /Revisados: 8\/8/);
   assert.match(rawPdf, /Avarias: 2/);
   assert.match(rawPdf, /Sem avaria: 6/);
   assert.equal((rawPdf.match(/AVARIA REGISTRADA/g) ?? []).length, 2);
@@ -43,12 +43,12 @@ test("PDF de vistoria em produção consulta a persistência, não o snapshot da
   const api = source("src/app/api/comandas/[id]/pdf/route.ts");
   const repository = source("src/lib/comanda-documento.ts");
 
-  assert.match(ui, /pdf\\?tipo=vistoria/);
+  assert.match(ui, /pdf\?tipo=vistoria/);
   assert.match(ui, /cache: "no-store"/);
   assert.match(api, /tipo === "vistoria"/);
-  assert.match(repository, /vistoria\\.itens\\.length !== 8/);
-  assert.match(repository, /vistoria\\.itens\\.some\\(item => !item\\.revisado\\)/);
+  assert.match(repository, /vistoria\.itens\.length !== 8/);
+  assert.match(repository, /vistoria\.itens\.some\(item => !item\.revisado\)/);
   assert.match(repository, /Conclua e salve os oito pontos/);
-  assert.match(repository, /resumoComanda: somenteVistoria \\? undefined :/);
-  assert.match(ui, /if \\(DEMO\\)/);
+  assert.match(repository, /resumoComanda: somenteVistoria \? undefined :/);
+  assert.match(ui, /if \(DEMO\)/);
 });
