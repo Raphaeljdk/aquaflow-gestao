@@ -12,6 +12,7 @@ export const solicitacaoEmpresaSchema = z.object({
   aceitePrivacidade: z.literal(true),
   cienteCondicoesComerciais: z.boolean().default(false),
   modalidadeCadastro: z.enum(["CONTRATACAO", "TESTE_7_DIAS"]).default("CONTRATACAO"),
+  indicacao: z.string().trim().max(64).default(""),
   planoPagamento: z.enum(["MENSAL", "ANUAL_MENSAL", "ANUAL_AVISTA"]).default("ANUAL_MENSAL"),
   metodoPagamento: z.enum(["CARTAO_CREDITO_RECORRENTE", "PIX_STRIPE", "CARTAO_CREDITO_1X"]).default("CARTAO_CREDITO_RECORRENTE"),
   site: z.string().max(100).default(""),
