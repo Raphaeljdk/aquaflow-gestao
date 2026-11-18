@@ -4,7 +4,7 @@ import type { Vistoria } from "@/types";
 import { gerarPdfVistoria } from "@/lib/inspection-report";
 import { BusinessError } from "@/lib/domain";
 
-export async function gerarPdfComandaOperacional(db: PrismaClient, id: string): Promise<File> {
+export async function gerarPdfComandaOperacional(db: PrismaClient, id: string, vistoriaSomente = false): Promise<File> {
   const comanda = await db.comanda.findUnique({
     where: { id },
     include: {
@@ -15,6 +15,11 @@ export async function gerarPdfComandaOperacional(db: PrismaClient, id: string): 
   if (!comanda) throw new BusinessError("Comanda não encontrada neste lava-rápido.", 404);
   const cfg = await db.configuracao.findUnique({ where: { id: "empresa" } });
   const vistoria = comanda.vistoria as unknown as Vistoria | null;
+  // A vistoria avulsa sempre reflete o registro salvo, nunca um snapshot do celular.
+  // Não gerar laudo aparentemente "sem danos" a partir de dados ainda não salvos.
+  const ids = new Set(vistoria?.itens?.filter(i=>i.revisado).map(i=>i.id) ?? []);
+  if (vistoriaSomente && (!vistoria || ids.size !== 8))
+    throw new BusinessError("Conclua e salve os oito pontos da vistoria antes de gerar o PDF.",409);
   return gerarPdfVistoria({
     numero: comanda.numero,
     estabelecimento: cfg?.nome ?? "Lava-rápido",
@@ -25,7 +30,7 @@ export async function gerarPdfComandaOperacional(db: PrismaClient, id: string): 
     placa: comanda.veiculo.placa,
     criadoEm: comanda.createdAt.toISOString(),
     vistoria: vistoria ?? { itens: [], atualizadoEm: comanda.createdAt.toISOString(), observacoesGerais: "Vistoria não realizada." },
-    resumoComanda: {
+    ...(!vistoriaSomente ? { resumoComanda: {
       status: comanda.status,
       pagamento: comanda.formaPagamento ?? "Pendente",
       desconto: Number(comanda.desconto),
@@ -37,6 +42,6 @@ export async function gerarPdfComandaOperacional(db: PrismaClient, id: string): 
       produtos: comanda.itensProduto.map(i => ({
         nome:i.nome,preco:Number(i.preco),quantidade:i.quantidade,devolvido:i.devolvido,
       })),
-    },
+    }} : {}),
   });
 }
