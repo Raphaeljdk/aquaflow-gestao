@@ -16,7 +16,9 @@ test("PDF de vistoria contém mapa vetorial e os oito pontos, inclusive moto e c
   for (const id of ["PARACHOQUES", "FAROIS", "PINTURA", "RETROVISORES", "VIDROS", "AMASSADOS", "RODAS_PNEUS", "INTERIOR"]) {
     assert.match(pdf, new RegExp(id));
   }
-  assert.match(form, /tipo: v\?\.tipo \?\? "CARRO"/);
+  const servidor = readFileSync("src/lib/comanda-documento.ts","utf8");
+  assert.match(servidor, /tipo: comanda.veiculo.tipo/);
+  assert.match(form, /\/pdf\?tipo=vistoria/);
 });
 
 test("finalização operacional distingue Pix, débito, crédito e dinheiro", () => {
