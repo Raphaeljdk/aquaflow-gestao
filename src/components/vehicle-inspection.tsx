@@ -180,14 +180,9 @@ export function VehicleInspection({
   }
   function marcarTodosOk() {
     if (readOnly || busy) return;
-    if (itens.some(i => i.revisado && i.defeito) &&
-      !window.confirm("Marcar tudo como OK também removerá as avarias já apontadas. Continuar?")) return;
-    setItens(items => items.map(i => ({...i, revisado: true, defeito: false, observacao: ""})));
-    changed();
-  }
-  function limparTudo() {
-    if (readOnly || busy || !window.confirm("Limpar marcações desta vistoria? As fotos serão mantidas até você removê-las.")) return;
-    setItens(checklist(null));
+    // Nunca sobrescrever uma área já revisada, sobretudo uma avaria documentada.
+    if (!itens.some(i => !i.revisado)) return;
+    setItens(items => items.map(i => i.revisado ? i : {...i, revisado: true, defeito: false}));
     changed();
   }
   return (
@@ -384,12 +379,16 @@ export function VehicleInspection({
               placeholder="Observações sobre o veículo ou objetos encontrados"
               className="mt-2 min-h-20 border-white/15 bg-[#111d29] text-sm text-slate-50 placeholder:text-slate-500"/>
           </div>
-          {!readOnly && <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" disabled={busy||uploading}
-              onClick={marcarTodosOk} className="flex-1"><ShieldCheck size={14}/> Marcar tudo OK</Button>
-            <Button type="button" size="sm" variant="outline" disabled={busy||uploading}
-              onClick={limparTudo}><RotateCcw size={14}/> Limpar</Button>
-          </div>}
+          {!readOnly && <div className="space-y-2">
+            <Button type="button" size="sm" variant="outline"
+              disabled={busy||uploading||faltantes===0}
+              onClick={marcarTodosOk} className="min-h-11 w-full border-emerald-400/30 bg-[#11251f] font-semibold text-emerald-100 hover:bg-[#1b382c] hover:text-white">
+              <ShieldCheck size={14}/> Marcar somente os pontos pendentes como sem avaria
+            </Button>
+            <p className="text-xs text-slate-300">
+              As áreas já avaliadas, avarias, descrições e fotos não serão apagadas. Para corrigir uma área, selecione-a no mapa.
+            </p>
+          </div>
         </div>
       </div>
       <footer className="space-y-3 border-t border-white/10 bg-[#0c151e] px-4 py-4 sm:px-5">
@@ -402,7 +401,7 @@ export function VehicleInspection({
           </p>
           {!readOnly && <Button type="button" disabled={busy || !concluida || !dirty || uploading}
             onClick={()=>void salvar()} className="min-h-11 w-full gap-2 sm:w-auto">
-            <Save size={16}/>{busy?"Salvando...":"Salvar vistoria"}
+            <Save size={16}/>{busy?"Salvando...":"Salvar vistoria concluída"}
           </Button>}
         </div>
         <p className="text-[10px] text-slate-500">Mapa ilustrativo de inspeção · o registro de avarias é preservado no histórico da comanda.</p>
