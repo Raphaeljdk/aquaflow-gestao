@@ -29,15 +29,15 @@ test("duas avarias continuam no PDF, mesmo quando oito pontos foram revisados",a
  assert.match(template,/AVARIA REGISTRADA/);
  assert.doesNotMatch(template,/doc\.text\([^\n]*100% sem (?:danos|avarias)/);
 });
-test("vistoria avulsa consulta banco atual e recusa vistoria não salva",()=>{
+test("vistoria avulsa consulta banco atual e aceita vistoria parcial salva",()=>{
  const route=src("src/app/api/comandas/[id]/pdf/route.ts");
  const document=src("src/lib/comanda-documento.ts");
  const form=src("src/components/forms/order-form.tsx");
  assert.match(route,/tipo==="vistoria"/);
  assert.match(route,/withOperationalDatabase\(user/);
  assert.match(route,/Cache-Control.*private, no-store/);
- assert.match(document,/ids.size !== 8/);
- assert.match(document,/Conclua e salve os oito pontos/);
+ assert.match(document,/!vistoria/);
+ assert.match(document,/Salve a vistoria antes de gerar o PDF/);
  assert.match(document,/findUnique/);
  assert.match(form,/\/pdf\?tipo=vistoria/);
  assert.match(form,/cache:"no-store"/);

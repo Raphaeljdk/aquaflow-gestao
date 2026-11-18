@@ -24,8 +24,8 @@ test("vistoria não sobrescreve rascunho ao receber novo snapshot", () => {
   assert.match(detail, /<VehicleInspection\s+key=\{o\.id\}/);
 });
 
-test("salvamento somente após revisar todos os pontos e confirmar mutação", () => {
-  assert.match(source, /disabled=\{busy \|\| !concluida \|\| !dirty \|\| uploading\}/);
+test("salvamento de vistoria parcial ou completa confirma mutação", () => {
+  assert.match(source, /disabled=\{busy \|\| !dirty \|\| uploading\}/);
   assert.match(source, /await onSave\(\{ itens, observacoesGerais, fotos \}\)/);
   assert.match(source, /maxLength=\{300\}/);
   assert.match(source, /maxLength=\{1000\}/);
@@ -42,6 +42,6 @@ test("layout premium mantém histórico e fotos compactadas", () => {
   assert.match(source, /Fotos de apoio/);
   assert.match(source, /createImageBitmap\(file\)/);
   assert.match(source, /fotos\.length >= 3/);
-  assert.match(source, /Marcar tudo OK/);
+  assert.match(source, /Marcar somente os pontos pendentes como sem avaria/);
   assert.match(source, /Vistoria de avarias/);
 });

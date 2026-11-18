@@ -15,11 +15,11 @@ test("a vistoria entregue contém checklist e dados do veículo", () => {
   assert.match(pdf, /Cliente:/);
   assert.match(pdf, /Placa:/);
 });
-test("o compartilhamento não exporta rascunhos nem promete anexos automáticos via wa.me", () => {
-  // O documento vem do banco, e o servidor barra vistoria incompleta.
+test("o compartilhamento permite vistoria parcial salva sem prometer anexos automáticos via wa.me", () => {
+  // O documento vem do banco e o servidor exige vistoria salva.
   const servidor = readFileSync("src/lib/comanda-documento.ts","utf8");
   assert.match(detail, /\/pdf\?tipo=vistoria/);
-  assert.match(servidor, /ids.size !== 8/);
+  assert.match(servidor, /vistoriaSomente && !vistoria/);
   assert.match(detail, /navigator\.share\(\{ files: \[arquivo\]/);
   assert.match(detail, /baixarPdfVistoria\(arquivo\)/);
   assert.match(detail, /whatsappLink\(c\?\.telefone, texto\)/);
