@@ -113,7 +113,7 @@ export function VehicleInspection({
   }
 
   async function salvar() {
-    if (!concluida || busy || readOnly) return;
+    if (busy || readOnly || !dirty || uploading) return;
     setError("");
     try {
       const ok = await onSave({ itens, observacoesGerais, fotos });
@@ -397,11 +397,11 @@ export function VehicleInspection({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="flex items-start gap-2 text-xs text-slate-300" role="status" aria-live="polite">
             <Info size={16} className="shrink-0 text-cyan-300"/>
-            <span>{readOnly?"Vistoria encerrada: somente consulta.":!concluida?"Revise os "+faltantes+" pontos restantes antes de salvar.":dirty?"Pronta para salvar. Alterações pendentes.":saved?"Vistoria salva.":"Todos os pontos revisados."}</span>
+            <span>{readOnly?"Vistoria encerrada: somente consulta.":!concluida?"Rascunho: "+faltantes+" pontos pendentes. Você pode salvar e compartilhar como vistoria parcial.":dirty?"Pronta para salvar. Alterações pendentes.":saved?"Vistoria salva.":"Todos os pontos revisados."}</span>
           </p>
-          {!readOnly && <Button type="button" disabled={busy || !concluida || !dirty || uploading}
+          {!readOnly && <Button type="button" disabled={busy || !dirty || uploading}
             onClick={()=>void salvar()} className="min-h-11 w-full gap-2 sm:w-auto">
-            <Save size={16}/>{busy?"Salvando...":"Salvar vistoria concluída"}
+            <Save size={16}/>{busy?"Salvando...":concluida?"Salvar vistoria concluída":"Salvar vistoria parcial"}
           </Button>}
         </div>
         <p className="text-[10px] text-slate-500">Mapa ilustrativo de inspeção · o registro de avarias é preservado no histórico da comanda.</p>
