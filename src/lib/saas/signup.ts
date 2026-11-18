@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { queueOwnerInvitation } from "./secure-owner-invites";
+import {resolveSalesPartner,assignSalesReferral} from "./sales-referrals";
 import type { PrismaClient } from "@prisma/client";
 import { BusinessError } from "@/lib/domain";
 
@@ -19,7 +20,7 @@ function validCnpj(digits:string):boolean{
  return check(digits.slice(0,12),[5,4,3,2,9,8,7,6,5,4,3,2])===Number(digits[12]) &&
   check(digits.slice(0,13),[6,5,4,3,2,9,8,7,6,5,4,3,2])===Number(digits[13]);
 }
-type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;cnpj?:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string;originHash?:string};
+type RequestInfo={nomeEmpresa:string;nomeResponsavel:string;email:string;whatsapp:string;cnpj?:string;kind?:"TESTE_7_DIAS"|"CONTRATACAO";plan?:string;method?:string;originHash?:string;referralCode?:string};
 export async function assertRegistrationIdentityAvailable(db:PrismaClient,identity:{email:string;whatsapp:string;cnpj?:string}){
  const email=identity.email.trim().toLowerCase();
  const phone=identity.whatsapp.replace(/\D/g,"");
@@ -54,16 +55,18 @@ export async function registerTrialRequest(db:PrismaClient,info:RequestInfo) {
      if((recent[0]?.quantity??0)>=10)throw new BusinessError("Limite diário de cadastros atingido.",429);
    }
    await assertRegistrationIdentityAvailable(tx as unknown as PrismaClient,{email,whatsapp:number,cnpj});
+   const salesPartner=await resolveSalesPartner(tx,info.referralCode);
    const rows=await tx.$queryRaw<Array<{id:string}>>`
       INSERT INTO platform_tenants(slug,display_name,owner_email,owner_whatsapp,owner_cnpj)
       VALUES(${slug},${info.nomeEmpresa.trim()},${email},${number},${cnpj||null})
       RETURNING id::text`;
    const tenantId=rows[0].id;
+   await assignSalesReferral(tx,tenantId,salesPartner);
    await tx.$executeRaw`
       INSERT INTO platform_entitlements(tenant_id,state) VALUES(${tenantId}::uuid,'PENDING')`;
    await tx.$executeRaw`
       INSERT INTO platform_audit_events(tenant_id,action,metadata)
-      VALUES(${tenantId}::uuid,'saas_signup_requested',${JSON.stringify({source:"website",kind:info.kind??"TESTE_7_DIAS",plan:info.plan??null,method:info.method??null,contactName:info.nomeResponsavel.trim().slice(0,80),ip_hash:info.originHash??null})}::jsonb)`;
+      VALUES(${tenantId}::uuid,'saas_signup_requested',${JSON.stringify({source:salesPartner?"partner":"website",referralCode:salesPartner?.code??null,kind:info.kind??"TESTE_7_DIAS",plan:info.plan??null,method:info.method??null,contactName:info.nomeResponsavel.trim().slice(0,80),ip_hash:info.originHash??null})}::jsonb)`;
    // The invitation verifies ownership of the email BEFORE any Neon project is created.
    await queueOwnerInvitation(tx,tenantId,"SIGNUP");
    return {id:tenantId,slug};

@@ -227,6 +227,7 @@ model SolicitacaoEmpresa {
   mensalidadeCentavos Int?
   planoPagamento String?
   modalidadeCadastro String @default("CONTRATACAO")
+  parceiroIndicador String?
   testeIniciadoEm DateTime?
   testeExpiraEm DateTime?
   totalContratoCentavos Int?
@@ -242,6 +243,7 @@ model SolicitacaoEmpresa {
   observacoesInternas String @default("")
   @@index([status, createdAt])
   @@index([origemHash, createdAt])
+  @@index([parceiroIndicador, createdAt])
 }
 
 /** Lista curada pela administração; aprovação de cadastro não publica automaticamente um parceiro. */

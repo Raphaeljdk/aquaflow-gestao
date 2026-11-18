@@ -12,10 +12,14 @@ export default function CadastroEmpresaPage() {
   const [consent, setConsent] = useState(false);
   const [cienteCondicoesComerciais, setCienteCondicoesComerciais] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [indicacao,setIndicacao]=useState("");
   const [modalidadeCadastro, setModalidadeCadastro] = useState<"TESTE_7_DIAS" | "CONTRATACAO">("CONTRATACAO");
   useEffect(() => {
-    const tipo = new URLSearchParams(window.location.search).get("modalidade");
+    const q=new URLSearchParams(window.location.search);
+    const tipo=q.get("modalidade");
     if (tipo === "teste") setModalidadeCadastro("TESTE_7_DIAS");
+    const codigo=q.get("indicacao")??"";
+    if(/^ind-[0-9a-f]{12}$/.test(codigo))setIndicacao(codigo);
   }, []);
   const trial = modalidadeCadastro === "TESTE_7_DIAS";
   const [planoPagamento, setPlanoPagamento] = useState<PlatformPlan>("ANUAL_AVISTA");
@@ -85,7 +89,7 @@ export default function CadastroEmpresaPage() {
     try {
       const response = await fetch("/api/solicitacoes", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...form, modalidadeCadastro, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais: trial ? false : cienteCondicoesComerciais}),
+        body:JSON.stringify({...form, indicacao, modalidadeCadastro, planoPagamento, metodoPagamento, aceitePrivacidade: consent, cienteCondicoesComerciais: trial ? false : cienteCondicoesComerciais}),
       });
       const data = await response.json() as {error?:string;message?:string};
       if(!response.ok) {setError(data.error || "Não foi possível enviar.");return;}
@@ -132,6 +136,7 @@ export default function CadastroEmpresaPage() {
             <Link href="/login" className="inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground">Voltar ao início</Link>
           </div> : <>
             <h2 className="text-2xl font-bold">{trial ? "Solicitar teste de 7 dias" : "Solicitar cadastro"}</h2>
+            {indicacao&&<p className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs" role="status">Cadastro por indicação comercial: <strong>{indicacao}</strong>. O teste gratuito continua com as mesmas condições.</p>}
             <p className="mb-5 mt-2 text-sm text-muted-foreground">
               {trial ? "Sem cartão, sem cobrança e sem compromisso de contratação. Preencha os dados para solicitar seu ambiente exclusivo." :
                 "Preencha os dados do responsável e do estabelecimento."}
