@@ -42,6 +42,11 @@ test("vistoria avulsa consulta banco atual e recusa vistoria não salva",()=>{
  assert.match(form,/\/pdf\?tipo=vistoria/);
  assert.match(form,/cache:"no-store"/);
  assert.doesNotMatch(form,/vistoria: o\.vistoria,/);
+ assert.match(form,/if\(vistoriaDirty\)throw new Error/);
+ assert.match(form,/onDirtyChange=\{setVistoriaDirty\}/);
+ const editor=src("src/components/vehicle-inspection.tsx");
+ assert.match(editor,/onDirtyChange\?\.\(true\)/);
+ assert.match(editor,/onDirtyChange\?\.\(false\)/);
 });
 test("abertura de fotos e PDF tolera limitações do Android",()=>{
  const uploader=src("src/components/vehicle-inspection.tsx");
