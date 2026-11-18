@@ -457,8 +457,10 @@ export function OrderDetail({
     [editingVehicle, setEditingVehicle] = useState(false),
     [vehicleType, setVehicleType] = useState<Veiculo["tipo"]>("CARRO"),
     [whatsappConsentChecked,setWhatsappConsentChecked] = useState(false),
-    [whatsappBusy,setWhatsappBusy] = useState(false);
+    [whatsappBusy,setWhatsappBusy] = useState(false),
+    [vistoriaDirty,setVistoriaDirty] = useState(false);
   const o = data?.comandas.find((o) => o.id === id);
+  useEffect(() => {setVistoriaDirty(false);},[id]);
   useEffect(() => {
     setPayment(o?.formaPagamento ?? "");
     setPixConfirmado(false);
@@ -532,6 +534,7 @@ export function OrderDetail({
   // o snapshot do navegador pode estar atrasado após salvar a vistoria.
   async function documentoVistoria(): Promise<File | null> {
     if (!o) return null;
+    if(vistoriaDirty)throw new Error("Você alterou a vistoria. Clique em Salvar vistoria antes de gerar o PDF.");
     const response=await fetch("/api/comandas/"+encodeURIComponent(o.id)+"/pdf?tipo=vistoria",{
       cache:"no-store",headers:{"Cache-Control":"no-cache"}
     });
@@ -568,6 +571,7 @@ export function OrderDetail({
   }
   async function arquivoComanda(): Promise<File | null> {
     if (!o) return null;
+    if(vistoriaDirty)throw new Error("Salve as avarias alteradas antes de gerar a comanda em PDF.");
     const response = await fetch("/api/comandas/" + encodeURIComponent(o.id) + "/pdf", { cache: "no-store" });
     if (!response.ok) {
       const body = await response.json().catch(() => ({})) as { error?: string };
@@ -724,6 +728,7 @@ export function OrderDetail({
               <OrderProducts key={"produtos-" + o.id} id={o.id} status={o.status} onChanged={refresh} />
               <VehicleInspection
                 key={o.id}
+                onDirtyChange={setVistoriaDirty}
                 tipo={v?.tipo ?? "CARRO"}
                 value={o.vistoria}
                 busy={busy}
