@@ -130,7 +130,23 @@ export function VehicleInspection({
     }
     setUploading(true);
     try {
-      const imagem = await createImageBitmap(file);
+      // Alguns navegadores Android não suportam createImageBitmap para certos
+      // formatos. Usar Image como fallback sem perder as fotos da vistoria.
+      let imagem: ImageBitmap | HTMLImageElement;
+      try {
+        if(typeof createImageBitmap !== "function") throw new Error("Decodificador indisponível");
+        imagem=await createImageBitmap(file);
+      } catch {
+        const url=URL.createObjectURL(file);
+        try {
+          imagem=await new Promise<HTMLImageElement>((resolve,reject)=>{
+            const element=new Image();
+            element.onload=()=>resolve(element);
+            element.onerror=()=>reject(new Error("Não foi possível abrir a foto neste aparelho."));
+            element.src=url;
+          });
+        } finally { URL.revokeObjectURL(url); }
+      }
       const max = 960;
       const scale = Math.min(1, max / Math.max(imagem.width, imagem.height));
       const canvas = document.createElement("canvas");
@@ -139,7 +155,7 @@ export function VehicleInspection({
       const context = canvas.getContext("2d");
       if (!context) throw Error("Não foi possível processar a foto.");
       context.drawImage(imagem, 0, 0, canvas.width, canvas.height);
-      imagem.close();
+      if("close" in imagem) imagem.close();
       let arquivo = "";
       for (const quality of [0.73, 0.57, 0.42, 0.30]) {
         arquivo = canvas.toDataURL("image/jpeg", quality);
