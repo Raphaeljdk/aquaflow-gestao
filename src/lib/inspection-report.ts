@@ -138,7 +138,6 @@ export async function gerarPdfVistoria(info: {
   const revisados = pontos.filter((p) => status(p.id)?.revisado);
   const avarias = revisados.filter((p) => status(p.id)?.defeito).length;
   const corretos = revisados.length - avarias;
-  const pendentes = pontos.length - revisados.length;
   const tipo = info.tipo ?? "CARRO";
   const date = (s: string) => {
     const d = new Date(s);
