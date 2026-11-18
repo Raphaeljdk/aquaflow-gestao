@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Choice, Picker, StatusBadge } from "@/components/common";
 import { comandaSchema } from "@/lib/validations";
-import { useStore } from "@/hooks/use-store";
+import { DEMO, useStore } from "@/hooks/use-store";
 import { money, dateLabel } from "@/lib/format";
 import { activeStatus } from "@/lib/domain";
 import { paymentLabels, type Status, type Veiculo } from "@/types";
@@ -528,28 +528,40 @@ export function OrderDetail({
       if (status === "EM_LAVAGEM" || status === "FINALIZADO") onClose();
     }
   };
-  async function documentoVistoria() {
-    if (!o || !o.vistoria || !o.vistoria.itens.length || o.vistoria.itens.some(i => !i.revisado)) {
-      toast.error("Conclua e salve todos os itens da vistoria antes de compartilhar.");
-      return null;
+  async function documentoVistoria(): Promise<File | null> {
+    if (!o) return null;
+    if (DEMO) {
+      if (!o.vistoria || o.vistoria.itens.length !== 8 || o.vistoria.itens.some(i => !i.revisado)) {
+        throw new Error("Conclua a vistoria antes de gerar o PDF de demonstração.");
+      }
+      return gerarPdfVistoria({
+        numero: o.numero,
+        estabelecimento: data?.configuracao.nome ?? "Ducha Elitte",
+        cliente: c?.nome ?? "Não informado",
+        telefone: c?.telefone ?? "Não informado",
+        veiculo: [v?.marca, v?.modelo, v?.cor].filter(Boolean).join(" "),
+        tipo: v?.tipo ?? "CARRO",
+        placa: v?.placa ?? "Não informada",
+        criadoEm: o.createdAt,
+        vistoria: o.vistoria,
+      });
     }
-    return gerarPdfVistoria({
-      numero: o.numero,
-      estabelecimento: data?.configuracao.nome ?? "Ducha Elitte",
-      cliente: c?.nome ?? "Não informado",
-      telefone: c?.telefone ?? "Não informado",
-      veiculo: [v?.marca, v?.modelo, v?.cor].filter(Boolean).join(" "),
-      tipo: v?.tipo ?? "CARRO",
-      placa: v?.placa ?? "Não informada",
-      criadoEm: o.createdAt,
-      vistoria: o.vistoria,
+    // Em produção, lê a vistoria recém-salva do banco, nunca um snapshot antigo da tela.
+    const response = await fetch("/api/comandas/" + encodeURIComponent(o.id) + "/pdf?tipo=vistoria", {
+      cache: "no-store",
     });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      throw new Error(body.error ?? "Não foi possível gerar a vistoria salva.");
+    }
+    const blob = await response.blob();
+    return new File([blob], "vistoria-comanda-" + o.numero + ".pdf", { type: "application/pdf" });
   }
   async function baixarVistoria() {
     try {
       const arquivo = await documentoVistoria();
       if (arquivo) { baixarPdfVistoria(arquivo); toast.success("PDF da vistoria baixado."); }
-    } catch { toast.error("Não foi possível gerar a vistoria em PDF."); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível gerar a vistoria em PDF."); }
   }
   async function consentimentoWhatsapp(revogar:boolean){
     if(!o||whatsappBusy)return;
@@ -622,7 +634,7 @@ export function OrderDetail({
       toast.info(link
         ? "PDF baixado. Anexe-o na conversa do WhatsApp antes de enviar."
         : "PDF baixado. Informe um WhatsApp válido para abrir a conversa do cliente.");
-    } catch { toast.error("Não foi possível preparar o compartilhamento da vistoria."); }
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível preparar o compartilhamento da vistoria."); }
   }
   return (
     <>
