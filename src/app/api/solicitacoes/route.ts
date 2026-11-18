@@ -7,6 +7,7 @@ import { saasPilotMode } from "@/lib/saas/identity";
 import { publicSignupMode } from "@/lib/saas/public-signup-mode";
 import { withControlPlane } from "@/lib/saas/control-plane";
 import { registerTrialRequest,assertRegistrationIdentityAvailable } from "@/lib/saas/signup";
+import {resolveSalesPartner} from "@/lib/saas/sales-referrals";
 import { ownerInviteChannelReady } from "@/lib/saas/owner-invite-delivery";
 import { BusinessError } from "@/lib/domain";
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       const result=await withControlPlane(db=>registerTrialRequest(db,{nomeEmpresa:body.data.nomeEmpresa,
         nomeResponsavel:body.data.nomeResponsavel,email:body.data.email,whatsapp:contact,cnpj:body.data.cnpj,
         kind:body.data.modalidadeCadastro,plan:body.data.planoPagamento,
-        method:body.data.metodoPagamento,originHash}));
+        method:body.data.metodoPagamento,originHash,referralCode:body.data.indicacao}));
       return NextResponse.json({ok:true,modalidadeCadastro:body.data.modalidadeCadastro,protocolo:result.id,
         message:body.data.modalidadeCadastro==="TESTE_7_DIAS"?
          "Cadastro recebido! Enviaremos um e-mail para criar sua senha. Após a confirmação, seu banco exclusivo será preparado automaticamente e o teste começará quando estiver pronto.":
@@ -47,9 +48,12 @@ export async function POST(request: NextRequest) {
     // Legacy signup must also check the central SaaS registry (including archived signups).
     // Trial expiry or a different email must never grant the same phone/CNPJ a second trial.
     const contact=body.data.whatsapp.startsWith("55")?body.data.whatsapp:"55"+body.data.whatsapp;
-    await withControlPlane(db=>assertRegistrationIdentityAvailable(db,{
-      email:body.data.email,whatsapp:contact,cnpj:body.data.cnpj
-    }));
+    const salesPartner=await withControlPlane(async db=>{
+      await assertRegistrationIdentityAvailable(db,{
+        email:body.data.email,whatsapp:contact,cnpj:body.data.cnpj
+      });
+      return resolveSalesPartner(db,body.data.indicacao);
+    });
     const registered = await prisma.solicitacaoEmpresa.findFirst({
       where:{OR:[
         {email:body.data.email},
@@ -79,6 +83,7 @@ export async function POST(request: NextRequest) {
       data: {
         nomeEmpresa, nomeResponsavel, email, cidade, mensagem, cnpj, razaoSocial,
         modalidadeCadastro,
+        parceiroIndicador:salesPartner?.code??null,
         // Solicitação gratuita não inicia relógio, não provisiona banco e não cobra cartão.
         testeIniciadoEm: null,
         testeExpiraEm: null,
