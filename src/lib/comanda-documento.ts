@@ -18,8 +18,9 @@ export async function gerarPdfComandaOperacional(db: PrismaClient, id: string, v
   // A vistoria avulsa sempre reflete o registro salvo, nunca um snapshot do celular.
   // Não gerar laudo aparentemente "sem danos" a partir de dados ainda não salvos.
   const ids = new Set(vistoria?.itens?.filter(i=>i.revisado).map(i=>i.id) ?? []);
-  if (vistoriaSomente && (!vistoria || ids.size !== 8))
-    throw new BusinessError("Conclua e salve os oito pontos da vistoria antes de gerar o PDF.",409);
+  if (vistoriaSomente && !vistoria)
+    throw new BusinessError("Salve a vistoria antes de gerar o PDF.",409);
+  // Vistorias parciais são compartilháveis, mas o PDF identifica os pontos pendentes.
   return gerarPdfVistoria({
     numero: comanda.numero,
     estabelecimento: cfg?.nome ?? "Lava-rápido",
